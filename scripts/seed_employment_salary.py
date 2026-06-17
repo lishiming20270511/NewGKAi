@@ -224,7 +224,7 @@ async def seed():
 
     async with async_session() as session:
         # 预先加载所有学校名→ID的映射
-        rows = await session.execute(text("SELECT id, name FROM schools"))
+        rows = await session.execute(text("SELECT school_id AS id, name FROM schools"))
         school_map = {r["name"]: r["id"] for r in rows.mappings()}
         print(f"数据库共有 {len(school_map)} 所学校")
 
