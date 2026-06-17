@@ -4,7 +4,7 @@
 |---------|------|
 | 项目名称 | AI高考志愿规划师 · 直播辅助工具 |
 | 上级文档 | [Tasks.md](./Tasks.md) |
-| 更新日期 | 2026-06-17 (50/50任务全部完成：T9.1-T9.3回归测试全部完成) |
+| 更新日期 | 2026-06-17 (54/54任务全部完成：Phase 10数据丰富与运营看板完成) |
 
 ---
 
@@ -943,9 +943,88 @@ curl http://127.0.0.1:8000/health
 | 薪资数据估算 | `dim.salary_source: "estimated"` | 同上 | ⚠️ 已记录待优化 |
 | 城市分析缺失 | `dim.city_analysis: null` | 城市板块不渲染（正确隐藏） | ✅ 正常 |
 
-**待优化事项**（非阻断性，可在爬虫数据补全后一并处理）：
-- 前端 `renderSchoolCard()` 对 `dim.tuition_source === 'estimated'` / `dim.salary_source === 'estimated'` 增加 "(估算)" 角标
-- 完善维度级估算标注展示
+---
+
+## Phase 10：数据丰富与运营看板 进度
+
+| 任务 | 状态 | 完成日期 | 备注 |
+|------|------|----------|------|
+| **T10.1** 城市分析数据种子（54城市） | ✅ 完成 | 2026-06-17 | 见下方详情 |
+| **T10.2** 就业率+薪资数据种子（~90院校） | ✅ 完成 | 2026-06-17 | 见下方详情 |
+| **T10.3** 前端估算标注与城市字段修复 | ✅ 完成 | 2026-06-17 | 见下方详情 |
+| **T10.4** 管理后台爬取进度看板 | ✅ 完成 | 2026-06-17 | 见下方详情 |
+
+### T10.1 完成详情
+
+**文件**：`scripts/seed_city_analysis.py`
+
+**写入数据**：
+- 4个一线城市：北京/上海/广州/深圳
+- 约16个新一线城市：成都/杭州/武汉/重庆/西安/南京/郑州/长沙/天津/苏州/合肥/青岛/宁波/无锡/佛山/东莞/泉州/珠海
+- 约30个二线/三线城市（济南/大连/沈阳/昆明/贵阳/福州/厦门 等）
+- 5维字段：location（地理/战略）/ advantage（核心优势）/ development（注意事项）/ main_business（就业市场）/ city_level（城市等级）
+- 共54条，ON DUPLICATE KEY UPDATE 幂等写入
+
+**运行**：`python scripts/seed_city_analysis.py`（生产服务器上执行）
+
+---
+
+### T10.2 完成详情
+
+**文件**：`scripts/seed_employment_salary.py`
+
+**就业率数据**（写入 school_employment 表）：
+- ~90所院校（985全覆盖 + 211大部分 + 部分普通本科）
+- 字段：employment_rate / graduate_rate / data_source / data_year
+- 数据来源：麦可思就业蓝皮书2024 + 各高校官网就业质量报告
+
+**薪资数据**（写入 school_salary 表）：
+- 校均薪资：~50所院校（major_name = "__default__"）
+- 专业专项：计算机/临床医学/金融学各主要院校
+- 字段：salary_start_min/max（应届薪资）/ salary_3yr_min/max（3年后薪资）
+- 薪资区间：985应届 8k-35k，211应届 6k-16k，普通本科 4.5k-9k
+
+**运行**：`python scripts/seed_employment_salary.py`（生产服务器上执行）
+
+---
+
+### T10.3 完成详情
+
+**后端修复**（`api/services/recommendation.py`）：
+- `aggregate_16_dimensions()` 的城市分析返回字段重映射：
+  - `development` → `disadvantage`（前端期望字段名）
+  - `main_business` → `job_market`（前端期望字段名）
+  - 新增 `livability` 合成字段（根据 city_level 动态生成宜居描述）
+
+**前端修复**（`frontend/index.html`）：
+- 学费行（Dim 8）：`dim.tuition_data_quality === 'estimated'` 时显示 `<span class="est-badge">估算</span>`
+- 薪资行（Dim 12）：`dim.salary_data_quality === 'estimated'` 时显示估算标注
+- 新增 `.est-badge` CSS 样式（灰色#94a3b8，圆角边框小标签）
+
+**效果**：
+- 有真实city_analysis数据时：城市分析面板正确展示位置/优势/注意事项/就业市场/宜居度5个维度
+- 无数据时降级到 `{summary: fallback}` 单行展示（原逻辑不变）
+- 估算数据用灰色小标签标注，不影响主要展示内容
+
+---
+
+### T10.4 完成详情
+
+**后端**（`api/routers/admin.py`）：
+
+- `GET /admin/crawl/progress`：查询6类爬取任务表状态分布
+  ```json
+  {"tasks": [{"key":"admission","label":"录取数据","total":1200,"pending":800,"running":0,"done":380,"failed":20}, ...]}
+  ```
+- `POST /admin/crawl/retry`：`{"task_type":"admission","max_retry":3}` → 重置 failed && retry_count < 3 的任务为 pending
+- 表不存在时优雅降级（返回 `note: "表不存在"` 而非500报错）
+
+**前端**（`frontend/admin.html`）：
+- 新增第4个Tab"数据爬取"
+- 6张爬取进度卡片（每卡：标签/进度条/4态数字统计）
+- 进度条颜色：≥80% cyan，≥40% indigo，<40% amber
+- 失败任务>0时显示"↻ 重试失败任务"按钮
+- 使用 DOM createElement 构建节点（通过安全钩子校验，无 innerHTML XSS 风险）
 
 ---
 
@@ -963,3 +1042,4 @@ curl http://127.0.0.1:8000/health
 | v4.0 | 2026-06-17 | Phase 7全部完成：v4.0数据层升级；T7.1~T7.7；admin_accounts独立认证；6类爬虫网关；aggregate_16_dimensions()查真实数据；**42/42任务全部完成** |
 | v4.1 | 2026-06-17 | Phase 8完成：T8.1已完成；T8.2-T8.5全部完成：16维学校卡片/PDF重设计/5板块报告/管理后台暗色主题+密码管理；**47/50任务完成，T9.1-T9.3待开始** |
 | v4.2 | 2026-06-17 | Phase 9完成：T9.1全流程回归测试（BF-9~BF-13，5个Bug修复）；T9.2数据差异化验证通过（省份/分数均有效区分）；T9.3降级展示验证通过；**50/50任务全部完成，项目收官** |
+| **v5.0** | **2026-06-17** | **Phase 10完成：T10.1~T10.4全部完成；城市/就业/薪资三类种子数据；城市字段映射Bug修复；估算标注前端完善；管理后台爬取进度看板；54任务全部完成** |

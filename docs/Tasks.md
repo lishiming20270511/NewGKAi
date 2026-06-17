@@ -1422,13 +1422,92 @@ Phase 9: T9.1 → T9.2                  (7h, 验证)
 | ★ Phase 7: v4.0数据层 | 7 | 22h | 与Phase 8并行 |
 | ★ Phase 8: v4.0前端 | 5 | 18h | 与Phase 7并行 |
 | ★ Phase 9: v4.0验证 | 3 | 10h | 串行 |
-| **合计** | **50** | **~158h** | — |
+| ★ Phase 10: 数据丰富与运营 | 4 | 8h | 串行 |
+| **合计** | **54** | **~166h** | — |
 
-> **按2人团队计算**：Phase 1→6 = 后端约50h + 前端约56h ≈ 可并行约56h ≈ 7人天完成MVP。Phase 7→9 = 约30h ≈ 4人天完成v4.0升级。**总计约11人天到v4.0上线状态。**
+> **按2人团队计算**：Phase 1→6 = 后端约50h + 前端约56h ≈ 可并行约56h ≈ 7人天完成MVP。Phase 7→9 = 约30h ≈ 4人天完成v4.0升级。Phase 10 = 约8h ≈ 1人天完成数据丰富与运营看板。**总计约12人天到完整状态。**
+
+---
+
+## Phase 10：数据丰富与运营看板 ★ 新增
+
+> 目标：补全城市分析与就业薪资真实数据、修复前端字段映射、增加估算标注、添加管理后台爬取进度看板，形成完整的数据运营闭环。
+
+### T10.1 · 城市分析数据种子（54城市）
+| 属性 | 内容 |
+|------|------|
+| **工时** | 1.5h |
+| **前置** | T7.1（city_analysis表） |
+| **负责人** | 后端 |
+
+**任务清单**：
+- [x] 编写 `scripts/seed_city_analysis.py`
+- [x] 覆盖4个一线城市（北京/上海/广州/深圳）
+- [x] 覆盖约16个新一线城市（成都/杭州/武汉/重庆/西安/南京/郑州/长沙/天津/苏州/合肥/青岛/宁波/无锡/佛山/东莞/泉州/珠海）
+- [x] 覆盖约30个二线/三线城市
+- [x] 5维数据：location/advantage/development/main_business/city_level
+- [x] ON DUPLICATE KEY UPDATE 幂等写入
+
+**验收标准**：54个城市，`python scripts/seed_city_analysis.py` 无报错。
+
+---
+
+### T10.2 · 就业率与薪资数据种子（~90院校）
+| 属性 | 内容 |
+|------|------|
+| **工时** | 2h |
+| **前置** | T7.1（school_employment/school_salary表） |
+| **负责人** | 后端 |
+
+**任务清单**：
+- [x] 编写 `scripts/seed_employment_salary.py`
+- [x] 就业率数据：~90所985/211/双一流院校（employment_rate/graduate_rate）
+- [x] 薪资数据：~80条（校均 + 计算机/医学/金融专业专项薪资）
+- [x] 薪资范围覆盖应届/3年（salary_start/salary_3yr）
+- [x] school_name → school_id 映射查询
+- [x] ON DUPLICATE KEY UPDATE 幂等写入
+
+**验收标准**：`python scripts/seed_employment_salary.py` 无报错，缺失院校打印跳过日志。
+
+---
+
+### T10.3 · 前端估算标注与城市字段修复
+| 属性 | 内容 |
+|------|------|
+| **工时** | 1.5h |
+| **前置** | T8.2（renderSchoolCard），T7.4（aggregate_16_dimensions） |
+| **负责人** | 前端+后端 |
+
+**任务清单**：
+- [x] **后端**：`recommendation.py` 中 city_analysis 返回字段映射修复：`development` → `disadvantage`，`main_business` → `job_market`，新增 `livability` 合成字段
+- [x] **前端**：`renderSchoolCard()` 学费行增加 `dim.tuition_data_quality === 'estimated'` 判断，展示 `<span class="est-badge">估算</span>`
+- [x] **前端**：薪资行增加 `dim.salary_data_quality === 'estimated'` 判断，展示估算标注
+- [x] **CSS**：新增 `.est-badge` 样式（灰色边框小标签）
+
+**验收标准**：真实数据时城市分析5维全显示；估算数据时学费/薪资行出现灰色"估算"标注。
+
+---
+
+### T10.4 · 管理后台爬取进度看板
+| 属性 | 内容 |
+|------|------|
+| **工时** | 2h |
+| **前置** | T7.1（6类crawl_tasks表），T4.1（admin认证） |
+| **负责人** | 后端+前端 |
+
+**任务清单**：
+- [x] **后端**：`GET /admin/crawl/progress`：查询6类爬取任务表（admission/major/tuition/employment/salary/city）的状态分布（pending/running/done/failed）
+- [x] **后端**：`POST /admin/crawl/retry`：将指定类型的 failed 且 retry_count < max_retry 任务重置为 pending
+- [x] **前端**：admin.html 新增"数据爬取"Tab
+- [x] **前端**：6张爬取进度卡片（进度条 + 4态统计），失败任务显示"重试"按钮
+- [x] **前端**：使用 DOM createElement 构建（非 innerHTML，通过安全校验）
+
+**验收标准**：进度看板正确显示6类任务状态；"重试"按钮点击后自动刷新；表不存在时显示"表不存在"提示而不报错。
 
 ---
 
 | 版本 | 日期 | 变更 |
 |------|------|------|
 | v1.0 | 2026-06-16 | 初始任务拆分：35任务6Phase~122h（对齐Architecture v1.2） |
-| **v2.0** | **2026-06-17** | **★ 对齐 Architecture v2.0 / PRD v4.0 新增：Phase 7（数据层升级 7任务22h）+ Phase 8（前端升级 5任务18h）+ Phase 9（验证 3任务10h），总计50任务~158h。关键新增：T7.1（5张新表DDL）、T7.2（admin_accounts+密码管理）、T7.4（推荐引擎16维度查询）、T8.1（Bento Grid暗色CSS）、T8.2（16维度卡片）、T8.3（PDF 5种水印+封面重设计）** |
+| v2.0 | 2026-06-17 | 对齐 Architecture v2.0 / PRD v4.0 新增：Phase 7（数据层升级 7任务22h）+ Phase 8（前端升级 5任务18h）+ Phase 9（验证 3任务10h），总计50任务~158h |
+| **v2.1** | **2026-06-17** | **★ 新增 Phase 10（数据丰富与运营看板 4任务8h）：T10.1城市种子/T10.2就业薪资种子/T10.3估算标注/T10.4爬取看板；总计54任务~166h** |

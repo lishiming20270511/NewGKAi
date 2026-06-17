@@ -849,12 +849,14 @@ async def aggregate_16_dimensions(
     )
     ca = r15.mappings().first()
     if ca:
+        city_level = ca["city_level"] or "二线"
         dims["city_analysis"] = {
             "location": ca["location"],
             "advantage": ca["advantage"],
-            "development": ca["development"],
-            "main_business": ca["main_business"],
-            "city_level": ca["city_level"] or "二线",
+            "disadvantage": ca["development"],
+            "job_market": ca["main_business"],
+            "livability": f"{city_level}城市，生活成本{'较高' if city_level == '一线' else '适中' if city_level == '新一线' else '较低'}，宜居指数{'良好' if city_level in ('一线', '新一线') else '稳定'}",
+            "city_level": city_level,
         }
         dims["city_data_quality"] = "real"
     else:

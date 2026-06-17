@@ -427,3 +427,84 @@ async def update_config(
         pass
 
     return {"success": True, "updated": list(body.keys())}
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# T10.4 爬取进度看板
+# ──────────────────────────────────────────────────────────────────────────────
+
+_CRAWL_TABLES = {
+    "admission":  ("school_admission_crawl_tasks",  "录取数据"),
+    "major":      ("school_major_crawl_tasks",       "专业数据"),
+    "tuition":    ("school_tuition_crawl_tasks",     "学费数据"),
+    "employment": ("school_employment_crawl_tasks",  "就业数据"),
+    "salary":     ("school_salary_crawl_tasks",      "薪资数据"),
+    "city":       ("school_city_crawl_tasks",        "城市分析"),
+}
+
+
+@router.get("/crawl/progress")
+async def get_crawl_progress(
+    admin=Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    result = []
+    for key, (table, label) in _CRAWL_TABLES.items():
+        try:
+            row = await db.execute(
+                text(f"""
+                    SELECT
+                        COUNT(*) AS total,
+                        SUM(status = 'pending')  AS pending,
+                        SUM(status = 'running')  AS running,
+                        SUM(status = 'done')     AS done,
+                        SUM(status = 'failed')   AS failed
+                    FROM `{table}`
+                """)
+            )
+            r = row.mappings().first()
+            result.append({
+                "key": key,
+                "label": label,
+                "total":   int(r["total"]   or 0),
+                "pending": int(r["pending"] or 0),
+                "running": int(r["running"] or 0),
+                "done":    int(r["done"]    or 0),
+                "failed":  int(r["failed"]  or 0),
+            })
+        except Exception:
+            result.append({
+                "key": key, "label": label,
+                "total": 0, "pending": 0, "running": 0, "done": 0, "failed": 0,
+                "note": "表不存在",
+            })
+    return {"tasks": result}
+
+
+class RetryRequest(BaseModel):
+    task_type: str = Field(..., description="admission/major/tuition/employment/salary/city")
+    max_retry: int = Field(3, ge=1, le=10)
+
+
+@router.post("/crawl/retry")
+async def retry_failed_crawl_tasks(
+    body: RetryRequest,
+    admin=Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    if body.task_type not in _CRAWL_TABLES:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"不支持的任务类型: {body.task_type}")
+    table, label = _CRAWL_TABLES[body.task_type]
+    try:
+        result = await db.execute(
+            text(f"""
+                UPDATE `{table}`
+                SET status = 'pending', error_msg = NULL
+                WHERE status = 'failed' AND retry_count < :max_retry
+            """),
+            {"max_retry": body.max_retry},
+        )
+        await db.commit()
+        return {"success": True, "reset_count": result.rowcount, "label": label}
+    except Exception as e:
+        raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, str(e))
