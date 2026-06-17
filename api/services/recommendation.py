@@ -766,15 +766,24 @@ async def detect_data_gaps(
 async def _create_crawl_tasks(
     school_id: int, province: str, years: list[int], db: AsyncSession
 ) -> None:
+    try:
+        row = await db.execute(
+            text("SELECT name FROM schools WHERE school_id = :sid"),
+            {"sid": school_id},
+        )
+        school_name = (row.scalar() or str(school_id))
+    except Exception:
+        school_name = str(school_id)
+
     for year in years:
         try:
             await db.execute(
                 text("""
                     INSERT IGNORE INTO school_admission_crawl_tasks
-                        (school_id, province, year, status)
-                    VALUES (:sid, :prov, :yr, 'pending')
+                        (school_name, school_code, year, status)
+                    VALUES (:name, :code, :yr, 'pending')
                 """),
-                {"sid": school_id, "prov": province, "yr": year},
+                {"name": school_name, "code": str(school_id), "yr": year},
             )
         except Exception:
             pass

@@ -4,7 +4,7 @@
 |---------|------|
 | 项目名称 | AI高考志愿规划师 · 直播辅助工具 |
 | 上级文档 | [Tasks.md](./Tasks.md) |
-| 更新日期 | 2026-06-17 (T2.1 + T2.3) |
+| 更新日期 | 2026-06-17 (Bug修复：admin config列名 + crawl_tasks列名) |
 
 ---
 
@@ -16,6 +16,88 @@
 | **T1.2** 数据库Schema创建与索引优化 | ✅ 完成 | 2026-06-17 | 见下方详情 |
 | **T1.3** 爬虫数据网关 | ✅ 完成 | 2026-06-17 | 见下方详情 |
 | **T1.4** 项目脚手架与FastAPI基础路由 | ✅ 完成 | 2026-06-17 | 见下方详情 |
+
+---
+
+## Phase 2：核心后端 进度
+
+| 任务 | 状态 | 完成日期 | 备注 |
+|------|------|----------|------|
+| **T2.1** 认证系统（JWT + Redis黑名单） | ✅ 完成 | 2026-06-17 | 见下方详情 |
+| **T2.2** 扣费系统（幂等+原子事务） | ✅ 完成 | 2026-06-17 | 见下方详情 |
+| **T2.3** 学校搜索API | ✅ 完成 | 2026-06-17 | 见下方详情 |
+| **T2.4** 推荐引擎核心（位次估算+四层候选池） | ✅ 完成 | 2026-06-17 | 见下方详情 |
+| **T2.5** 推荐引擎概率计算（rankProb+weightedProb） | ✅ 完成 | 2026-06-17 | 见下方详情 |
+| **T2.6** 推荐引擎16维度数据填充 | ✅ 完成 | 2026-06-17 | 见下方详情 |
+| **T2.7** 直播答疑API + LLM调用 | ✅ 完成 | 2026-06-17 | 见下方详情 |
+| **T2.8** 报告记录 + 防倒卖检测 | ✅ 完成 | 2026-06-17 | 见下方详情 |
+
+---
+
+## Phase 3：前端页面 进度
+
+| 任务 | 状态 | 完成日期 | 备注 |
+|------|------|----------|------|
+| **T3.1** 前端框架搭建（index.html + 路由 + 手机模拟框） | ✅ 完成 | 2026-06-17 | 见下方详情 |
+| **T3.2** 登录页 + 考生信息页 | ✅ 完成 | 2026-06-17 | 见下方详情 |
+| **T3.3** 意向偏好页 | ✅ 完成 | 2026-06-17 | 见下方详情 |
+| **T3.4** 分析中过渡页 + 付款墙 | ✅ 完成 | 2026-06-17 | 见下方详情 |
+| **T3.5** 完整报告页 + 特别关注区 | ✅ 完成 | 2026-06-17 | 见下方详情 |
+| **T3.6** PDF生成 + 下一位学生 | ✅ 完成 | 2026-06-17 | 见下方详情 |
+| **T3.7** 报告样板 + 直播答疑 | ✅ 完成 | 2026-06-17 | 见下方详情 |
+| **T3.8** 直播模式 | ✅ 完成 | 2026-06-17 | 见下方详情 |
+
+---
+
+## Phase 4：管理与交易 进度
+
+| 任务 | 状态 | 完成日期 | 备注 |
+|------|------|----------|------|
+| **T4.1** 管理后台框架 + 管理员认证 | ✅ 完成 | 2026-06-17 | 见下方详情 |
+| **T4.2** 主播管理CRUD | ✅ 完成 | 2026-06-17 | 见下方详情 |
+| **T4.3** 充值系统 | ✅ 完成 | 2026-06-17 | 见下方详情 |
+| **T4.4** 订单查看 | ✅ 完成 | 2026-06-17 | 见下方详情 |
+| **T4.5** 系统配置管理 | ✅ 完成 | 2026-06-17 | ⚠️ Bug修复：列名 key_/value_ |
+
+---
+
+## Phase 5：集成测试与部署 进度
+
+| 任务 | 状态 | 完成日期 | 备注 |
+|------|------|----------|------|
+| **T5.1** 前后端联调（主流程） | ⏳ 待开始 | — | 依赖 Phase 2+3 ✅ |
+| **T5.2** 边界场景测试 | ⏳ 待开始 | — | 依赖 T5.1 |
+| **T5.3** 性能测试 | ⏳ 待开始 | — | 依赖 T5.1 |
+| **T5.4** 爬虫网关集成测试 | ⏳ 待开始 | — | 依赖 T1.3 |
+| **T5.5** Nginx配置 + SSL验证 | ⏳ 待开始 | — | 依赖 T5.1 |
+| **T5.6** 生产部署 + 冒烟测试 | ⏳ 待开始 | — | 依赖 T5.1~T5.5 |
+
+---
+
+## Phase 6：上线加固 进度
+
+| 任务 | 状态 | 完成日期 | 备注 |
+|------|------|----------|------|
+| **T6.1** 监控告警部署 | ⏳ 待开始 | — | 依赖 T5.6 |
+| **T6.2** 数据备份方案验证 | ⏳ 待开始 | — | 依赖 T5.6 |
+| **T6.3** Redis持久化 + 降级验证 | ⏳ 待开始 | — | 依赖 T5.6 |
+| **T6.4** 文档更新 + 部署手册 | ⏳ 待开始 | — | 依赖 T5.6 |
+
+---
+
+## Bug修复记录
+
+### BugFix-1：admin.py config API 列名错误（2026-06-17）
+
+- **问题**：`GET /admin/config` 和 `PUT /admin/config` 使用了 `config_key`/`config_value` 列名，但实际 `system_config` 表列名为 `key_`/`value_`（T1.2 创建时的实际建表列名）
+- **修复**：`api/routers/admin.py` 中将所有 `config_key`→`key_`，`config_value`→`value_`
+- **影响范围**：仅 `GET/PUT /admin/config` 两个端点
+
+### BugFix-2：recommendation.py _create_crawl_tasks 列名错误（2026-06-17）
+
+- **问题**：`_create_crawl_tasks()` 向 `school_admission_crawl_tasks` 插入时使用 `school_id`/`province` 列，但实际表结构为 `school_name`/`school_code`/`year`/`status`（Architecture.md §爬虫任务表描述）
+- **修复**：增加从 `schools` 表按 `school_id` 查询 `name` 的步骤，改用 `school_name`/`school_code` 列插入
+- **影响范围**：仅数据缺口检测的爬虫任务写入，不影响推荐结果（已有 try/except 兜底）
 
 ---
 
@@ -110,7 +192,7 @@ redis-cli CONFIG GET save → 3600 1
 | `low_score_boundary` | `400` |
 | `max_candidates` | `105` |
 
-**注**：`system_config` 现有列名为 `key_`/`value_`（非 Architecture.md 设计的 `config_key`/`config_value`），T1.4/T2 代码将按实际列名读取。
+**注**：`system_config` 现有列名为 `key_`/`value_`（非 Architecture.md 设计的 `config_key`/`config_value`），所有代码均按实际列名读取。
 
 ### EXPLAIN 验证结果
 ```
@@ -120,8 +202,6 @@ yifenyidang 位次估算:
 admission_history 批量录取:
   type=range, key=uk_admission, Extra=Using index condition ✅
 ```
-
----
 
 ---
 
@@ -170,17 +250,21 @@ api/
   database.py        SQLAlchemy 2.0 async 引擎 + get_db()
   redis_client.py    aioredis 客户端单例
   routers/
-    auth.py          空路由（T2.1 实现）
-    schools.py       空路由（T2.3 实现）
-    recommendation.py 空路由（T2.4 实现）
-    qa.py            空路由（T2.7 实现）
-    report.py        空路由（T2.8 实现）
-    admin.py         空路由（T4.1 实现）
+    auth.py          已实现（T2.1 + T2.2）
+    schools.py       已实现（T2.3）
+    recommendation.py 已实现（T2.4~T2.6）
+    qa.py            已实现（T2.7）
+    report.py        已实现（T2.8）
+    admin.py         已实现（T4.1~T4.5）
     crawler.py       已实现（T1.3）
-  services/__init__.py
+  deps.py            已实现（T2.1）— JWT 认证依赖
+  services/
+    recommendation.py 已实现（T2.4~T2.6，974行）
   models/__init__.py
 scripts/
   check_staging.py   已实现（T1.3）
+frontend/
+  index.html         已实现（T3.1~T3.8，1842行）
 ```
 
 #### 关键配置
@@ -199,17 +283,6 @@ curl http://127.0.0.1:8000/health
 # → {"status":"ok","mysql":"ok","redis":"ok"} ✅
 systemctl status gaokao-api  # → active (running), 4 workers ✅
 ```
-
----
-
-## Phase 2：核心后端 进度
-
-| 任务 | 状态 | 完成日期 | 备注 |
-|------|------|----------|------|
-| **T2.1** 认证系统（JWT + Redis黑名单） | ✅ 完成 | 2026-06-17 | 见下方详情 |
-| **T2.2** 扣费系统（幂等+原子事务） | ⏳ 待开始 | — | 依赖 T2.1 ✅ |
-| **T2.3** 学校搜索API | ✅ 完成 | 2026-06-17 | 见下方详情 |
-| **T2.4** 推荐引擎核心 | ⏳ 待开始 | — | 依赖 T2.3 ✅ |
 
 ---
 
@@ -237,6 +310,29 @@ GET /auth/streamer/profile (无 Token) → 401 ✅
 
 ---
 
+## T2.2 完成详情（2026-06-17）
+
+### 执行内容
+
+#### `api/routers/auth.py` — POST /auth/deduct
+- ① Redis NX 分布式锁（`deduct:lock:{sid}`，ex=5s）—— Redis 不可用时降级跳过
+- ② 幂等检查：`SELECT id FROM orders WHERE streamer_id=? AND idempotency_key=?`
+  - 已存在 → 直接返回 `{success:true, already_processed:true, order_id:...}`
+- ③ `SELECT FOR UPDATE` 查询余额
+- ④ 余额不足 → 400
+- ⑤ `UPDATE balance -= 1, used_total += 1`
+- ⑥ `INSERT INTO orders`（order_id 格式：`GK{YYYYMMDD-HHmm}-{4hex}`）
+- ⑦ `INSERT INTO report_tasks`（student_hash + score_range + school_hash）
+
+**验证结果**：
+```bash
+POST /auth/deduct → 200 {success:true, balance:7, order_id:"GKxxxxxxxx-xxxx-xxxx"} ✅
+重复 idempotency_key → 200 {already_processed:true} 余额不减 ✅
+余额=0 → 400 {detail:"余额不足"} ✅
+```
+
+---
+
 ## T2.3 完成详情（2026-06-17）
 
 ### 执行内容
@@ -259,11 +355,117 @@ GET /api/schools/100
 
 ---
 
-## Phase 3-6：待开始
+## T2.4 + T2.5 + T2.6 完成详情（2026-06-17）
 
-Phase 3 (前端) · Phase 4 (管理与交易) · Phase 5 (集成部署) · Phase 6 (上线加固)
+### 执行内容
+
+#### `api/services/recommendation.py`（974行）
+
+**位次估算 `estimate_rank()`**：
+- 查询 `yifenyidang`，`subject_group` 列，按 2025→2024→2023 年份回退
+- L2 Redis 缓存：`recommend:rank:{province}:{year}:{category}:{score}` TTL 3600s
+
+**四层候选池 `build_candidate_pool()`**：
+- 特别关注区：意向学校（不计入15所配额）
+- L1：意向城市学校（60+ 城市→省份映射）
+- L2：本省学校
+- L3：邻省学校（`CITY_NEIGHBOR_PROVINCES` 映射）
+- L4：全国兜底（`PROVINCE_EXPAND` 扩展）
+- 每层去重，最多 105 候选
+
+**概率计算**：
+- `calc_rank_prob()`：取近3年 min_rank 中位数，位次比较法，趋势修正（逐年收紧→下调5%），钳制到 [1,99]
+- `calc_weighted_prob()`：6维度加权（录取35% + 专业20% + 就业15% + 城市10% + 性格10% + 经济10%）
+
+**Tier分层 `assign_tier()`**：0=冲刺(30-60%) / 1=稳妥(60-85%) / 2=保底(≥85%)
+
+**16维度 `aggregate_16_dimensions()`**：employment_data 查询 + 学费估算 + 城市分析
+
+**数据缺口检测 `detect_data_gaps()`**：
+- 缺数据时向 `school_admission_crawl_tasks` 写爬虫任务（school_name + school_code）
+
+**全局入口 `generate_recommendation()`**：
+- L3 全量结果缓存：`recommend:result:{md5}` TTL 1800s
+
+---
+
+## T2.7 完成详情（2026-06-17）
+
+### 执行内容
+
+#### `api/routers/qa.py` — POST /api/qa/ask
+- System prompt：张雪峰风格，口语化，犀利接地气，200字以内
+- 调用 DeepSeek API（`deepseek-chat`），超时 10s
+- 失败降级：返回 `"AI暂时无法回答，请稍后重试"`
+- 问答日志写入 `qa_history`（try/except 兜底，表不存在不影响主流程）
+
+---
+
+## T2.8 完成详情（2026-06-17）
+
+### 执行内容
+
+#### `api/routers/report.py` — POST /api/report/log
+- 相似度检测：查询同主播近10条 `report_tasks`
+- 同省份 + 同分数段(±5分) + 同意向学校哈希 → `similarity_flag=1`
+- 连续3次 → `similarity_flag=2` → `logging.WARNING` 告警
+
+---
+
+## T3.1 ~ T3.8 完成详情（2026-06-17）
+
+### 执行内容
+
+#### `frontend/index.html`（1842行，单文件SPA）
+
+**页面路由（hash-based）**：
+- `#login` → `#student`（7字段表单）→ `#pref`（意向偏好）→ `#analyzing`（分析动画）→ `#paywall`（付款墙）→ `#report`（完整报告）
+- `#sample`（无需登录，静态样板）
+- `#qa`（直播答疑）
+
+**核心功能**：
+- 考生信息页：31省选择 + 动态选科组件（3+3 / 3+1+2）+ 分数钳制（上海660/其他750）
+- 意向偏好：26专业标签 + 16城市 + 学校搜索（300ms防抖+API）+ 8性格标签
+- 分析动画：1.5s加载→AI分析→自动跳转
+- 付款墙：概率数据遮蔽 + 余额显示 + 解锁按钮
+- 完整报告：特别关注区（意向学校，含0%标注）+ 饼图（Canvas原生绘制）+ 15张学校卡片（16维度折叠展开）
+- PDF导出：html2canvas + jsPDF + 5种水印
+- 直播模式：requestFullscreen + 1.2x字体 + 悬浮退出按钮
+- 管理后台：内嵌 admin panel（主播CRUD/订单/配置），桌面端布局
+
+---
+
+## T4.1 ~ T4.5 完成详情（2026-06-17）
+
+### 执行内容
+
+#### `api/routers/admin.py`（后端）
+
+- `POST /admin/login`：admin JWT（role="admin"，独立于主播 token）
+- `GET/POST /admin/streamers`：列表（分页20条）+ 新增主播（bcrypt密码）
+- `PUT /admin/streamers/{id}`：编辑手机号/密码/姓名
+- `PATCH /admin/streamers/{id}/status`：启用/禁用 toggle
+- `POST /admin/streamers/{id}/recharge`：事务 UPDATE balance + INSERT recharge_log
+- `GET /admin/orders`：分页 + 日期/主播筛选
+- `GET /admin/config`：读 `system_config`（`key_`/`value_` 列），Redis 缓存 300s
+- `PUT /admin/config`：更新配置，清除 Redis 缓存
+
+#### 前端（内嵌 `index.html`）
+- 管理员登录流程（独立 localStorage 存储）
+- 主播列表表格 + 新增/编辑/禁用弹窗
+- 充值对话框（次数+金额联动）
+- 订单表格 + 筛选器
+- 系统配置表单（概率阈值 + 定价 + 分数上限）
+
+---
+
+## Phase 5-6：待开始
+
+Phase 5 (集成测试) · Phase 6 (上线加固)
 
 详见 [Tasks.md](./Tasks.md)。
+
+下一步：T5.1 前后端联调（在生产服务器上走通完整主流程）。
 
 ---
 
@@ -275,3 +477,4 @@ Phase 3 (前端) · Phase 4 (管理与交易) · Phase 5 (集成部署) · Phase
 | v1.3 | 2026-06-17 | 记录 T1.4 完成：FastAPI脚手架、config/database/redis模块、/health端点、systemd服务迁移 |
 | v1.4 | 2026-06-17 | 记录 T2.1 完成：JWT认证、bcrypt登录、Redis黑名单注销、主播profile接口 |
 | v1.5 | 2026-06-17 | 记录 T2.3 完成：学校搜索（FULLTEXT+LIKE回退+Redis缓存）、学校详情 |
+| v2.0 | 2026-06-17 | 大更新：补录 T2.2/T2.4~T2.8/T3.1~T3.8/T4.1~T4.5 完成状态；修复 BugFix-1(admin config列名) + BugFix-2(crawl_tasks列名) |

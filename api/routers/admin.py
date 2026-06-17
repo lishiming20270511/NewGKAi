@@ -316,9 +316,9 @@ async def get_config(
         pass
 
     rows = await db.execute(
-        text("SELECT config_key, config_value, description FROM system_config ORDER BY config_key")
+        text("SELECT key_, value_, description FROM system_config ORDER BY key_")
     )
-    config = {r["config_key"]: {"value": r["config_value"], "description": r["description"]} for r in rows.mappings()}
+    config = {r["key_"]: {"value": r["value_"], "description": r["description"]} for r in rows.mappings()}
     try:
         r = get_redis()
         await r.setex("sys:config", 300, json.dumps(config, ensure_ascii=False))
@@ -336,9 +336,9 @@ async def update_config(
     for key, value in body.items():
         await db.execute(
             text("""
-                INSERT INTO system_config (config_key, config_value)
+                INSERT INTO system_config (key_, value_)
                 VALUES (:k, :v)
-                ON DUPLICATE KEY UPDATE config_value = :v
+                ON DUPLICATE KEY UPDATE value_ = :v
             """),
             {"k": key, "v": json.dumps(value) if not isinstance(value, str) else value},
         )
