@@ -624,7 +624,8 @@ def sort_and_slice(schools: list[SchoolRecord], personality: list[str]) -> list[
 # PHASE 2d / T2.6: 16维度数据聚合
 # ──────────────────────────────────────────────────────────────────────────────
 
-_CITY_ANALYSIS: dict[str, str] = {
+# Fallback city descriptions (used when city_analysis table has no data)
+_CITY_ANALYSIS_FALLBACK: dict[str, str] = {
     "北京": "北京(超一线)，政治/科技/文化中心，就业最广，起薪高，消费高，留存率≥70%",
     "上海": "上海(超一线)，金融/贸易/互联网中心，外资机会多，起薪高，消费极高",
     "广州": "广州(一线)，商贸/制造业/互联网，外贸机会多，气候宜人，生活成本中高",
@@ -645,7 +646,7 @@ async def aggregate_16_dimensions(
 ) -> dict:
     dims: dict = {}
 
-    # 维度1-5: 基于录取历史数据
+    # ── 维度1-6,9: 基于录取历史数据 ──────────────────────────────────────────
     if history:
         years = sorted(history, key=lambda x: x["year"], reverse=True)
         latest = years[0]
@@ -653,22 +654,17 @@ async def aggregate_16_dimensions(
         dims["latest_min_rank"] = latest.get("min_rank")
         dims["latest_min_score"] = latest.get("min_score")
 
-        # Trend
         scores = [y["min_score"] for y in years if y.get("min_score")]
         if len(scores) >= 2:
             diff = scores[0] - scores[-1]
             if diff > 3:
-                trend = "rising"
-                trend_detail = f"分数线逐年上升 (+{diff}分趋势)"
+                trend, trend_detail = "rising", f"分数线逐年上升 (+{diff}分趋势)"
             elif diff < -3:
-                trend = "falling"
-                trend_detail = f"分数线逐年下降 (-{abs(diff)}分趋势)"
+                trend, trend_detail = "falling", f"分数线逐年下降 (-{abs(diff)}分趋势)"
             else:
-                trend = "stable"
-                trend_detail = "分数线近年稳定"
+                trend, trend_detail = "stable", "分数线近年稳定"
         else:
-            trend = "unknown"
-            trend_detail = "数据不足，趋势未知"
+            trend, trend_detail = "unknown", "数据不足，趋势未知"
         dims["trend"] = trend
         dims["trend_detail"] = trend_detail
         dims["years_available"] = sorted([y["year"] for y in years], reverse=True)
@@ -677,97 +673,211 @@ async def aggregate_16_dimensions(
         dims["trend_detail"] = "暂无录取数据"
         dims["years_available"] = []
 
-    # 维度7: 推荐专业
-    if req.major_preference:
-        dims["recommended_major"] = req.major_preference[0]
-    else:
-        dims["recommended_major"] = "综合类专业"
-
-    # 维度8: 学费估算
-    stype = (school.school_type or "").lower()
-    if "公办" in stype or school.is_985 or school.is_211:
-        dims["tuition"] = "4500-6000元/年"
-        dims["tuition_total"] = "4年约2-2.4万"
-        dims["tuition_fit"] = "中等家庭可接受"
-    elif "民办" in stype or "独立学院" in stype:
-        dims["tuition"] = "15000-30000元/年"
-        dims["tuition_total"] = "4年约6-12万"
-        dims["tuition_fit"] = "需考虑家庭经济承受能力"
-    else:
-        dims["tuition"] = "5000-8000元/年 (估算)"
-        dims["tuition_total"] = "4年约2-3.2万 (估算)"
-        dims["tuition_fit"] = "中等家庭可接受"
-        dims["data_source"] = "estimated"
-
-    # 维度9: 录取趋势
     dims["admission_trend"] = dims.get("trend_detail", "数据不足")
 
-    # 维度10-13: 就业数据（按专业查询，无数据时估算）
-    employ_data = None
+    # ── 维度7: 推荐专业（school_majors + major_similarity 映射）─────────────
+    recommended_major = None
+    major_match_type = "none"
     if req.major_preference:
-        for major in req.major_preference:
-            row = await db.execute(
+        for pref in req.major_preference:
+            # 1) 精确匹配该校专业
+            r7 = await db.execute(
                 text("""
-                    SELECT employment_rate, avg_salary, top_industries
-                    FROM employment_data WHERE major_name = :major LIMIT 1
+                    SELECT major_name, major_level FROM school_majors
+                    WHERE school_id = :sid AND major_name = :major LIMIT 1
                 """),
-                {"major": major},
+                {"sid": school.school_id, "major": pref},
             )
-            employ_data = row.mappings().first()
-            if employ_data:
+            exact = r7.mappings().first()
+            if exact:
+                recommended_major = exact["major_name"]
+                dims["major_level"] = exact["major_level"] or "普通"
+                major_match_type = "exact"
                 break
 
-    if employ_data:
-        rate = employ_data["employment_rate"]
-        dims["employment_rate"] = f"{rate}%" if rate is not None else "–"
-        salary = employ_data["avg_salary"]
-        dims["avg_salary_start"] = f"{salary}元/月" if salary else "–"
-        dims["avg_salary_3yr"] = f"{int(salary * 1.3)}元/月" if salary else "–"
-        industries = employ_data.get("top_industries")
-        if industries:
-            if isinstance(industries, str):
-                import json as _json
-                try:
-                    industries = _json.loads(industries)
-                except Exception:
-                    industries = []
-            dims["core_positions"] = "、".join(industries[:3]) if industries else "–"
-            dims["other_positions"] = "、".join(industries[3:6]) if len(industries) > 3 else "–"
-        else:
-            dims["core_positions"] = "–"
-            dims["other_positions"] = "–"
-        dims["trend_5yr"] = "数据待更新"
+            # 2) 相似专业映射
+            r7s = await db.execute(
+                text("""
+                    SELECT ms.target_major, ms.similarity, sm.major_level
+                    FROM major_similarity ms
+                    LEFT JOIN school_majors sm
+                        ON sm.school_id = :sid AND sm.major_name = ms.target_major
+                    WHERE ms.source_major = :major AND sm.school_id IS NOT NULL
+                    ORDER BY ms.similarity DESC LIMIT 1
+                """),
+                {"sid": school.school_id, "major": pref},
+            )
+            similar = r7s.mappings().first()
+            if similar:
+                recommended_major = similar["target_major"]
+                dims["major_similarity"] = float(similar["similarity"])
+                dims["major_level"] = similar["major_level"] or "普通"
+                major_match_type = "similar"
+                dims["major_note"] = f"相近专业（与{pref}相似度{int(float(similar['similarity'])*100)}%）"
+                break
+
+        # 3) Fallback: 该校任意专业
+        if not recommended_major:
+            r7f = await db.execute(
+                text("SELECT major_name FROM school_majors WHERE school_id = :sid LIMIT 1"),
+                {"sid": school.school_id},
+            )
+            row_f = r7f.mappings().first()
+            if row_f:
+                recommended_major = row_f["major_name"]
+                major_match_type = "fallback"
+
+    dims["recommended_major"] = recommended_major or req.major_preference[0] if req.major_preference else "综合类专业"
+    dims["major_match_type"] = major_match_type
+
+    # ── 维度8: 学费（school_tuition，冷门院校显示"查询中"）──────────────────
+    tuition_major = recommended_major or "__default__"
+    r8 = await db.execute(
+        text("""
+            SELECT tuition_per_year, duration_years, data_source, data_year
+            FROM school_tuition
+            WHERE school_id = :sid
+              AND (major_name = :major OR major_name = '__default__')
+            ORDER BY (major_name = :major) DESC, data_year DESC
+            LIMIT 1
+        """),
+        {"sid": school.school_id, "major": tuition_major},
+    )
+    tuition_row = r8.mappings().first()
+    if tuition_row:
+        per_yr = tuition_row["tuition_per_year"]
+        yrs = tuition_row["duration_years"] or 4
+        total = per_yr * yrs
+        dims["tuition"] = f"{per_yr:,}元/年"
+        dims["tuition_total"] = f"{yrs}年约{total//10000:.1f}万" if total >= 10000 else f"{yrs}年约{total:,}元"
+        dims["tuition_fit"] = _tuition_fit(per_yr, req.economic_level)
+        dims["tuition_source"] = tuition_row["data_source"] or "官网"
+        dims["tuition_year"] = tuition_row["data_year"]
+        dims["tuition_data_quality"] = "real"
     else:
-        # Fallback estimates by school tier
+        # Fallback estimates until crawler fills the gap
+        stype = (school.school_type or "").lower()
+        if "公办" in stype or school.is_985 or school.is_211:
+            dims["tuition"] = "4500-6000元/年"
+            dims["tuition_total"] = "4年约2-2.4万"
+            dims["tuition_fit"] = "中等家庭可接受"
+        elif "民办" in stype or "独立学院" in stype:
+            dims["tuition"] = "15000-30000元/年"
+            dims["tuition_total"] = "4年约6-12万"
+            dims["tuition_fit"] = "需考虑家庭经济承受能力"
+        else:
+            dims["tuition"] = "5000-8000元/年"
+            dims["tuition_total"] = "4年约2-3.2万"
+            dims["tuition_fit"] = "中等家庭可接受"
+        dims["tuition_data_quality"] = "estimated"
+
+    # ── 维度11: 就业率（school_employment）───────────────────────────────────
+    r11 = await db.execute(
+        text("""
+            SELECT employment_rate, graduate_rate, data_source, data_year
+            FROM school_employment WHERE school_id = :sid
+        """),
+        {"sid": school.school_id},
+    )
+    emp = r11.mappings().first()
+    if emp and emp["employment_rate"] is not None:
+        er = emp["employment_rate"]
+        gr = emp["graduate_rate"]
+        yr = emp["data_year"] or "未知"
+        src = emp["data_source"] or "学校官网"
+        dims["employment_rate"] = f"{er:.1f}%"
+        dims["graduate_rate"] = f"{gr:.1f}%" if gr is not None else None
+        dims["employment_source"] = f"{src}·{yr}年数据"
+        dims["employment_data_quality"] = "real"
+    else:
         if school.is_985:
             dims["employment_rate"] = "92-97%"
+        elif school.is_211:
+            dims["employment_rate"] = "88-94%"
+        else:
+            dims["employment_rate"] = "82-90%"
+        dims["employment_source"] = "按院校层次估算"
+        dims["employment_data_quality"] = "estimated"
+
+    # ── 维度12-13: 薪资数据（school_salary）──────────────────────────────────
+    r12 = await db.execute(
+        text("""
+            SELECT salary_start_min, salary_start_max, salary_3yr_min, salary_3yr_max,
+                   data_source, data_year
+            FROM school_salary
+            WHERE school_id = :sid
+              AND (major_name = :major OR major_name = '__default__')
+            ORDER BY (major_name = :major) DESC, data_year DESC
+            LIMIT 1
+        """),
+        {"sid": school.school_id, "major": recommended_major or "__default__"},
+    )
+    sal = r12.mappings().first()
+    if sal and sal["salary_start_min"] is not None:
+        s_min, s_max = sal["salary_start_min"], sal["salary_start_max"] or sal["salary_start_min"]
+        t_min = sal["salary_3yr_min"]
+        t_max = sal["salary_3yr_max"] or (t_min if t_min else None)
+        yr = sal["data_year"] or "未知"
+        dims["avg_salary_start"] = f"{s_min//100*100}-{s_max//100*100}元/月" if s_min != s_max else f"{s_min}元/月"
+        dims["avg_salary_3yr"] = f"{t_min//100*100}-{t_max//100*100}元/月" if (t_min and t_max and t_min != t_max) else (f"{t_min}元/月" if t_min else "–")
+        dims["salary_source"] = f"{sal['data_source'] or '第三方调研'}·{yr}年数据"
+        dims["salary_data_quality"] = "real"
+    else:
+        if school.is_985:
             dims["avg_salary_start"] = "8000-14000元/月"
             dims["avg_salary_3yr"] = "15000-25000元/月"
         elif school.is_211:
-            dims["employment_rate"] = "88-94%"
             dims["avg_salary_start"] = "6500-11000元/月"
             dims["avg_salary_3yr"] = "12000-18000元/月"
         else:
-            dims["employment_rate"] = "82-90%"
             dims["avg_salary_start"] = "4500-7000元/月"
             dims["avg_salary_3yr"] = "7000-12000元/月"
-        dims["core_positions"] = "见各专业就业报告"
-        dims["other_positions"] = "–"
-        dims["trend_5yr"] = "数据收集中"
-        dims["data_source"] = "estimated"
+        dims["salary_source"] = "按院校层次估算"
+        dims["salary_data_quality"] = "estimated"
 
-    # 维度15: 城市分析
+    dims["core_positions"] = "见该校就业报告"
+    dims["trend_5yr"] = "数据收集中"
+
+    # ── 维度15: 城市分析（city_analysis 表）─────────────────────────────────
     city = school.city or school.province
-    dims["city_analysis"] = _CITY_ANALYSIS.get(city, f"{city}，城市发展稳定，就业机会适中")
+    r15 = await db.execute(
+        text("""
+            SELECT location, advantage, development, main_business, city_level
+            FROM city_analysis WHERE city_name = :city
+        """),
+        {"city": city},
+    )
+    ca = r15.mappings().first()
+    if ca:
+        dims["city_analysis"] = {
+            "location": ca["location"],
+            "advantage": ca["advantage"],
+            "development": ca["development"],
+            "main_business": ca["main_business"],
+            "city_level": ca["city_level"] or "二线",
+        }
+        dims["city_data_quality"] = "real"
+    else:
+        fallback = _CITY_ANALYSIS_FALLBACK.get(city, f"{city}，城市发展稳定，就业机会适中")
+        dims["city_analysis"] = {"summary": fallback}
+        dims["city_data_quality"] = "estimated"
 
-    # 维度16: AI点评 (异步生成，MVP先返回null)
+    # ── 维度16: AI点评 (异步生成，MVP先返回null) ──────────────────────────────
     dims["ai_review"] = None
 
     return dims
 
 
+def _tuition_fit(per_year: int, economic_level: str) -> str:
+    if economic_level in ("较为困难",):
+        return "高于建议范围，请谨慎评估" if per_year > 8000 else "家庭可接受"
+    if economic_level in ("良好", "比较优越"):
+        return "家庭完全可接受"
+    return "中等家庭可接受" if per_year <= 10000 else "需提前规划费用"
+
+
 # ──────────────────────────────────────────────────────────────────────────────
-# PHASE 5: 数据缺口检测
+# PHASE 5: 数据缺口检测 (v4.0 — 6种数据类型)
 # ──────────────────────────────────────────────────────────────────────────────
 
 async def detect_data_gaps(
@@ -775,29 +885,39 @@ async def detect_data_gaps(
 ) -> str:
     years = [y["year"] for y in history if y.get("min_rank")]
     if len(years) >= 4:
-        return "full"
-    if len(years) >= 1:
+        quality = "full"
+    elif len(years) >= 1:
         missing = [y for y in [2022, 2023, 2024, 2025] if y not in years]
-        await _create_crawl_tasks(school_id, province, missing, db)
-        return "partial"
-    await _create_crawl_tasks(school_id, province, [2022, 2023, 2024, 2025], db)
-    if history:
-        return "partial"
-    return "no_data"
+        await _create_admission_tasks(school_id, province, missing, db)
+        quality = "partial"
+    else:
+        await _create_admission_tasks(school_id, province, [2022, 2023, 2024, 2025], db)
+        quality = "no_data" if not history else "partial"
+
+    # Trigger other crawl tasks asynchronously (best-effort)
+    await _ensure_major_task(school_id, db)
+    await _ensure_tuition_task(school_id, db)
+    await _ensure_employment_task(school_id, db)
+    await _ensure_salary_task(school_id, db)
+    return quality
 
 
-async def _create_crawl_tasks(
-    school_id: int, province: str, years: list[int], db: AsyncSession
-) -> None:
+async def _get_school_info(school_id: int, db: AsyncSession) -> tuple[str, str]:
     try:
         row = await db.execute(
-            text("SELECT name FROM schools WHERE school_id = :sid"),
+            text("SELECT name FROM schools WHERE id = :sid"),
             {"sid": school_id},
         )
-        school_name = (row.scalar() or str(school_id))
+        name = row.scalar() or str(school_id)
     except Exception:
-        school_name = str(school_id)
+        name = str(school_id)
+    return name, str(school_id)
 
+
+async def _create_admission_tasks(
+    school_id: int, province: str, years: list[int], db: AsyncSession
+) -> None:
+    school_name, school_code = await _get_school_info(school_id, db)
     for year in years:
         try:
             await db.execute(
@@ -806,10 +926,90 @@ async def _create_crawl_tasks(
                         (school_name, school_code, year, status)
                     VALUES (:name, :code, :yr, 'pending')
                 """),
-                {"name": school_name, "code": str(school_id), "yr": year},
+                {"name": school_name, "code": school_code, "yr": year},
             )
         except Exception:
             pass
+
+
+async def _ensure_major_task(school_id: int, db: AsyncSession) -> None:
+    try:
+        r = await db.execute(
+            text("SELECT COUNT(*) AS cnt FROM school_majors WHERE school_id = :sid"),
+            {"sid": school_id},
+        )
+        if (r.scalar() or 0) == 0:
+            school_name, school_code = await _get_school_info(school_id, db)
+            await db.execute(
+                text("""
+                    INSERT IGNORE INTO school_major_crawl_tasks
+                        (school_id, school_name, school_code, status)
+                    VALUES (:sid, :name, :code, 'pending')
+                """),
+                {"sid": school_id, "name": school_name, "code": school_code},
+            )
+    except Exception:
+        pass
+
+
+async def _ensure_tuition_task(school_id: int, db: AsyncSession) -> None:
+    try:
+        r = await db.execute(
+            text("SELECT COUNT(*) AS cnt FROM school_tuition WHERE school_id = :sid"),
+            {"sid": school_id},
+        )
+        if (r.scalar() or 0) == 0:
+            school_name, school_code = await _get_school_info(school_id, db)
+            await db.execute(
+                text("""
+                    INSERT IGNORE INTO school_tuition_crawl_tasks
+                        (school_id, school_name, school_code, status)
+                    VALUES (:sid, :name, :code, 'pending')
+                """),
+                {"sid": school_id, "name": school_name, "code": school_code},
+            )
+    except Exception:
+        pass
+
+
+async def _ensure_employment_task(school_id: int, db: AsyncSession) -> None:
+    try:
+        r = await db.execute(
+            text("SELECT COUNT(*) AS cnt FROM school_employment WHERE school_id = :sid"),
+            {"sid": school_id},
+        )
+        if (r.scalar() or 0) == 0:
+            school_name, school_code = await _get_school_info(school_id, db)
+            await db.execute(
+                text("""
+                    INSERT IGNORE INTO school_employment_crawl_tasks
+                        (school_id, school_name, school_code, status)
+                    VALUES (:sid, :name, :code, 'pending')
+                """),
+                {"sid": school_id, "name": school_name, "code": school_code},
+            )
+    except Exception:
+        pass
+
+
+async def _ensure_salary_task(school_id: int, db: AsyncSession) -> None:
+    try:
+        r = await db.execute(
+            text("SELECT COUNT(*) AS cnt FROM school_salary WHERE school_id = :sid"),
+            {"sid": school_id},
+        )
+        if (r.scalar() or 0) == 0:
+            school_name, school_code = await _get_school_info(school_id, db)
+            await db.execute(
+                text("""
+                    INSERT IGNORE INTO school_salary_crawl_tasks
+                        (school_id, school_name, school_code, status)
+                    VALUES (:sid, :name, :code, 'pending')
+                """),
+                {"sid": school_id, "name": school_name, "code": school_code},
+            )
+    except Exception:
+        pass
 
 
 # ──────────────────────────────────────────────────────────────────────────────

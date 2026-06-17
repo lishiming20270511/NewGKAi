@@ -48,19 +48,30 @@ async def get_current_streamer(
 
 
 _admin_bearer = HTTPBearer(auto_error=True)
-ADMIN_JWT_SECRET = settings.jwt_secret  # same secret, different role claim
 
 
 async def get_current_admin(
     credentials: HTTPAuthorizationCredentials = Depends(_admin_bearer),
+    db: AsyncSession = Depends(get_db),
 ):
     token = credentials.credentials
     try:
-        payload = jwt.decode(token, ADMIN_JWT_SECRET, algorithms=[settings.jwt_algorithm])
+        payload = jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
     except JWTError:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "未登录或Token已过期")
 
     if payload.get("role") != "admin":
         raise HTTPException(status.HTTP_403_FORBIDDEN, "无管理员权限")
 
-    return payload
+    admin_id = int(payload.get("sub"))
+    row = await db.execute(
+        text("SELECT id, username, role, status FROM admin_accounts WHERE id = :id"),
+        {"id": admin_id},
+    )
+    admin = row.mappings().first()
+    if not admin:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "管理员账号不存在")
+    if admin["status"] == "disabled":
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "账号已被禁用")
+
+    return dict(admin)

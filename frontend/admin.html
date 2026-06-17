@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI高考志愿规划师 · 管理后台</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --color-danger:#EF4444;--color-info:#3B82F6;--color-success:#22C55E;
+  --bg-primary:#F5F7FA;--bg-card:#FFFFFF;
+  --text-primary:#1E293B;--text-secondary:#64748B;--border:#E2E8F0;
+  --radius-sm:6px;--radius-md:10px;--radius-lg:16px;
+  --shadow-sm:0 1px 3px rgba(0,0,0,.08);--shadow-md:0 4px 16px rgba(0,0,0,.10);
+  --transition:all .18s ease;
+}
+body{background:var(--bg-primary);min-height:100vh;font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;color:var(--text-primary)}
+
+/* ── Layout ── */
+.page-header{background:#1E293B;color:#fff;padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between}
+.page-header h1{font-size:16px;font-weight:700}
+.header-right{display:flex;align-items:center;gap:12px;font-size:13px;color:#94A3B8}
+.main{max-width:1100px;margin:0 auto;padding:24px 16px}
+
+/* ── Login ── */
+.login-wrap{max-width:360px;margin:80px auto;background:#fff;border-radius:var(--radius-lg);padding:32px;box-shadow:var(--shadow-md)}
+.login-wrap h2{font-size:20px;font-weight:700;margin-bottom:4px}
+.login-wrap p{color:var(--text-secondary);font-size:13px;margin-bottom:24px}
+
+/* ── Tabs ── */
+.tab-bar{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:20px}
+.tab-btn{background:none;border:none;padding:10px 20px;font-size:14px;cursor:pointer;color:var(--text-secondary);border-bottom:2px solid transparent;transition:var(--transition);font-weight:500}
+.tab-btn.active{color:var(--color-info);border-bottom-color:var(--color-info);font-weight:600}
+
+/* ── Card ── */
+.card{background:#fff;border-radius:var(--radius-md);padding:20px;box-shadow:var(--shadow-sm);margin-bottom:16px}
+.card-title{font-size:15px;font-weight:700;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+
+/* ── Form ── */
+.form-group{margin-bottom:12px}
+.form-label{display:block;font-size:13px;font-weight:500;color:var(--text-secondary);margin-bottom:4px}
+.form-input{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;outline:none;transition:var(--transition);background:#fff}
+.form-input:focus{border-color:var(--color-info);box-shadow:0 0 0 3px rgba(59,130,246,.1)}
+.form-error{font-size:12px;color:var(--color-danger);margin-top:4px;display:none}
+.form-error.show{display:block}
+
+/* ── Buttons ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;padding:8px 18px;border-radius:var(--radius-sm);border:none;cursor:pointer;font-size:14px;font-weight:500;transition:var(--transition)}
+.btn-primary{background:var(--color-info);color:#fff}
+.btn-primary:hover{opacity:.9}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed}
+.btn-danger{background:var(--color-danger);color:#fff}
+.btn-danger:hover{opacity:.9}
+.btn-ghost{background:transparent;color:var(--text-secondary);border:1px solid var(--border)}
+.btn-ghost:hover{background:var(--bg-primary)}
+.btn-sm{padding:4px 12px;font-size:12px}
+
+/* ── Table ── */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:10px 12px;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap}
+th{background:var(--bg-primary);font-weight:600;color:var(--text-secondary);font-size:12px;text-transform:uppercase;letter-spacing:.5px}
+tr:hover td{background:#F8FAFC}
+.status-active{color:var(--color-success);font-weight:600}
+.status-disabled{color:var(--color-danger);font-weight:600}
+.action-group{display:flex;gap:6px}
+
+/* ── Pagination ── */
+.pagination{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-top:12px;font-size:13px;color:var(--text-secondary)}
+.pagination button{border:1px solid var(--border);background:#fff;padding:5px 12px;border-radius:var(--radius-sm);cursor:pointer;font-size:13px}
+.pagination button:disabled{opacity:.4;cursor:not-allowed}
+
+/* ── Modal ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal{background:#fff;border-radius:var(--radius-lg);padding:24px;width:360px;max-width:90vw;box-shadow:var(--shadow-md)}
+.modal h3{font-size:16px;font-weight:700;margin-bottom:16px}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}
+
+/* ── Filter bar ── */
+.filter-bar{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+
+/* ── Toast ── */
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-10px);background:#1E293B;color:#fff;padding:10px 20px;border-radius:24px;font-size:13px;opacity:0;transition:var(--transition);pointer-events:none;z-index:999;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.success{background:var(--color-success)}
+.toast.error{background:var(--color-danger)}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="page-header" id="siteHeader">
+  <h1>⚙️ AI高考志愿规划师 · 管理后台</h1>
+  <div class="header-right" id="headerRight" style="display:none">
+    <span id="headerAdmin"></span>
+    <button class="btn btn-ghost btn-sm" style="color:#94A3B8;border-color:#374151" onclick="doLogout()">退出登录</button>
+  </div>
+</div>
+
+<!-- Login -->
+<div class="main" id="loginSection">
+  <div class="login-wrap">
+    <h2>🔐 管理员登录</h2>
+    <p>请使用管理员账号登录</p>
+    <div class="form-group">
+      <label class="form-label">用户名</label>
+      <input class="form-input" id="loginUser" placeholder="admin" autocomplete="username">
+    </div>
+    <div class="form-group">
+      <label class="form-label">密码</label>
+      <input class="form-input" id="loginPass" type="password" placeholder="管理员密码" autocomplete="current-password">
+    </div>
+    <div class="form-error" id="loginErr"></div>
+    <button class="btn btn-primary" style="width:100%;margin-top:8px" id="btnLogin" onclick="doLogin()">登录</button>
+  </div>
+</div>
+
+<!-- Main Panel -->
+<div class="main" id="mainSection" style="display:none">
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="streamers" onclick="switchTab('streamers')">主播管理</button>
+    <button class="tab-btn" data-tab="orders" onclick="switchTab('orders')">订单查看</button>
+    <button class="tab-btn" data-tab="config" onclick="switchTab('config')">系统配置</button>
+  </div>
+
+  <!-- Streamers Tab -->
+  <div id="tab-streamers">
+    <div class="card">
+      <div class="card-title">
+        主播列表
+        <button class="btn btn-primary btn-sm" onclick="openModal('createStreamer')">+ 新增主播</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>手机号</th><th>姓名</th><th>剩余次数</th><th>累计购买</th><th>已使用</th><th>状态</th><th>操作</th></tr></thead>
+          <tbody id="streamersTbody"></tbody>
+        </table>
+      </div>
+      <div class="pagination">
+        <button id="prevStreamers" onclick="loadStreamers(-1)" disabled>上一页</button>
+        <span id="streamerPageInfo">1 / 1</span>
+        <button id="nextStreamers" onclick="loadStreamers(1)" disabled>下一页</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Orders Tab -->
+  <div id="tab-orders" style="display:none">
+    <div class="card">
+      <div class="card-title">订单记录</div>
+      <div class="filter-bar">
+        <input class="form-input" id="filterDate" type="date" style="width:160px">
+        <button class="btn btn-primary btn-sm" onclick="loadOrders(0)">查询</button>
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('filterDate').value='';loadOrders(0)">重置</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>订单号</th><th>主播</th><th>考生昵称</th><th>省份</th><th>分数</th><th>时间</th><th>状态</th></tr></thead>
+          <tbody id="ordersTbody"></tbody>
+        </table>
+      </div>
+      <div class="pagination">
+        <button id="prevOrders" onclick="loadOrders(-1)" disabled>上一页</button>
+        <span id="ordersPageInfo">1 / 1</span>
+        <button id="nextOrders" onclick="loadOrders(1)" disabled>下一页</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Config Tab -->
+  <div id="tab-config" style="display:none">
+    <div class="card">
+      <div class="card-title">概率阈值配置</div>
+      <div style="max-width:400px">
+        <div class="form-group">
+          <label class="form-label">冲刺下限（%，默认 30）</label>
+          <input class="form-input" id="cfgBoostMin" type="number" value="30" style="width:120px">
+        </div>
+        <div class="form-group">
+          <label class="form-label">稳妥下限（%，默认 60）</label>
+          <input class="form-input" id="cfgSolidMin" type="number" value="60" style="width:120px">
+        </div>
+        <div class="form-group">
+          <label class="form-label">保底下限（%，默认 85）</label>
+          <input class="form-input" id="cfgSafeMin" type="number" value="85" style="width:120px">
+        </div>
+        <button class="btn btn-primary" style="margin-top:8px" onclick="saveConfig()">保存配置</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Recharge -->
+<div class="modal-overlay" id="modal-recharge">
+  <div class="modal">
+    <h3>💰 充值次数</h3>
+    <p id="rechargeTarget" style="font-size:13px;color:var(--text-secondary);margin-bottom:12px"></p>
+    <div class="form-group">
+      <label class="form-label">充值次数</label>
+      <input class="form-input" type="number" id="rechargeCount" value="10" min="1" oninput="calcAmt()">
+    </div>
+    <div class="form-group">
+      <label class="form-label">充值金额（元，仅记录）</label>
+      <input class="form-input" type="number" id="rechargeAmount" value="299" oninput="calcCount()">
+    </div>
+    <div class="form-group">
+      <label class="form-label">备注（可选）</label>
+      <input class="form-input" id="rechargeRemark" placeholder="如：微信转账">
+    </div>
+    <div class="form-error" id="rechargeErr"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('recharge')">取消</button>
+      <button class="btn btn-primary" id="btnDoRecharge" onclick="doRecharge()">确认充值</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Create Streamer -->
+<div class="modal-overlay" id="modal-createStreamer">
+  <div class="modal">
+    <h3>➕ 新增主播</h3>
+    <div class="form-group">
+      <label class="form-label">手机号</label>
+      <input class="form-input" id="newPhone" maxlength="11" placeholder="11位手机号">
+    </div>
+    <div class="form-group">
+      <label class="form-label">姓名 / 昵称</label>
+      <input class="form-input" id="newName" maxlength="64" placeholder="主播昵称">
+    </div>
+    <div class="form-group">
+      <label class="form-label">初始密码</label>
+      <input class="form-input" id="newPassword" type="password" placeholder="至少6位">
+    </div>
+    <div class="form-error" id="createErr"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('createStreamer')">取消</button>
+      <button class="btn btn-primary" id="btnDoCreate" onclick="doCreateStreamer()">创建</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const S = {
+  token: null,
+  streamerPage: 1,
+  streamerTotal: 0,
+  ordersPage: 1,
+  ordersTotal: 0,
+  rechargeTargetId: null,
+};
+const PAGE_SIZE = 20;
+
+// ── Init ─────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  S.token = localStorage.getItem('gk_admin_token');
+  if (S.token) showMain();
+  document.getElementById('loginPass').addEventListener('keydown', e => {
+    if (e.key === 'Enter') doLogin();
+  });
+});
+
+// ── API ──────────────────────────────────────────────────
+async function api(method, path, body) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (S.token) headers['Authorization'] = 'Bearer ' + S.token;
+  const res = await fetch(path, {
+    method,
+    headers,
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  });
+  if (res.status === 401) {
+    doLogout();
+    throw new Error('登录已过期，请重新登录');
+  }
+  if (res.status === 204) return null;
+  const data = await res.json().catch(() => ({ detail: '服务器无响应' }));
+  if (!res.ok) throw new Error(data.detail || `请求失败 (${res.status})`);
+  return data;
+}
+
+// ── Auth ─────────────────────────────────────────────────
+async function doLogin() {
+  const user = document.getElementById('loginUser').value.trim();
+  const pass = document.getElementById('loginPass').value;
+  const errEl = document.getElementById('loginErr');
+  const btn = document.getElementById('btnLogin');
+  errEl.classList.remove('show');
+  if (!user || !pass) { errEl.textContent = '请输入用户名和密码'; errEl.classList.add('show'); return; }
+  btn.disabled = true;
+  btn.textContent = '登录中…';
+  try {
+    const data = await api('POST', '/admin/login', { username: user, password: pass });
+    S.token = data.token;
+    localStorage.setItem('gk_admin_token', S.token);
+    showMain();
+  } catch(e) {
+    errEl.textContent = e.message;
+    errEl.classList.add('show');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '登录';
+  }
+}
+
+function doLogout() {
+  S.token = null;
+  localStorage.removeItem('gk_admin_token');
+  document.getElementById('mainSection').style.display = 'none';
+  document.getElementById('loginSection').style.display = '';
+  document.getElementById('headerRight').style.display = 'none';
+}
+
+function showMain() {
+  document.getElementById('loginSection').style.display = 'none';
+  document.getElementById('mainSection').style.display = '';
+  document.getElementById('headerRight').style.display = '';
+  document.getElementById('headerAdmin').textContent = '管理员';
+  loadStreamers(0);
+}
+
+// ── Tabs ─────────────────────────────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn[data-tab]').forEach(b =>
+    b.classList.toggle('active', b.dataset.tab === tab));
+  ['streamers','orders','config'].forEach(t =>
+    document.getElementById('tab-' + t).style.display = t === tab ? '' : 'none');
+  if (tab === 'orders') loadOrders(0);
+  if (tab === 'config') loadConfig();
+}
+
+// ── Streamers ────────────────────────────────────────────
+async function loadStreamers(delta) {
+  S.streamerPage = Math.max(1, S.streamerPage + delta);
+  const tbody = document.getElementById('streamersTbody');
+  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-secondary)">加载中…</td></tr>';
+  try {
+    const data = await api('GET', `/admin/streamers?page=${S.streamerPage}`);
+    const totalPages = Math.ceil((data.total || 0) / PAGE_SIZE) || 1;
+    document.getElementById('streamerPageInfo').textContent = `${S.streamerPage} / ${totalPages}`;
+    document.getElementById('prevStreamers').disabled = S.streamerPage <= 1;
+    document.getElementById('nextStreamers').disabled = S.streamerPage >= totalPages;
+    tbody.innerHTML = (data.streamers || []).map(s => `
+      <tr>
+        <td>${esc(s.phone)}</td>
+        <td>${esc(s.name)}</td>
+        <td><strong>${s.balance}</strong></td>
+        <td>${s.purchased_total}</td>
+        <td>${s.used_total}</td>
+        <td class="${s.status === 'active' ? 'status-active' : 'status-disabled'}">
+          ${s.status === 'active' ? '● 启用' : '● 禁用'}
+        </td>
+        <td>
+          <div class="action-group">
+            <button class="btn btn-primary btn-sm" onclick="openRecharge(${s.id},'${esc(s.name)}')">充值</button>
+            <button class="btn btn-sm ${s.status === 'active' ? 'btn-danger' : 'btn-ghost'}"
+              onclick="toggleStatus(${s.id},'${s.status}')">
+              ${s.status === 'active' ? '禁用' : '启用'}
+            </button>
+          </div>
+        </td>
+      </tr>`).join('') ||
+      '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-secondary)">暂无数据</td></tr>';
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--color-danger)">${esc(e.message)}</td></tr>`;
+  }
+}
+
+async function toggleStatus(id, currentStatus) {
+  try {
+    await api('PATCH', `/admin/streamers/${id}/status`);
+    showToast(currentStatus === 'active' ? '已禁用' : '已启用', 'success');
+    loadStreamers(0);
+  } catch(e) { showToast(e.message, 'error'); }
+}
+
+function openRecharge(id, name) {
+  S.rechargeTargetId = id;
+  document.getElementById('rechargeTarget').textContent = `主播：${name}`;
+  document.getElementById('rechargeCount').value = 10;
+  document.getElementById('rechargeAmount').value = 299;
+  document.getElementById('rechargeRemark').value = '';
+  document.getElementById('rechargeErr').classList.remove('show');
+  openModal('recharge');
+}
+
+async function doRecharge() {
+  const count = parseInt(document.getElementById('rechargeCount').value);
+  const amount = parseFloat(document.getElementById('rechargeAmount').value);
+  const remark = document.getElementById('rechargeRemark').value;
+  const errEl = document.getElementById('rechargeErr');
+  if (!count || count < 1) { errEl.textContent = '请输入有效次数'; errEl.classList.add('show'); return; }
+  const btn = document.getElementById('btnDoRecharge');
+  btn.disabled = true;
+  try {
+    await api('POST', `/admin/streamers/${S.rechargeTargetId}/recharge`, { count, amount, remark });
+    closeModal('recharge');
+    showToast(`充值成功 +${count} 次`, 'success');
+    loadStreamers(0);
+  } catch(e) { errEl.textContent = e.message; errEl.classList.add('show'); }
+  finally { btn.disabled = false; }
+}
+
+function calcAmt() {
+  const c = parseInt(document.getElementById('rechargeCount').value) || 0;
+  document.getElementById('rechargeAmount').value = (c * 29.9).toFixed(0);
+}
+function calcCount() {
+  const a = parseFloat(document.getElementById('rechargeAmount').value) || 0;
+  document.getElementById('rechargeCount').value = Math.round(a / 29.9);
+}
+
+async function doCreateStreamer() {
+  const phone = document.getElementById('newPhone').value.trim();
+  const name = document.getElementById('newName').value.trim();
+  const password = document.getElementById('newPassword').value;
+  const errEl = document.getElementById('createErr');
+  errEl.classList.remove('show');
+  if (phone.length !== 11) { errEl.textContent = '请输入11位手机号'; errEl.classList.add('show'); return; }
+  if (!name) { errEl.textContent = '请输入姓名'; errEl.classList.add('show'); return; }
+  if (password.length < 6) { errEl.textContent = '密码至少6位'; errEl.classList.add('show'); return; }
+  const btn = document.getElementById('btnDoCreate');
+  btn.disabled = true;
+  try {
+    await api('POST', '/admin/streamers', { phone, name, password });
+    closeModal('createStreamer');
+    showToast(`主播 ${name} 创建成功`, 'success');
+    loadStreamers(0);
+  } catch(e) { errEl.textContent = e.message; errEl.classList.add('show'); }
+  finally { btn.disabled = false; }
+}
+
+// ── Orders ───────────────────────────────────────────────
+async function loadOrders(delta) {
+  S.ordersPage = Math.max(1, S.ordersPage + delta);
+  const tbody = document.getElementById('ordersTbody');
+  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-secondary)">加载中…</td></tr>';
+  const date = document.getElementById('filterDate').value;
+  const params = new URLSearchParams({ page: S.ordersPage });
+  if (date) { params.set('date_from', date); params.set('date_to', date + ' 23:59:59'); }
+  try {
+    const data = await api('GET', `/admin/orders?${params}`);
+    const totalPages = Math.ceil((data.total || 0) / PAGE_SIZE) || 1;
+    document.getElementById('ordersPageInfo').textContent = `${S.ordersPage} / ${totalPages}`;
+    document.getElementById('prevOrders').disabled = S.ordersPage <= 1;
+    document.getElementById('nextOrders').disabled = S.ordersPage >= totalPages;
+    tbody.innerHTML = (data.orders || []).map(o => `
+      <tr>
+        <td style="font-size:11px;font-family:monospace">${esc(o.id)}</td>
+        <td>${esc(o.streamer_name)}</td>
+        <td>${esc(o.student_nickname)}</td>
+        <td>${esc(o.student_province)}</td>
+        <td>${o.student_score}</td>
+        <td style="font-size:11px">${esc(String(o.created_at).slice(0,16))}</td>
+        <td style="color:var(--color-success)">${esc(o.status)}</td>
+      </tr>`).join('') ||
+      '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-secondary)">暂无数据</td></tr>';
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--color-danger)">${esc(e.message)}</td></tr>`;
+  }
+}
+
+// ── Config ───────────────────────────────────────────────
+async function loadConfig() {
+  try {
+    const data = await api('GET', '/admin/config');
+    const cfg = data.config || {};
+    if (cfg.boost_min) document.getElementById('cfgBoostMin').value = cfg.boost_min.value || 30;
+    if (cfg.solid_min) document.getElementById('cfgSolidMin').value = cfg.solid_min.value || 60;
+    if (cfg.safe_min)  document.getElementById('cfgSafeMin').value  = cfg.safe_min.value  || 85;
+  } catch(e) {}
+}
+
+async function saveConfig() {
+  try {
+    await api('PUT', '/admin/config', {
+      boost_min: document.getElementById('cfgBoostMin').value,
+      solid_min: document.getElementById('cfgSolidMin').value,
+      safe_min:  document.getElementById('cfgSafeMin').value,
+    });
+    showToast('配置已保存', 'success');
+  } catch(e) { showToast(e.message, 'error'); }
+}
+
+// ── Modal ────────────────────────────────────────────────
+function openModal(name) { document.getElementById('modal-' + name).classList.add('show'); }
+function closeModal(name) { document.getElementById('modal-' + name).classList.remove('show'); }
+document.querySelectorAll('.modal-overlay').forEach(mo => {
+  mo.addEventListener('click', e => { if (e.target === mo) mo.classList.remove('show'); });
+});
+
+// ── Toast ────────────────────────────────────────────────
+let _toastTimer = null;
+function showToast(msg, type = 'info') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + type + ' show';
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ── Escape ───────────────────────────────────────────────
+function esc(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+</script>
+</body>
+</html>

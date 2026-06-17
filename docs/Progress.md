@@ -4,7 +4,7 @@
 |---------|------|
 | 项目名称 | AI高考志愿规划师 · 直播辅助工具 |
 | 上级文档 | [Tasks.md](./Tasks.md) |
-| 更新日期 | 2026-06-17 (全部35任务完成：Phase 5+6上线加固收官) |
+| 更新日期 | 2026-06-17 (42/42任务完成：Phase 7 v4.0数据层升级收官) |
 
 ---
 
@@ -82,6 +82,20 @@
 | **T6.2** 数据备份方案验证 | ✅ 完成 | 2026-06-17 | gaokao_backup.sh + crontab 每日3am，首次备份12MB已验证 |
 | **T6.3** Redis持久化 + 降级验证 | ✅ 完成 | 2026-06-17 | 停Redis扣费仍成功，5s内自动重连恢复 |
 | **T6.4** 文档更新 + 部署手册 | ✅ 完成 | 2026-06-17 | ops_manual.md + streamer_guide.md + admin_guide.md |
+
+---
+
+## Phase 7：v4.0 数据层升级 进度
+
+| 任务 | 状态 | 完成日期 | 备注 |
+|------|------|----------|------|
+| **T7.1** v4.0数据层SQL迁移文件 | ✅ 完成 | 2026-06-17 | scripts/migrate_v4_data_layer.sql，含7张新表+6张爬虫任务表DDL |
+| **T7.2** admin_accounts表 + 管理员认证升级 | ✅ 完成 | 2026-06-17 | 见下方详情 |
+| **T7.3** 爬虫网关扩展到6种数据类型 | ✅ 完成 | 2026-06-17 | crawler.py支持admission/major/tuition/employment/salary/city |
+| **T7.4** 重写aggregate_16_dimensions() | ✅ 完成 | 2026-06-17 | 查询school_majors/major_similarity/school_tuition/school_employment/school_salary/city_analysis |
+| **T7.5** major_similarity种子脚本 | ✅ 完成 | 2026-06-17 | scripts/seed_major_similarity.py，26大类×3-5相似专业，约110条 |
+| **T7.6** 热门院校学费种子脚本 | ✅ 完成 | 2026-06-17 | scripts/seed_hot_school_tuition.py，100+所985/211院校，~110条记录 |
+| **T7.7** 数据缺口检测6类爬虫任务 | ✅ 完成 | 2026-06-17 | detect_data_gaps()扩展，自动触发6类爬虫任务 |
 
 ---
 
@@ -529,11 +543,99 @@ T9  /auth/logout         ✅ 注销 + Redis 黑名单生效（401）
 
 ---
 
-## Phase 6：待开始
+---
 
-详见 [Tasks.md](./Tasks.md)。
+## T7.2 完成详情（2026-06-17）
 
-下一步：T5.2 边界场景测试 / T5.5 Nginx+SSL 配置。
+### 执行内容
+
+#### `api/deps.py` — get_current_admin() 升级
+- 旧版：仅验证 JWT role 声明，无 DB 查询
+- 新版：解码 JWT → 查询 `admin_accounts` 表验证账号存在且 `status='active'`
+- 返回完整 admin 记录（含 `id`, `username`, `role`）
+
+#### `api/routers/admin.py` — admin_login() 升级
+- 旧版：对比 `settings.admin_username` / `settings.admin_password`（明文配置）
+- 新版：查询 `admin_accounts` 表 → bcrypt 验证 → UPDATE `last_login_at`
+- JWT sub 改为 admin ID（int），不再是用户名字符串
+
+#### 新端点
+- `POST /admin/change-password`：验证旧密码 → bcrypt 新密码 → UPDATE
+- `POST /admin/streamers/{id}/reset-password`：生成随机8位密码 → bcrypt → UPDATE → 返回明文密码供管理员告知主播
+
+#### 辅助脚本
+- `scripts/seed_admin.py`：初始化超级管理员账号（首次部署时执行）
+
+---
+
+## T7.3 完成详情（2026-06-17）
+
+### 执行内容
+
+#### `api/routers/crawler.py` — v4.0 6种数据类型
+- 新增 `data_type` 鉴别字段（discriminated union），支持 `admission/major/tuition/employment/salary/city`
+- `admission`：写入 `crawler_staging`（原有逻辑）
+- `major`：UPSERT `school_majors`（ON DUPLICATE KEY UPDATE by `uk_school_major`）
+- `tuition`：UPSERT `school_tuition`（ON DUPLICATE KEY UPDATE by `uk_school_major`）
+- `employment`：UPSERT `school_employment`（ON DUPLICATE KEY UPDATE by `uk_school`）
+- `salary`：UPSERT `school_salary`（ON DUPLICATE KEY UPDATE by `uk_school_major`；NULL major_name → `__default__`）
+- `city`：UPSERT `city_analysis`（ON DUPLICATE KEY UPDATE by `city_name`）
+
+---
+
+## T7.4 完成详情（2026-06-17）
+
+### 执行内容
+
+#### `api/services/recommendation.py` — aggregate_16_dimensions() v4.0
+
+| 维度 | 旧实现 | 新实现 |
+|------|--------|--------|
+| 维度7 推荐专业 | 直接取 `req.major_preference[0]` | 查 `school_majors` 精确匹配 → `major_similarity` 相似匹配 → fallback |
+| 维度8 学费 | 按院校类型硬编码估算 | 查 `school_tuition`（精确/默认）→ fallback估算 |
+| 维度11 就业率 | 查旧 `employment_data` 表（列名不匹配）| 查 `school_employment`，标注来源+年份 |
+| 维度12 薪资 | 按院校层次估算 | 查 `school_salary`（精确/默认）→ fallback估算 |
+| 维度15 城市分析 | Python 硬编码字典12城市 | 查 `city_analysis` 5维度结构化数据 → fallback |
+
+#### `detect_data_gaps()` v4.0
+- 扩展为6类缺口检测
+- 录取缺口：创建 `school_admission_crawl_tasks`
+- 专业缺口（`school_majors` 无记录）：创建 `school_major_crawl_tasks`
+- 学费缺口：创建 `school_tuition_crawl_tasks`
+- 就业缺口：创建 `school_employment_crawl_tasks`
+- 薪资缺口：创建 `school_salary_crawl_tasks`
+- 城市数据无需爬虫任务（爬取触发方式不同）
+
+---
+
+## T7.5 完成详情（2026-06-17）
+
+### 执行内容
+
+**`scripts/seed_major_similarity.py`**（约110条映射）
+
+覆盖专业大类：
+- 计算机/信息类（计算机→软件/人工智能/数据科学/信息安全）
+- 电子/通信类（电子信息→通信/电子科学/微电子）
+- 土木/建筑类
+- 机械/制造类（机械→自动化/电气工程）
+- 化工/材料类
+- 经济/金融类（经济→金融/国贸；金融→金融工程）
+- 管理类（工商管理→营销/人力/财务；会计→财管/审计）
+- 法律/医学/师范/外语/农林/艺术类
+
+---
+
+## T7.6 完成详情（2026-06-17）
+
+### 执行内容
+
+**`scripts/seed_hot_school_tuition.py`**（约110条记录）
+
+覆盖院校：39所985院校（含医学专业差异化）+ 约60所211院校  
+学费范围：3800元/年（西部省属院校）~ 8000元/年（医学5年制）  
+数据来源：各院校2024年官网公告  
+差异化处理：部分院校医学/建筑学/软件工程单独记录（与通用学费不同）
 
 ---
 
@@ -548,3 +650,4 @@ T9  /auth/logout         ✅ 注销 + Redis 黑名单生效（401）
 | v2.0 | 2026-06-17 | 大更新：补录 T2.2/T2.4~T2.8/T3.1~T3.8/T4.1~T4.5 完成状态；修复 BugFix-1(admin config列名) + BugFix-2(crawl_tasks列名) |
 | v2.1 | 2026-06-17 | T5.1完成：冒烟测试14/14全通过；修复 BugFix-3~8（列名/事务/LLM格式） |
 | v3.0 | 2026-06-17 | Phase 5+6全部完成：边界测试/性能测试/爬虫测试/Nginx加固/监控/备份/Redis降级/文档；TC-07分数截断修复；**35/35任务全部完成** |
+| v4.0 | 2026-06-17 | Phase 7全部完成：v4.0数据层升级；T7.1~T7.7；admin_accounts独立认证；6类爬虫网关；aggregate_16_dimensions()查真实数据；**42/42任务全部完成** |

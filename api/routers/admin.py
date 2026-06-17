@@ -1,4 +1,6 @@
 import json
+import random
+import string
 import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Optional
@@ -21,7 +23,7 @@ _PAGE_SIZE = 20
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Admin auth
+# Admin auth — v4.0: queries admin_accounts table
 # ──────────────────────────────────────────────────────────────────────────────
 
 class AdminLoginRequest(BaseModel):
@@ -30,16 +32,66 @@ class AdminLoginRequest(BaseModel):
 
 
 @router.post("/login")
-async def admin_login(body: AdminLoginRequest):
-    if body.username != settings.admin_username or body.password != settings.admin_password:
+async def admin_login(body: AdminLoginRequest, db: AsyncSession = Depends(get_db)):
+    row = await db.execute(
+        text("SELECT id, username, password_hash, role, status FROM admin_accounts WHERE username = :u"),
+        {"u": body.username},
+    )
+    admin = row.mappings().first()
+    if not admin:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "用户名或密码错误")
+    if admin["status"] == "disabled":
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "账号已被禁用")
+    if not bcrypt.checkpw(body.password.encode(), admin["password_hash"].encode()):
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "用户名或密码错误")
+
+    await db.execute(
+        text("UPDATE admin_accounts SET last_login_at = NOW() WHERE id = :id"),
+        {"id": admin["id"]},
+    )
+    await db.commit()
+
     exp = datetime.now(timezone.utc) + timedelta(hours=24)
     token = jwt.encode(
-        {"sub": body.username, "role": "admin", "jti": str(uuid.uuid4()), "exp": exp},
+        {"sub": str(admin["id"]), "role": "admin", "jti": str(uuid.uuid4()), "exp": exp},
         settings.jwt_secret,
         algorithm=settings.jwt_algorithm,
     )
-    return {"token": token}
+    return {"token": token, "username": admin["username"], "role": admin["role"]}
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# v4.0: 密码管理
+# ──────────────────────────────────────────────────────────────────────────────
+
+class ChangePasswordRequest(BaseModel):
+    old_password: str = Field(..., min_length=6, max_length=64)
+    new_password: str = Field(..., min_length=6, max_length=64)
+
+
+@router.post("/change-password")
+async def change_admin_password(
+    body: ChangePasswordRequest,
+    admin=Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    row = await db.execute(
+        text("SELECT password_hash FROM admin_accounts WHERE id = :id"),
+        {"id": admin["id"]},
+    )
+    record = row.mappings().first()
+    if not record:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "账号不存在")
+    if not bcrypt.checkpw(body.old_password.encode(), record["password_hash"].encode()):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "旧密码错误")
+
+    new_hash = bcrypt.hashpw(body.new_password.encode(), bcrypt.gensalt(rounds=12)).decode()
+    await db.execute(
+        text("UPDATE admin_accounts SET password_hash = :h WHERE id = :id"),
+        {"h": new_hash, "id": admin["id"]},
+    )
+    await db.commit()
+    return {"success": True, "message": "密码修改成功"}
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -146,6 +198,30 @@ async def update_streamer(
     )
     await db.commit()
     return {"success": True}
+
+
+@router.post("/streamers/{streamer_id}/reset-password")
+async def reset_streamer_password(
+    streamer_id: int,
+    admin=Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    row = await db.execute(
+        text("SELECT id FROM streamer_accounts WHERE id = :id"),
+        {"id": streamer_id},
+    )
+    if not row.mappings().first():
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "主播不存在")
+
+    chars = string.ascii_letters + string.digits
+    new_password = "".join(random.choices(chars, k=8))
+    pw_hash = bcrypt.hashpw(new_password.encode(), bcrypt.gensalt(rounds=12)).decode()
+    await db.execute(
+        text("UPDATE streamer_accounts SET password_hash = :h WHERE id = :id"),
+        {"h": pw_hash, "id": streamer_id},
+    )
+    await db.commit()
+    return {"success": True, "new_password": new_password}
 
 
 @router.patch("/streamers/{streamer_id}/status")
