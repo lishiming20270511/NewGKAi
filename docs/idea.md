@@ -85,7 +85,7 @@ API层
 
 
   ### 1.2 生产环境
-  - 主服务器: `114.55.65.71`
+  - 主服务器: `121.41.69.234`
   - 项目路径: `/root/gaokao-ai`
   - 主播后台页: `/www/wwwroot/gaokao.lumenaistudio.co/admin.html`
 
@@ -337,7 +337,7 @@ type: project
 originSessionId: 6b710eef-59c1-47dd-89b2-2476ae398136
 ---
 ## 项目位置
-服务器：114.55.65.71，路径：/root/gaokao-ai
+服务器：121.41.69.234，路径：/root/gaokao-ai
 域名：qswl.tech（新购域名，2026-06-03，ICP备案最迟明天提交，约7月初通过）
 旧域名：gaokao.zswl.net（已废弃：ICP备案注销重新备案，zswl.net域名持有人变更问题）
 
@@ -348,9 +348,9 @@ originSessionId: 6b710eef-59c1-47dd-89b2-2476ae398136
 - 报告存储：阿里云 OSS (bucket: gaokaobaoming, oss-cn-beijing)
 
 ## 当前可用访问方式
-- 开发/测试：https://114.55.65.71（自签名证书，直接IP访问）
+- 开发/测试：https://121.41.69.234（自签名证书，直接IP访问）
 - 生产（备案后）：https://qswl.tech 或子域名（待确认）
-- 管理后台：https://114.55.65.71/admin-ui（密码：gaokao-admin-2026）
+- 管理后台：https://121.41.69.234/admin-ui（密码：gaokao-admin-2026）
 
 ## API路由（完整）
 - POST /auth/wx/login
@@ -376,8 +376,8 @@ originSessionId: 6b710eef-59c1-47dd-89b2-2476ae398136
 
 ## nginx配置
 - HTTPS proxy到127.0.0.1:8000，阿里云免费SSL证书（gaokao.zswl.net，但该域名备案问题无法外部访问）
-- HTTP proxy到127.0.0.1:8000（port 80，server_name 114.55.65.71）
-- 外部访问：http://114.55.65.71（200 OK）/ https://114.55.65.71（200 OK）
+- HTTP proxy到127.0.0.1:8000（port 80，server_name 121.41.69.234）
+- 外部访问：http://121.41.69.234（200 OK）/ https://121.41.69.234（200 OK）
 - gaokao.zswl.net 被阿里云 ICP 拦截（Non-compliance ICP Filing）
 - ⬜ qswl.tech nginx server_name 待添加（备案通过后配置）
 
@@ -394,7 +394,7 @@ originSessionId: 6b710eef-59c1-47dd-89b2-2476ae398136
 C:/Users/Administrator/Desktop/临时/gaokao-miniprogram/gaokao-miniprogram
 
 ## utils/api.js 当前BASE_URL
-- 开发：https://114.55.65.71（真机预览用，需勾选"不校验合法域名"）
+- 开发：https://121.41.69.234（真机预览用，需勾选"不校验合法域名"）
 - 上线前改为：https://qswl.tech（或子域名，待定）
 
 ## 小程序UI（2026-06-03已修复）
@@ -405,7 +405,7 @@ C:/Users/Administrator/Desktop/临时/gaokao-miniprogram/gaokao-miniprogram
 - WXSS中文类名全部改为ASCII
 
 ## 备案待办（关键路径）
-- ⬜ qswl.tech DNS A记录 → 114.55.65.71（建议今天操作）
+- ⬜ qswl.tech DNS A记录 → 121.41.69.234（建议今天操作）
 - ⬜ qswl.tech ICP备案提交（最迟明天，预计7月初通过）
 - ⬜ 备案通过后：申请SSL证书（阿里云免费DV证书）
 - ⬜ 备案通过后：nginx添加qswl.tech server_name，更换SSL证书
@@ -416,7 +416,7 @@ C:/Users/Administrator/Desktop/临时/gaokao-miniprogram/gaokao-miniprogram
 ## D11-12 联调完成（2026-06-13）
 ✅ POST /orders 创建订单接口（存储表单数据，返回order_id）已添加到 api/routers/orders.py
 ✅ list_orders 500错误修复（OrderListItem.status 必填字段）
-✅ 小程序 utils/api.js BASE_URL 改为 https://114.55.65.71（测试用）
+✅ 小程序 utils/api.js BASE_URL 改为 https://121.41.69.234（测试用）
 ✅ utils/api.js createRecommendation/createProRecommendation → POST /orders
 ✅ form.wxml 搜索结果标签：item.is_985/is_211 → item.tags.indexOf() 
 ✅ result.wxml 字段修复：probability_level→level, warning→data_note, trend_chart_base64→rank_trend_chart_b64, actual_count→plan_count，概率显示去掉%

@@ -25,7 +25,7 @@
                                         │ HTTPS + JWT(内部)
                                         ▼
 ┌──────────────┐    ┌──────────────────────────────────────┐
-│ 主播浏览器    │    │       生产服务器 (114.55.65.71)       │
+│ 主播浏览器    │    │       生产服务器 (121.41.69.234)       │
 │              │    │                                      │
 │ index.html   │◄──►│  Nginx :443                          │
 │ (SPA 单文件)  │    │  ├─ / → /www/wwwroot/.../index.html  │
@@ -1434,7 +1434,7 @@ FastAPI                 Celery Worker            Redis (broker)
 
 ```
 ┌──────────────────────────────────────────────────────┐
-│              生产服务器 114.55.65.71                    │
+│              生产服务器 121.41.69.234                    │
 │  OS: Ubuntu 22.04                                     │
 │                                                       │
 │  ┌─────────────────┐  ┌─────────────────────────┐    │
@@ -1509,24 +1509,24 @@ server {
 ```bash
 # === 后端部署 ===
 # 1. 拷贝代码
-scp api/services/ai_pro.py root@114.55.65.71:/root/gaokao-ai/api/services/
-scp api/routers/auth.py root@114.55.65.71:/root/gaokao-ai/api/routers/
+scp api/services/ai_pro.py root@121.41.69.234:/root/gaokao-ai/api/services/
+scp api/routers/auth.py root@121.41.69.234:/root/gaokao-ai/api/routers/
 
 # 2. 重启服务（避免 systemctl restart 卡SSH）
-ssh root@114.55.65.71 "pkill -HUP -f 'uvicorn.*main:app'"
+ssh root@121.41.69.234 "pkill -HUP -f 'uvicorn.*main:app'"
 
 # 3. 验证
 curl -s http://127.0.0.1:8000/health  # → {"status":"ok"}
 
 # === 前端部署 ===
 # 1. 备份
-ssh root@114.55.65.71 "cp /www/wwwroot/gaokao.lumenaistudio.co/index.html{,.bak_\$(date +%Y%m%d_%H%M%S)}"
+ssh root@121.41.69.234 "cp /www/wwwroot/gaokao.lumenaistudio.co/index.html{,.bak_\$(date +%Y%m%d_%H%M%S)}"
 
 # 2. 部署（用Python patch脚本，禁用sed以避免${}问题）
 # 参考 skill: references/ssh-consent-workaround.md
 
 # 3. 验证
-ssh root@114.55.65.71 "nginx -t && systemctl reload nginx"
+ssh root@121.41.69.234 "nginx -t && systemctl reload nginx"
 curl -sk 'https://127.0.0.1/' -H 'Host: gaokao.lumenaistudio.co' | head -1  # → HTTP 200
 
 # === 数据库备份 ===

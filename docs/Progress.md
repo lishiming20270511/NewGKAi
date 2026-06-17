@@ -4,7 +4,7 @@
 |---------|------|
 | 项目名称 | AI高考志愿规划师 · 直播辅助工具 |
 | 上级文档 | [Tasks.md](./Tasks.md) |
-| 更新日期 | 2026-06-17 (Bug修复：admin config列名 + crawl_tasks列名) |
+| 更新日期 | 2026-06-17 (T5.1完成：冒烟测试14/14全通过) |
 
 ---
 
@@ -65,7 +65,7 @@
 
 | 任务 | 状态 | 完成日期 | 备注 |
 |------|------|----------|------|
-| **T5.1** 前后端联调（主流程） | ⏳ 待开始 | — | 依赖 Phase 2+3 ✅ |
+| **T5.1** 前后端联调（主流程） | ✅ 完成 | 2026-06-17 | 冒烟测试14/14通过，见详情 |
 | **T5.2** 边界场景测试 | ⏳ 待开始 | — | 依赖 T5.1 |
 | **T5.3** 性能测试 | ⏳ 待开始 | — | 依赖 T5.1 |
 | **T5.4** 爬虫网关集成测试 | ⏳ 待开始 | — | 依赖 T1.3 |
@@ -95,9 +95,45 @@
 
 ### BugFix-2：recommendation.py _create_crawl_tasks 列名错误（2026-06-17）
 
-- **问题**：`_create_crawl_tasks()` 向 `school_admission_crawl_tasks` 插入时使用 `school_id`/`province` 列，但实际表结构为 `school_name`/`school_code`/`year`/`status`（Architecture.md §爬虫任务表描述）
+- **问题**：`_create_crawl_tasks()` 向 `school_admission_crawl_tasks` 插入时使用 `school_id`/`province` 列，但实际表结构为 `school_name`/`school_code`/`year`/`status`
 - **修复**：增加从 `schools` 表按 `school_id` 查询 `name` 的步骤，改用 `school_name`/`school_code` 列插入
 - **影响范围**：仅数据缺口检测的爬虫任务写入，不影响推荐结果（已有 try/except 兜底）
+
+### BugFix-3：recommendation.py estimate_rank 列名错误（2026-06-17）
+
+- **问题**：`estimate_rank()` 查询 `yifenyidang` 时用 `subject_group` 列，实际列名为 `category`，导致 500 错误
+- **修复**：改为 `category`
+- **影响范围**：推荐引擎入口，修复前每次推荐请求均报 500
+
+### BugFix-4：yifenyidang 类别 fallback 缺失（2026-06-17）
+
+- **问题**：数据库 `yifenyidang` 表所有记录均为 `category='综合'`，传入 `理科`/`文科` 查不到任何结果，推荐返回 0 所学校
+- **修复**：`estimate_rank()` 加 fallback 链：传入值 → 映射值（理科→物理/文科→历史）→ 综合
+- **影响范围**：所有非综合省份的考生推荐
+
+### BugFix-5：employment_data 列名不匹配（2026-06-17）
+
+- **问题**：`aggregate_16_dimensions()` 查询 `employment_data` 时用 `major`/`avg_salary_start`/`avg_salary_3yr`/`core_positions`/`other_positions`/`trend_5yr`，实际表列为 `major_name`/`avg_salary`/`top_industries`
+- **修复**：按实际列名重写查询和字段映射，`avg_salary_3yr` 估算为 `avg_salary * 1.3`，`top_industries` JSON 拆分为岗位列表
+- **影响范围**：16维度中就业数据维度（无数据时降级为按院校层次估算，主流程不中断）
+
+### BugFix-6：deduct() SQLAlchemy 事务冲突（2026-06-17）
+
+- **问题**：`deduct()` 用 `async with db.begin()` 显式开启事务，但 `get_current_streamer` 依赖注入已通过 autobegin 执行了一条 SELECT，导致 `InvalidRequestError: A transaction is already begun`
+- **修复**：移除 `async with db.begin()`，改为直接执行 SQL（autobegin 已开启），在成功路径末尾 `await db.commit()`，异常路径 `await db.rollback()`
+- **影响范围**：`POST /auth/deduct`，修复前每次扣费请求均报 500
+
+### BugFix-7：logout/token 接口协议错误（2026-06-17）
+
+- **问题**：`POST /auth/logout/token` 期望请求体 `{"token":"..."}` 传入 JWT，但前端（smoke test）只发 `Authorization: Bearer ...` header，导致 422 Unprocessable Entity
+- **修复**：改为从 `HTTPBearer` header 读取 token，返回 `{"success": true}`（原返回 204 No Content）
+- **影响范围**：注销流程
+
+### BugFix-8：qa.py LLM 调用格式错误（2026-06-17）
+
+- **问题**：`_call_llm()` 用 OpenAI chat completions 格式（`/v1/chat/completions`，`choices[0].message.content`），但 `api.pateway.ai` 对 Claude 模型使用 Anthropic 原生格式，返回 `"protocol_mismatch"`
+- **修复**：改为 Anthropic messages 格式（`/v1/messages`，system 字段独立，响应取 `content[0].text`），header 加 `anthropic-version: 2023-06-01`，超时从 10s 改为 30s
+- **影响范围**：`POST /api/qa/ask` LLM 调用路径
 
 ---
 
@@ -105,7 +141,7 @@
 
 ### 执行内容
 
-**服务器**：`114.55.65.71`（生产服务器）
+**服务器**：`121.41.69.234`（生产服务器）
 
 #### 1. Redis 7.4.2 配置
 - `maxmemory-policy` → `allkeys-lru` ✅
@@ -156,7 +192,7 @@ redis-cli CONFIG GET save → 3600 1
 
 ### 执行内容
 
-**服务器**：`114.55.65.71`（生产服务器，数据库 `gaokao_ai`）
+**服务器**：`121.41.69.234`（生产服务器，数据库 `gaokao_ai`）
 
 #### 1. 旧表归档（保留历史数据）
 - `orders`（2条旧数据，B2C端用户支付订单）→ 重命名为 `orders_legacy` ✅
@@ -362,8 +398,9 @@ GET /api/schools/100
 #### `api/services/recommendation.py`（974行）
 
 **位次估算 `estimate_rank()`**：
-- 查询 `yifenyidang`，`subject_group` 列，按 2025→2024→2023 年份回退
-- L2 Redis 缓存：`recommend:rank:{province}:{year}:{category}:{score}` TTL 3600s
+- 查询 `yifenyidang`，`category` 列，按 2025→2024→2023 年份回退
+- 类别 fallback 顺序：传入值 → 映射值（理科→物理/文科→历史）→ 综合（兜底）
+- L2 Redis 缓存：`recommend:rank:{province}:{year}:{category}:{score}` TTL 86400s
 
 **四层候选池 `build_candidate_pool()`**：
 - 特别关注区：意向学校（不计入15所配额）
@@ -395,7 +432,7 @@ GET /api/schools/100
 
 #### `api/routers/qa.py` — POST /api/qa/ask
 - System prompt：张雪峰风格，口语化，犀利接地气，200字以内
-- 调用 DeepSeek API（`deepseek-chat`），超时 10s
+- 调用 Claude（`claude-sonnet-4-6` via `api.pateway.ai/v1/messages`，Anthropic 原生格式），超时 30s
 - 失败降级：返回 `"AI暂时无法回答，请稍后重试"`
 - 问答日志写入 `qa_history`（try/except 兜底，表不存在不影响主流程）
 
@@ -459,13 +496,44 @@ GET /api/schools/100
 
 ---
 
-## Phase 5-6：待开始
+## T5.1 完成详情（2026-06-17）
 
-Phase 5 (集成测试) · Phase 6 (上线加固)
+### 执行内容
+
+**服务器**：`121.41.69.234`（生产服务器）
+
+#### 冒烟测试结果：✅ 14/14 全通过
+
+```
+T1  /health             ✅ status/mysql/redis 均 ok
+T2  /auth/login         ✅ 登录成功
+T3  /auth/streamer/profile ✅ profile 返回正常
+T4  /api/schools/search ✅ 郑州搜索3所
+T5  /api/recommendation/generate（首次） ✅ 15所学校，5-5-5分布，70ms
+T6  /api/recommendation/generate（缓存） ✅ 缓存命中 10ms
+T7  /auth/deduct         ✅ 扣费成功 + 幂等验证
+T8  /api/qa/ask          ✅ LLM 实际回答（张雪峰风格）
+T9  /auth/logout         ✅ 注销 + Redis 黑名单生效（401）
+```
+
+#### 修复的 Bug（本轮发现）
+
+| Bug | 文件 | 原因 | 修复 |
+|-----|------|------|------|
+| BugFix-3 | `recommendation.py` `estimate_rank()` | 列名写成 `subject_group`，实际为 `category` | 改为 `category` |
+| BugFix-4 | `recommendation.py` `estimate_rank()` | 数据库只有 `综合` 类别，传入 `理科`/`文科` 无结果 | 加 fallback：理科→物理→综合 |
+| BugFix-5 | `recommendation.py` `aggregate_16_dimensions()` | `employment_data` 列名不匹配（`major`→`major_name`，`avg_salary_start`→`avg_salary` 等） | 按实际列名修复 |
+| BugFix-6 | `auth.py` `deduct()` | `async with db.begin()` 与 SQLAlchemy 2.0 autobegin 冲突（get_current_streamer 已起事务） | 移除 begin()，改用手动 commit/rollback |
+| BugFix-7 | `auth.py` `logout_with_token()` | 期望 body 传 token，实际前端只发 Bearer header | 改为从 Authorization header 读取 |
+| BugFix-8 | `qa.py` `_call_llm()` | pateway.ai 用 Anthropic 原生格式（`/v1/messages`），非 OpenAI format | 改为 Anthropic messages 格式 |
+
+---
+
+## Phase 6：待开始
 
 详见 [Tasks.md](./Tasks.md)。
 
-下一步：T5.1 前后端联调（在生产服务器上走通完整主流程）。
+下一步：T5.2 边界场景测试 / T5.5 Nginx+SSL 配置。
 
 ---
 
@@ -478,3 +546,4 @@ Phase 5 (集成测试) · Phase 6 (上线加固)
 | v1.4 | 2026-06-17 | 记录 T2.1 完成：JWT认证、bcrypt登录、Redis黑名单注销、主播profile接口 |
 | v1.5 | 2026-06-17 | 记录 T2.3 完成：学校搜索（FULLTEXT+LIKE回退+Redis缓存）、学校详情 |
 | v2.0 | 2026-06-17 | 大更新：补录 T2.2/T2.4~T2.8/T3.1~T3.8/T4.1~T4.5 完成状态；修复 BugFix-1(admin config列名) + BugFix-2(crawl_tasks列名) |
+| v2.1 | 2026-06-17 | T5.1完成：冒烟测试14/14全通过；修复 BugFix-3~8（列名/事务/LLM格式） |

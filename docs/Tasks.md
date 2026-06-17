@@ -34,7 +34,7 @@ Phase 6: 上线加固 (T6.1 ~ T6.4)    ─── 4个任务，12h
 | **负责人** | 后端 / 运维 |
 
 **任务清单**：
-- [ ] 在 114.55.65.71 安装 Redis 7.x（`apt install redis-server`）
+- [ ] 在 121.41.69.234 安装 Redis 7.x（`apt install redis-server`）
 - [ ] 配置 Redis：`maxmemory-policy allkeys-lru`，`save 3600 1`（RDB每1小时至少1次写入），`maxmemory 512mb`
 - [ ] 创建 `gaokao` 系统用户：`useradd -m -s /bin/bash gaokao`
 - [ ] 配置 MySQL 连接池：`pool_size=20, max_overflow=30`（修改 `/root/gaokao-ai/.env`）

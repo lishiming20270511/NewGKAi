@@ -21,27 +21,27 @@ _FALLBACK_ANSWER = "AI暂时无法回答，请稍后重试，或者直接问我�
 
 async def _call_llm(question: str) -> str:
     payload = {
-        "model": "deepseek-chat",
+        "model": settings.llm_model,
+        "system": _SYSTEM_PROMPT,
         "messages": [
-            {"role": "system", "content": _SYSTEM_PROMPT},
             {"role": "user", "content": question},
         ],
         "max_tokens": 400,
-        "temperature": 0.7,
     }
     headers = {
         "Authorization": f"Bearer {settings.llm_api_key}",
         "Content-Type": "application/json",
+        "anthropic-version": "2023-06-01",
     }
-    async with httpx.AsyncClient(timeout=10.0) as client:
+    async with httpx.AsyncClient(timeout=30.0) as client:
         resp = await client.post(
-            f"{settings.llm_base_url}/chat/completions",
+            f"{settings.llm_base_url}/messages",
             json=payload,
             headers=headers,
         )
         resp.raise_for_status()
         data = resp.json()
-        return data["choices"][0]["message"]["content"].strip()
+        return data["content"][0]["text"].strip()
 
 
 class AskRequest(BaseModel):

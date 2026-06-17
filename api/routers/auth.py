@@ -6,6 +6,7 @@ from typing import Optional
 
 import bcrypt
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import jwt
 from pydantic import BaseModel, Field
 from sqlalchemy import text
@@ -115,23 +116,23 @@ async def logout(
     pass  # Blacklist is written at middleware level via jti from token payload
 
 
-@router.post("/logout/token", status_code=status.HTTP_204_NO_CONTENT)
+@router.post("/logout/token")
 async def logout_with_token(
-    body: dict,
-    db: AsyncSession = Depends(get_db),
+    credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer(auto_error=False)),
 ):
-    """Called with {"token": "..."} to blacklist the JWT jti."""
-    from jose import JWTError
-    token = body.get("token", "")
-    try:
-        payload = jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
-        jti = payload.get("jti", "")
-        exp = payload.get("exp", 0)
-        ttl = max(int(exp - datetime.now(timezone.utc).timestamp()), 1)
-        r = get_redis()
-        await r.setex(f"jwt:blacklist:{jti}", ttl, "1")
-    except (JWTError, Exception):
-        pass  # Always succeed (idempotent)
+    """Blacklist the JWT via Bearer token header. Always returns success (idempotent)."""
+    from jose import JWTError as _JWTError
+    if credentials:
+        try:
+            payload = jwt.decode(credentials.credentials, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
+            jti = payload.get("jti", "")
+            exp = payload.get("exp", 0)
+            ttl = max(int(exp - datetime.now(timezone.utc).timestamp()), 1)
+            r = get_redis()
+            await r.setex(f"jwt:blacklist:{jti}", ttl, "1")
+        except (_JWTError, Exception):
+            pass  # Always succeed (idempotent)
+    return {"success": True}
 
 
 @router.get("/streamer/profile")
@@ -170,90 +171,92 @@ async def deduct(
         redis_client = None  # Redis unavailable — DB lock only
 
     try:
-        async with db.begin():
-            # ② Idempotency check
-            dup = await db.execute(
-                text("SELECT id FROM orders WHERE streamer_id=:sid AND idempotency_key=:key"),
-                {"sid": sid, "key": body.idempotency_key},
-            )
-            existing = dup.mappings().first()
-            if existing:
-                acc_row = await db.execute(
-                    text("SELECT balance, used_total FROM streamer_accounts WHERE id=:id"),
-                    {"id": sid},
-                )
-                acc = acc_row.mappings().first()
-                return {
-                    "success": True,
-                    "already_processed": True,
-                    "order_id": existing["id"],
-                    "balance": acc["balance"],
-                    "used_total": acc["used_total"],
-                }
-
-            # ③ SELECT FOR UPDATE — row-level lock prevents concurrent deducts
+        # ② Idempotency check (autobegin already started by get_current_streamer)
+        dup = await db.execute(
+            text("SELECT id FROM orders WHERE streamer_id=:sid AND idempotency_key=:key"),
+            {"sid": sid, "key": body.idempotency_key},
+        )
+        existing = dup.mappings().first()
+        if existing:
             acc_row = await db.execute(
-                text("SELECT balance, used_total FROM streamer_accounts WHERE id=:id FOR UPDATE"),
+                text("SELECT balance, used_total FROM streamer_accounts WHERE id=:id"),
                 {"id": sid},
             )
-            account = acc_row.mappings().first()
-            if account["balance"] < 1:
-                raise HTTPException(status.HTTP_400_BAD_REQUEST, "剩余次数不足")
+            acc = acc_row.mappings().first()
+            await db.rollback()
+            return {
+                "success": True,
+                "already_processed": True,
+                "order_id": existing["id"],
+                "balance": acc["balance"],
+                "used_total": acc["used_total"],
+            }
 
-            # ④ Atomic deduct
-            await db.execute(
-                text("UPDATE streamer_accounts SET balance=balance-1, used_total=used_total+1 WHERE id=:id"),
-                {"id": sid},
-            )
+        # ③ SELECT FOR UPDATE — row-level lock prevents concurrent deducts
+        acc_row = await db.execute(
+            text("SELECT balance, used_total FROM streamer_accounts WHERE id=:id FOR UPDATE"),
+            {"id": sid},
+        )
+        account = acc_row.mappings().first()
+        if account["balance"] < 1:
+            await db.rollback()
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "剩余次数不足")
 
-            # ⑤ Create order
-            order_id = _generate_order_id()
-            intended_json = json.dumps(body.intended_schools or [], ensure_ascii=False)
-            await db.execute(
-                text("""
-                    INSERT INTO orders
-                        (id, streamer_id, student_nickname, student_province,
-                         student_score, student_subject, intended_schools, idempotency_key)
-                    VALUES
-                        (:id, :sid, :nick, :prov, :score, :subj, :intended, :ikey)
-                """),
-                {
-                    "id": order_id,
-                    "sid": sid,
-                    "nick": body.student_nickname,
-                    "prov": body.student_province,
-                    "score": body.student_score,
-                    "subj": body.student_subject,
-                    "intended": intended_json,
-                    "ikey": body.idempotency_key,
-                },
-            )
+        # ④ Atomic deduct
+        await db.execute(
+            text("UPDATE streamer_accounts SET balance=balance-1, used_total=used_total+1 WHERE id=:id"),
+            {"id": sid},
+        )
 
-            # ⑥ Insert report_tasks (anti-fraud similarity check done in T2.8 service)
-            student_hash = hashlib.sha256(
-                f"{body.student_nickname}:{body.student_province}:{body.student_score}".encode()
-            ).hexdigest()[:64]
-            school_hash = hashlib.sha256(
-                json.dumps(sorted(body.intended_schools or []), ensure_ascii=False).encode()
-            ).hexdigest()[:64]
-            await db.execute(
-                text("""
-                    INSERT INTO report_tasks
-                        (order_id, streamer_id, student_hash, score_range,
-                         province, school_hash, similarity_flag)
-                    VALUES
-                        (:oid, :sid, :shash, :srange, :prov, :schash, 0)
-                """),
-                {
-                    "oid": order_id,
-                    "sid": sid,
-                    "shash": student_hash,
-                    "srange": _score_range(body.student_score),
-                    "prov": body.student_province,
-                    "schash": school_hash,
-                },
-            )
+        # ⑤ Create order
+        order_id = _generate_order_id()
+        intended_json = json.dumps(body.intended_schools or [], ensure_ascii=False)
+        await db.execute(
+            text("""
+                INSERT INTO orders
+                    (id, streamer_id, student_nickname, student_province,
+                     student_score, student_subject, intended_schools, idempotency_key)
+                VALUES
+                    (:id, :sid, :nick, :prov, :score, :subj, :intended, :ikey)
+            """),
+            {
+                "id": order_id,
+                "sid": sid,
+                "nick": body.student_nickname,
+                "prov": body.student_province,
+                "score": body.student_score,
+                "subj": body.student_subject,
+                "intended": intended_json,
+                "ikey": body.idempotency_key,
+            },
+        )
 
+        # ⑥ Insert report_tasks (anti-fraud similarity check done in T2.8 service)
+        student_hash = hashlib.sha256(
+            f"{body.student_nickname}:{body.student_province}:{body.student_score}".encode()
+        ).hexdigest()[:64]
+        school_hash = hashlib.sha256(
+            json.dumps(sorted(body.intended_schools or []), ensure_ascii=False).encode()
+        ).hexdigest()[:64]
+        await db.execute(
+            text("""
+                INSERT INTO report_tasks
+                    (order_id, streamer_id, student_hash, score_range,
+                     province, school_hash, similarity_flag)
+                VALUES
+                    (:oid, :sid, :shash, :srange, :prov, :schash, 0)
+            """),
+            {
+                "oid": order_id,
+                "sid": sid,
+                "shash": student_hash,
+                "srange": _score_range(body.student_score),
+                "prov": body.student_province,
+                "schash": school_hash,
+            },
+        )
+
+        await db.commit()
         return {
             "success": True,
             "balance": account["balance"] - 1,
@@ -262,6 +265,7 @@ async def deduct(
         }
 
     except IntegrityError:
+        await db.rollback()
         # Duplicate idempotency_key race condition — treat as already processed
         acc_row = await db.execute(
             text("SELECT id FROM orders WHERE streamer_id=:sid AND idempotency_key=:key"),
@@ -282,6 +286,11 @@ async def deduct(
                 "used_total": acc["used_total"],
             }
         raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "扣费失败，请重试")
+    except HTTPException:
+        raise
+    except Exception:
+        await db.rollback()
+        raise
 
     finally:
         if redis_client is not None:

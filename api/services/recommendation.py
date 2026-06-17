@@ -155,27 +155,38 @@ async def estimate_rank(
         if cached:
             return int(cached)
     except Exception:
-        pass
+        r = None
 
-    # Try latest year first, fall back to previous years
+    # Category fallback order: exact match → 综合
+    # Old gaokao: 理科/文科; new gaokao: 物理/历史; combined: 综合
+    _CAT_MAP = {"理科": "物理", "文科": "历史"}
+    categories_to_try = [category]
+    if category != "综合":
+        mapped = _CAT_MAP.get(category)
+        if mapped and mapped != category:
+            categories_to_try.append(mapped)
+        categories_to_try.append("综合")
+
     for year in [2025, 2024, 2023]:
-        row = await db.execute(
-            text("""
-                SELECT cumulative_count FROM yifenyidang
-                WHERE province = :prov AND year = :yr
-                  AND subject_group = :cat AND score <= :score
-                ORDER BY score DESC LIMIT 1
-            """),
-            {"prov": province, "yr": year, "cat": category, "score": score},
-        )
-        result = row.mappings().first()
-        if result:
-            rank = int(result["cumulative_count"])
-            try:
-                await r.setex(cache_key, 86400, str(rank))
-            except Exception:
-                pass
-            return rank
+        for cat in categories_to_try:
+            row = await db.execute(
+                text("""
+                    SELECT cumulative_count FROM yifenyidang
+                    WHERE province = :prov AND year = :yr
+                      AND category = :cat AND score <= :score
+                    ORDER BY score DESC LIMIT 1
+                """),
+                {"prov": province, "yr": year, "cat": cat, "score": score},
+            )
+            result = row.mappings().first()
+            if result:
+                rank = int(result["cumulative_count"])
+                try:
+                    if r:
+                        await r.setex(cache_key, 86400, str(rank))
+                except Exception:
+                    pass
+                return rank
     return None
 
 
@@ -697,9 +708,8 @@ async def aggregate_16_dimensions(
         for major in req.major_preference:
             row = await db.execute(
                 text("""
-                    SELECT employment_rate, avg_salary_start, avg_salary_3yr,
-                           core_positions, other_positions, trend_5yr
-                    FROM employment_data WHERE major = :major LIMIT 1
+                    SELECT employment_rate, avg_salary, top_industries
+                    FROM employment_data WHERE major_name = :major LIMIT 1
                 """),
                 {"major": major},
             )
@@ -708,12 +718,25 @@ async def aggregate_16_dimensions(
                 break
 
     if employ_data:
-        dims["employment_rate"] = f"{employ_data['employment_rate']}%"
-        dims["avg_salary_start"] = f"{employ_data['avg_salary_start']}元/月"
-        dims["avg_salary_3yr"] = f"{employ_data['avg_salary_3yr']}元/月"
-        dims["core_positions"] = employ_data.get("core_positions") or "–"
-        dims["other_positions"] = employ_data.get("other_positions") or "–"
-        dims["trend_5yr"] = employ_data.get("trend_5yr") or "数据待更新"
+        rate = employ_data["employment_rate"]
+        dims["employment_rate"] = f"{rate}%" if rate is not None else "–"
+        salary = employ_data["avg_salary"]
+        dims["avg_salary_start"] = f"{salary}元/月" if salary else "–"
+        dims["avg_salary_3yr"] = f"{int(salary * 1.3)}元/月" if salary else "–"
+        industries = employ_data.get("top_industries")
+        if industries:
+            if isinstance(industries, str):
+                import json as _json
+                try:
+                    industries = _json.loads(industries)
+                except Exception:
+                    industries = []
+            dims["core_positions"] = "、".join(industries[:3]) if industries else "–"
+            dims["other_positions"] = "、".join(industries[3:6]) if len(industries) > 3 else "–"
+        else:
+            dims["core_positions"] = "–"
+            dims["other_positions"] = "–"
+        dims["trend_5yr"] = "数据待更新"
     else:
         # Fallback estimates by school tier
         if school.is_985:

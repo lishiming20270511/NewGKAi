@@ -1,9 +1,10 @@
 # Environment secrets - NEVER commit
 .env
+.env.*
 config/.env
 
-# Core data files - keep local
-data/gaokao_export/*.csv
+# Core data files - keep local (database exports, 100MB+)
+data/gaokao_export/
 
 # Python
 __pycache__/
