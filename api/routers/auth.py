@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import bcrypt
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import jwt
 from pydantic import BaseModel, Field
@@ -106,14 +106,20 @@ async def login(body: LoginRequest, db: AsyncSession = Depends(get_db)):
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
 async def logout(
-    current_streamer: dict = Depends(get_current_streamer),
+    credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer(auto_error=False)),
 ):
-    # jti is already validated in get_current_streamer; re-decode to get it
-    # We rely on the fact that get_current_streamer already decoded token.
-    # Instead, we pass the raw token here by re-reading the header.
-    # Simpler: logout is best-effort; actual blacklist happens in the middleware.
-    # For now we accept the token is valid and blacklist via the jti.
-    pass  # Blacklist is written at middleware level via jti from token payload
+    """Blacklist the JWT token. Always returns success (idempotent)."""
+    if credentials:
+        try:
+            payload = jwt.decode(credentials.credentials, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
+            jti = payload.get("jti", "")
+            exp = payload.get("exp", 0)
+            ttl = max(int(exp - datetime.now(timezone.utc).timestamp()), 1)
+            r = get_redis()
+            await r.setex(f"jwt:blacklist:{jti}", ttl, "1")
+        except Exception:
+            pass
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.post("/logout/token")

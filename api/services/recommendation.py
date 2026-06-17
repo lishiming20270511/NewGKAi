@@ -196,10 +196,62 @@ async def estimate_rank(
 def _extract_city(name: str) -> str:
     import re
     patterns = [
+        # 直辖市 (4)
         r"^(北京|上海|天津|重庆)",
+        # 省会 + 计划单列市 + 主要城市 (~70)
         r"^(哈尔滨|长春|沈阳|大连|石家庄|济南|青岛|郑州|南京|杭州|武汉|成都|西安"
         r"|广州|深圳|南昌|合肥|福州|厦门|长沙|昆明|贵阳|南宁|海口|太原|呼和浩特"
-        r"|西宁|银川|乌鲁木齐|兰州|徐州|苏州|无锡|宁波|温州|汕头)",
+        r"|西宁|银川|乌鲁木齐|兰州|徐州|苏州|无锡|宁波|温州|汕头"
+        # 河南地级市
+        r"|洛阳|开封|焦作|新乡|信阳|南阳|安阳|平顶山|许昌|商丘|周口|驻马店|漯河|濮阳|鹤壁|三门峡"
+        # 湖北地级市
+        r"|宜昌|荆州|黄石|襄阳|十堰|孝感|黄冈|荆门|咸宁|鄂州|随州"
+        # 湖南地级市
+        r"|株洲|岳阳|湘潭|衡阳|邵阳|常德|郴州|永州|怀化|娄底|益阳|吉首"
+        # 四川地级市
+        r"|绵阳|南充|自贡|泸州|德阳|乐山|宜宾|达州|广元|遂宁|内江|攀枝花"
+        # 安徽地级市
+        r"|芜湖|蚌埠|马鞍山|安庆|黄山|滁州|六安|淮北|铜陵|宣城|池州|亳州"
+        # 福建地级市
+        r"|泉州|漳州|龙岩|三明|南平|莆田"
+        # 江西地级市
+        r"|赣州|九江|宜春|景德镇|萍乡|吉安|上饶|抚州|新余"
+        # 陕西地级市
+        r"|咸阳|宝鸡|渭南|汉中|延安|安康|榆林|商洛"
+        # 山东地级市
+        r"|济宁|潍坊|临沂|泰安|淄博|聊城|日照|德州|滨州|菏泽|枣庄|东营|威海"
+        # 江苏地级市
+        r"|常州|南通|扬州|镇江|泰州|盐城|淮安|连云港|宿迁"
+        # 浙江地级市
+        r"|嘉兴|湖州|绍兴|金华|衢州|舟山|台州|丽水"
+        # 广东地级市
+        r"|东莞|佛山|中山|珠海|惠州|江门|肇庆|茂名|湛江|梅州|韶关|清远|揭阳|潮州|阳江|河源|汕尾|云浮"
+        # 辽宁地级市
+        r"|鞍山|抚顺|本溪|锦州|丹东|营口|辽阳|盘锦|铁岭|朝阳|葫芦岛"
+        # 吉林地级市
+        r"|吉林|四平|通化|延吉|松原|白城|辽源|白山"
+        # 黑龙江地级市
+        r"|大庆|齐齐哈尔|牡丹江|佳木斯|鸡西|鹤岗|双鸭山|伊春|七台河|黑河|绥化"
+        # 河北地级市
+        r"|保定|唐山|廊坊|承德|沧州|邯郸|邢台|秦皇岛|衡水|张家口"
+        # 山西地级市
+        r"|大同|长治|临汾|运城|晋中|吕梁|晋城|朔州|忻州"
+        # 广西地级市
+        r"|桂林|柳州|玉林|北海|梧州|钦州|贵港|百色|河池"
+        # 贵州地级市
+        r"|遵义|毕节|铜仁|六盘水|安顺"
+        # 云南地级市
+        r"|大理|曲靖|玉溪|丽江|保山|昭通|普洱|临沧|红河|文山|楚雄"
+        # 甘肃地级市
+        r"|天水|酒泉|武威|平凉|张掖|庆阳|陇南|白银|定西"
+        # 内蒙古地级市
+        r"|包头|赤峰|鄂尔多斯|通辽|呼伦贝尔|乌兰察布|巴彦淖尔|乌海"
+        # 新疆地级市 (非自治区首府)
+        r"|石河子|克拉玛依|昌吉|伊宁|库尔勒|喀什|阿克苏)"
+        # Special: 三字城市名 (3-char cities)
+        r"^(秦皇岛|驻马店|平顶山|三门峡|哈尔滨|景德镇|连云港|张家口|马鞍山|"
+        r"攀枝花|六盘水|牡丹江|佳木斯|齐齐哈尔|呼和浩特|乌鲁木齐|石河子|呼伦贝尔|"
+        r"鄂尔多斯|巴彦淖尔|克拉玛依|乌兰察布)",
     ]
     for p in patterns:
         m = re.match(p, name)
@@ -584,6 +636,8 @@ def assign_tier(rank_prob: float, score: int) -> tuple[int, str]:
 # ──────────────────────────────────────────────────────────────────────────────
 
 def sort_and_slice(schools: list[SchoolRecord], personality: list[str]) -> list[SchoolRecord]:
+    """Guarantees 5+5+5 tier distribution. When a tier is short, fills from
+    adjacent tiers (closest rankProb match) to maintain the 15-school count."""
     def sort_key(s: SchoolRecord):
         tier = s.tier if s.tier is not None else 3
         intended_city_flag = 0 if s.is_intended_city else 1
@@ -594,27 +648,59 @@ def sort_and_slice(schools: list[SchoolRecord], personality: list[str]) -> list[
 
     schools_sorted = sorted(schools, key=sort_key)
 
-    # Target 5+5+5 tier distribution; backfill from overflow if needed
+    # Group by tier (sorted within each tier by preference)
     tiers: dict[int, list[SchoolRecord]] = {0: [], 1: [], 2: []}
     for s in schools_sorted:
         t = s.tier if s.tier is not None else 0
         tiers[t].append(s)
 
     selected: list[SchoolRecord] = []
-    # First pass: up to 5 per tier
-    for t in [0, 1, 2]:
-        selected.extend(tiers[t][:5])
+    used_ids: set[int] = set()
 
-    # Backfill if any tier is short
+    def _take(tier_list: list[SchoolRecord], n: int) -> list[SchoolRecord]:
+        result = []
+        for s in tier_list:
+            if s.school_id in used_ids:
+                continue
+            result.append(s)
+            used_ids.add(s.school_id)
+            if len(result) >= n:
+                break
+        return result
+
+    # Tier 0: 冲刺 (5) — shortfall filled from tier 1
+    selected += _take(tiers[0], 5)
+    if len(selected) < 5:
+        selected += _take(tiers[1], 5 - len(selected))
+
+    # Tier 1: 稳妥 (5) — shortfall filled from tier 2, then tier 0 remaining
+    solid_taken = _take(tiers[1], 5)
+    if len(solid_taken) < 5:
+        solid_taken += _take(tiers[2], 5 - len(solid_taken))
+    if len(solid_taken) < 5:
+        solid_taken += _take(tiers[0], 5 - len(solid_taken))
+    selected += solid_taken
+
+    # Tier 2: 保底 (5) — shortfall filled from tier 1 remaining, then tier 0
+    safe_taken = _take(tiers[2], 5)
+    if len(safe_taken) < 5:
+        safe_taken += _take(tiers[1], 5 - len(safe_taken))
+    if len(safe_taken) < 5:
+        safe_taken += _take(tiers[0], 5 - len(safe_taken))
+    selected += safe_taken
+
+    # Final fallback: if still < 15, fill from any remaining school
     if len(selected) < 15:
-        used_ids = {s.school_id for s in selected}
         for t in [0, 1, 2]:
-            for s in tiers[t][5:]:
+            for s in tiers[t]:
+                if s.school_id in used_ids:
+                    continue
+                selected.append(s)
+                used_ids.add(s.school_id)
                 if len(selected) >= 15:
                     break
-                if s.school_id not in used_ids:
-                    selected.append(s)
-                    used_ids.add(s.school_id)
+            if len(selected) >= 15:
+                break
 
     return selected[:15]
 
@@ -869,6 +955,286 @@ async def aggregate_16_dimensions(
     return dims
 
 
+# ──────────────────────────────────────────────────────────────────────────────
+# BATCHED 16-dimension aggregation — replaces per-school N+1 queries
+# ──────────────────────────────────────────────────────────────────────────────
+
+async def batch_aggregate_dimensions(
+    schools: list[SchoolRecord],
+    admission_map: dict[int, list[dict]],
+    req: RecommendRequest,
+    db: AsyncSession,
+) -> None:
+    """Batch all per-table queries into 6 round-trips instead of 6×N."""
+    if not schools:
+        return
+    sids = [s.school_id for s in schools]
+    sid_set = set(sids)
+    major_pref = req.major_preference
+
+    # ── 1) school_majors (batch) ──
+    placeholders = ", ".join(f":id{i}" for i in range(len(sids)))
+    params = {f"id{i}": v for i, v in enumerate(sids)}
+    rows = await db.execute(
+        text(f"SELECT school_id, major_name, major_level FROM school_majors WHERE school_id IN ({placeholders})"),
+        params,
+    )
+    majors_by_school: dict[int, list[dict]] = {sid: [] for sid in sid_set}
+    for r in rows.mappings():
+        majors_by_school.setdefault(r["school_id"], []).append(dict(r))
+
+    # ── 2) major_similarity (batch — all source_major x all sids) ──
+    similarity_map: dict[tuple[int, str], dict] = {}
+    if major_pref:
+        # We need: for each (school_id, source_major), find best similar target
+        # Batch: JOIN school_majors ON major_similarity.target_major = school_majors.major_name
+        # WHERE school_majors.school_id IN (...) AND major_similarity.source_major IN (...)
+        mplaceholders = ", ".join(f":m{i}" for i in range(len(major_pref)))
+        sparams = {**params, **{f"m{i}": v for i, v in enumerate(major_pref)}}
+        sim_rows = await db.execute(
+            text(f"""
+                SELECT sm.school_id, ms.source_major, ms.target_major, ms.similarity, sm.major_level
+                FROM major_similarity ms
+                JOIN school_majors sm ON sm.major_name = ms.target_major
+                WHERE sm.school_id IN ({placeholders})
+                  AND ms.source_major IN ({mplaceholders})
+                ORDER BY ms.similarity DESC
+            """),
+            sparams,
+        )
+        for r in sim_rows.mappings():
+            key = (r["school_id"], r["source_major"])
+            if key not in similarity_map:
+                similarity_map[key] = dict(r)
+
+    # ── 3) school_tuition (batch) ──
+    trows = await db.execute(
+        text(f"""
+            SELECT school_id, major_name, tuition_per_year, duration_years, data_source, data_year
+            FROM school_tuition WHERE school_id IN ({placeholders})
+        """),
+        params,
+    )
+    tuition_by_school: dict[int, list[dict]] = {sid: [] for sid in sid_set}
+    for r in trows.mappings():
+        tuition_by_school.setdefault(r["school_id"], []).append(dict(r))
+
+    # ── 4) school_employment (batch) ──
+    erows = await db.execute(
+        text(f"""
+            SELECT school_id, employment_rate, graduate_rate, data_source, data_year
+            FROM school_employment WHERE school_id IN ({placeholders})
+        """),
+        params,
+    )
+    emp_by_school: dict[int, dict] = {}
+    for r in erows.mappings():
+        emp_by_school.setdefault(r["school_id"], dict(r))
+
+    # ── 5) school_salary (batch) ──
+    srows = await db.execute(
+        text(f"""
+            SELECT school_id, major_name, salary_start_min, salary_start_max,
+                   salary_3yr_min, salary_3yr_max, data_source, data_year
+            FROM school_salary WHERE school_id IN ({placeholders})
+        """),
+        params,
+    )
+    salary_by_school: dict[int, list[dict]] = {sid: [] for sid in sid_set}
+    for r in srows.mappings():
+        salary_by_school.setdefault(r["school_id"], []).append(dict(r))
+
+    # ── 6) city_analysis (batch — by city name) ──
+    cities = list({s.city or s.province for s in schools if s.city or s.province})
+    ca_map: dict[str, dict] = {}
+    if cities:
+        cplaceholders = ", ".join(f":c{i}" for i in range(len(cities)))
+        cparams = {f"c{i}": v for i, v in enumerate(cities)}
+        carows = await db.execute(
+            text(f"SELECT city_name, location, advantage, development, main_business, city_level "
+                 f"FROM city_analysis WHERE city_name IN ({cplaceholders})"),
+            cparams,
+        )
+        for r in carows.mappings():
+            ca_map[r["city_name"]] = dict(r)
+
+    # ── Assemble dimensions per school ──
+    for school in schools:
+        dims: dict = {}
+        history = admission_map.get(school.school_id, [])
+
+        # Dims 1-6,9: admission data
+        if history:
+            years = sorted(history, key=lambda x: x["year"], reverse=True)
+            latest = years[0]
+            dims["latest_year"] = latest["year"]
+            dims["latest_min_rank"] = latest.get("min_rank")
+            dims["latest_min_score"] = latest.get("min_score")
+            scores = [y["min_score"] for y in years if y.get("min_score")]
+            if len(scores) >= 2:
+                diff = scores[0] - scores[-1]
+                if diff > 3:
+                    trend, trend_detail = "rising", f"分数线逐年上升 (+{diff}分趋势)"
+                elif diff < -3:
+                    trend, trend_detail = "falling", f"分数线逐年下降 (-{abs(diff)}分趋势)"
+                else:
+                    trend, trend_detail = "stable", "分数线近年稳定"
+            else:
+                trend, trend_detail = "unknown", "数据不足，趋势未知"
+            dims["trend"] = trend
+            dims["trend_detail"] = trend_detail
+            dims["years_available"] = sorted([y["year"] for y in years], reverse=True)
+        else:
+            dims["trend"] = "unknown"
+            dims["trend_detail"] = "暂无录取数据"
+            dims["years_available"] = []
+        dims["admission_trend"] = dims.get("trend_detail", "数据不足")
+
+        # Dim 7: recommended major
+        school_majors = majors_by_school.get(school.school_id, [])
+        major_names = {m["major_name"] for m in school_majors}
+        recommended_major = None
+        major_match_type = "none"
+
+        if major_pref:
+            for pref in major_pref:
+                if pref in major_names:
+                    match = next(m for m in school_majors if m["major_name"] == pref)
+                    recommended_major = pref
+                    dims["major_level"] = match["major_level"] or "普通"
+                    major_match_type = "exact"
+                    break
+                sim_key = (school.school_id, pref)
+                if sim_key in similarity_map:
+                    sim = similarity_map[sim_key]
+                    recommended_major = sim["target_major"]
+                    dims["major_similarity"] = float(sim["similarity"])
+                    dims["major_level"] = sim["major_level"] or "普通"
+                    major_match_type = "similar"
+                    dims["major_note"] = f"相近专业（与{pref}相似度{int(float(sim['similarity'])*100)}%）"
+                    break
+            if not recommended_major and school_majors:
+                fallback = school_majors[0]
+                recommended_major = fallback["major_name"]
+                major_match_type = "fallback"
+
+        dims["recommended_major"] = recommended_major or (major_pref[0] if major_pref else "综合类专业")
+        dims["major_match_type"] = major_match_type
+
+        # Dim 8: tuition
+        tuition_entries = tuition_by_school.get(school.school_id, [])
+        target_major = recommended_major or "__default__"
+        tuition_row = next((t for t in tuition_entries if t["major_name"] == target_major), None)
+        if not tuition_row:
+            tuition_row = next((t for t in tuition_entries if t["major_name"] == "__default__"), None)
+        if not tuition_row:
+            tuition_row = tuition_entries[0] if tuition_entries else None
+
+        if tuition_row:
+            per_yr = tuition_row["tuition_per_year"]
+            yrs = tuition_row["duration_years"] or 4
+            total = per_yr * yrs
+            dims["tuition"] = f"{per_yr:,}元/年"
+            dims["tuition_total"] = f"{yrs}年约{total//10000:.1f}万" if total >= 10000 else f"{yrs}年约{total:,}元"
+            dims["tuition_fit"] = _tuition_fit(per_yr, req.economic_level)
+            dims["tuition_source"] = tuition_row["data_source"] or "官网"
+            dims["tuition_year"] = tuition_row["data_year"]
+            dims["tuition_data_quality"] = "real"
+        else:
+            stype = (school.school_type or "").lower()
+            if "公办" in stype or school.is_985 or school.is_211:
+                dims["tuition"] = "4500-6000元/年"
+                dims["tuition_total"] = "4年约2-2.4万"
+                dims["tuition_fit"] = "中等家庭可接受"
+            elif "民办" in stype or "独立学院" in stype:
+                dims["tuition"] = "15000-30000元/年"
+                dims["tuition_total"] = "4年约6-12万"
+                dims["tuition_fit"] = "需考虑家庭经济承受能力"
+            else:
+                dims["tuition"] = "5000-8000元/年"
+                dims["tuition_total"] = "4年约2-3.2万"
+                dims["tuition_fit"] = "中等家庭可接受"
+            dims["tuition_data_quality"] = "estimated"
+
+        # Dim 11: employment
+        emp = emp_by_school.get(school.school_id)
+        if emp and emp.get("employment_rate") is not None:
+            er = emp["employment_rate"]
+            gr = emp.get("graduate_rate")
+            yr = emp.get("data_year") or "未知"
+            src = emp.get("data_source") or "学校官网"
+            dims["employment_rate"] = f"{er:.1f}%"
+            dims["graduate_rate"] = f"{gr:.1f}%" if gr is not None else None
+            dims["employment_source"] = f"{src}·{yr}年数据"
+            dims["employment_data_quality"] = "real"
+        else:
+            if school.is_985:
+                dims["employment_rate"] = "92-97%"
+            elif school.is_211:
+                dims["employment_rate"] = "88-94%"
+            else:
+                dims["employment_rate"] = "82-90%"
+            dims["employment_source"] = "按院校层次估算"
+            dims["employment_data_quality"] = "estimated"
+
+        # Dim 12-13: salary
+        sal_entries = salary_by_school.get(school.school_id, [])
+        sal_row = next((s for s in sal_entries if s.get("major_name") == target_major), None)
+        if not sal_row:
+            sal_row = next((s for s in sal_entries if s.get("major_name") == "__default__"), None)
+        if not sal_row:
+            sal_row = sal_entries[0] if sal_entries else None
+
+        if sal_row and sal_row.get("salary_start_min") is not None:
+            s_min, s_max = sal_row["salary_start_min"], sal_row.get("salary_start_max") or sal_row["salary_start_min"]
+            t_min = sal_row.get("salary_3yr_min")
+            t_max = sal_row.get("salary_3yr_max") or (t_min if t_min else None)
+            yr = sal_row.get("data_year") or "未知"
+            dims["avg_salary_start"] = f"{s_min//100*100}-{s_max//100*100}元/月" if s_min != s_max else f"{s_min}元/月"
+            dims["avg_salary_3yr"] = f"{t_min//100*100}-{t_max//100*100}元/月" if (t_min and t_max and t_min != t_max) else (f"{t_min}元/月" if t_min else "–")
+            dims["salary_source"] = f"{sal_row.get('data_source') or '第三方调研'}·{yr}年数据"
+            dims["salary_data_quality"] = "real"
+        else:
+            if school.is_985:
+                dims["avg_salary_start"] = "8000-14000元/月"
+                dims["avg_salary_3yr"] = "15000-25000元/月"
+            elif school.is_211:
+                dims["avg_salary_start"] = "6500-11000元/月"
+                dims["avg_salary_3yr"] = "12000-18000元/月"
+            else:
+                dims["avg_salary_start"] = "4500-7000元/月"
+                dims["avg_salary_3yr"] = "7000-12000元/月"
+            dims["salary_source"] = "按院校层次估算"
+            dims["salary_data_quality"] = "estimated"
+
+        dims["core_positions"] = "见该校就业报告"
+        dims["trend_5yr"] = "数据收集中"
+
+        # Dim 15: city analysis
+        city = school.city or school.province
+        ca = ca_map.get(city)
+        if ca:
+            city_level = ca.get("city_level") or "二线"
+            dims["city_analysis"] = {
+                "location": ca["location"],
+                "advantage": ca["advantage"],
+                "disadvantage": ca["development"],
+                "job_market": ca["main_business"],
+                "livability": f"{city_level}城市，生活成本{'较高' if city_level == '一线' else '适中' if city_level == '新一线' else '较低'}，宜居指数{'良好' if city_level in ('一线', '新一线') else '稳定'}",
+                "city_level": city_level,
+            }
+            dims["city_data_quality"] = "real"
+        else:
+            fallback = _CITY_ANALYSIS_FALLBACK.get(city, f"{city}，城市发展稳定，就业机会适中")
+            dims["city_analysis"] = {"summary": fallback}
+            dims["city_data_quality"] = "estimated"
+
+        # Dim 16: AI点评
+        dims["ai_review"] = None
+
+        school.dimensions = dims
+
+
 def _tuition_fit(per_year: int, economic_level: str) -> str:
     if economic_level in ("较为困难",):
         return "高于建议范围，请谨慎评估" if per_year > 8000 else "家庭可接受"
@@ -1072,7 +1438,6 @@ async def generate_recommendation(req: RecommendRequest, db: AsyncSession) -> di
             s.weighted_prob = 0.0
         s.data_quality = await detect_data_gaps(s.school_id, req.province, history, db)
         s.admission_data = _build_admission_summary(history)
-        s.dimensions = await aggregate_16_dimensions(s, history, req, db)
 
     # PHASE 2: 概率计算 (推荐池)
     scored: list[SchoolRecord] = []
@@ -1095,10 +1460,9 @@ async def generate_recommendation(req: RecommendRequest, db: AsyncSession) -> di
     # PHASE 3+4: Tier排序 + 截取15所
     selected = sort_and_slice(scored, req.personality)
 
-    # PHASE 2d: 16维度数据聚合 (only for selected 15)
-    for s in selected:
-        history = admission_map.get(s.school_id, [])
-        s.dimensions = await aggregate_16_dimensions(s, history, req, db)
+    # PHASE 2d: 16维度数据聚合 (batched — only for selected 15 + special_attention)
+    schools_for_dims = selected + [s for s in special_attention if s.school_id not in {x.school_id for x in selected}]
+    await batch_aggregate_dimensions(schools_for_dims, admission_map, req, db)
 
     await db.commit()
 

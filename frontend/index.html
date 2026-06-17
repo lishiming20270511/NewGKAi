@@ -893,8 +893,7 @@ function doLogout(redirect = true) {
   if (token) {
     fetch('/auth/logout/token', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token }),
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
     }).catch(() => {});
   }
   if (redirect) navigate('login');
@@ -1145,7 +1144,12 @@ async function runAnalysis() {
   };
 
   try {
-    const [, result] = await Promise.all([animPromise, api('POST', '/api/recommendation/generate', req)]);
+    // Fire API immediately; wait for BOTH animation AND API, with 800ms min floor
+    const apiPromise = api('POST', '/api/recommendation/generate', req);
+    const [, result] = await Promise.all([
+      Promise.all([animPromise, new Promise(r => setTimeout(r, 800))]),
+      apiPromise,
+    ]);
     S.reportData = result;
     sessionStorage.setItem('gk_report', JSON.stringify(result));
     navigate('paywall');

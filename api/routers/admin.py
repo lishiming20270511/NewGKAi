@@ -333,6 +333,9 @@ async def list_orders(
         filters.append("o.created_at >= :df")
         params["df"] = date_from
     if date_to:
+        # Ensure date_to covers the full day when only a date (no time) is provided
+        if " " not in date_to:
+            date_to = f"{date_to} 23:59:59"
         filters.append("o.created_at <= :dt")
         params["dt"] = date_to
 
