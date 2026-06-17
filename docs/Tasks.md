@@ -3,24 +3,29 @@
 | 文档信息 | 内容 |
 |---------|------|
 | 产品名称 | AI高考志愿规划师 · 直播辅助工具 |
-| 上级文档 | [PRD.md](./PRD.md) v3.1 · [Architecture.md](./Architecture.md) v1.2 · [ARR.md](./ARR.md) |
+| 上级文档 | [PRD.md](./PRD.md) v4.0 · [Architecture.md](./Architecture.md) v2.0 |
 | 创建日期 | 2026-06-17 |
-| 总预估工时 | **~120h（约15人天）** |
+| 总预估工时 | **~170h（约21人天）** |
 
 ---
 
 ## 任务总览
 
 ```
-Phase 1: 基础设施 (T1.1 ~ T1.4)    ─── 4个任务，12h
-Phase 2: 核心后端 (T2.1 ~ T2.8)    ─── 8个任务，28h
-Phase 3: 前端页面 (T3.1 ~ T3.8)    ─── 8个任务，32h
-Phase 4: 管理与交易 (T4.1 ~ T4.5)   ─── 5个任务，18h
-Phase 5: 集成部署 (T5.1 ~ T5.6)    ─── 6个任务，20h
-Phase 6: 上线加固 (T6.1 ~ T6.4)    ─── 4个任务，12h
-                                    ─────────────────
-                                    35个任务，~122h
+Phase 1: 基础设施搭建     (T1.1 ~ T1.4) ───  4个任务， 12h
+Phase 2: 核心后端         (T2.1 ~ T2.8) ───  8个任务， 24h
+Phase 3: 前端页面         (T3.1 ~ T3.8) ───  8个任务， 27h
+Phase 4: 管理与交易       (T4.1 ~ T4.5) ───  5个任务， 14h
+Phase 5: 集成测试与部署   (T5.1 ~ T5.6) ───  6个任务， 19h
+Phase 6: 上线加固         (T6.1 ~ T6.4) ───  4个任务， 10h
+Phase 7: v4.0 数据层升级  (T7.1 ~ T7.7) ───  7个任务， 22h  ★ 新增
+Phase 8: v4.0 前端与体验  (T8.1 ~ T8.5) ───  5个任务， 18h  ★ 新增
+Phase 9: v4.0 集成验证    (T9.1 ~ T9.3) ───  3个任务， 10h  ★ 新增
+                                         ─────────────────
+                                         50个任务，~156h
 ```
+
+> **标注说明**：★ 新增 = PRD v4.0 相对旧版任务的新增内容。Phase 1-6 保留原有任务（适配 v2.0 架构），Phase 7-9 为 v4.0 专项升级任务。
 
 ---
 
@@ -31,22 +36,19 @@ Phase 6: 上线加固 (T6.1 ~ T6.4)    ─── 4个任务，12h
 |------|------|
 | **工时** | 3h |
 | **前置** | 无 |
-| **负责人** | 后端 / 运维 |
+| **负责人** | 后端/运维 |
 
 **任务清单**：
-- [ ] 在 121.41.69.234 安装 Redis 7.x（`apt install redis-server`）
-- [ ] 配置 Redis：`maxmemory-policy allkeys-lru`，`save 3600 1`（RDB每1小时至少1次写入），`maxmemory 512mb`
-- [ ] 创建 `gaokao` 系统用户：`useradd -m -s /bin/bash gaokao`
-- [ ] 配置 MySQL 连接池：`pool_size=20, max_overflow=30`（修改 `/root/gaokao-ai/.env`）
-- [ ] 配置 Nginx 新增 `/internal/*` 路由代理（仅允许 199.193.126.80 来源IP）
-- [ ] 验证：`redis-cli PING` → PONG，`systemctl status redis` → active
+- [ ] 在 121.41.69.234 安装 Redis 7.x
+- [ ] 配置 Redis：`maxmemory-policy allkeys-lru`，`save 3600 1`，`maxmemory 512mb`
+- [ ] 创建 `gaokao` 系统用户（systemd 运行用户）
+- [ ] 配置 MySQL 连接池：`pool_size=20, max_overflow=30`
+- [ ] 配置 Nginx `/internal/*` 路由（仅允许爬虫IP 199.193.126.80）
+- [ ] 验证：`redis-cli PING` → PONG
 
 **验收标准**：
 ```bash
-redis-cli CONFIG GET maxmemory-policy  # → allkeys-lru
-redis-cli CONFIG GET save              # → 3600 1
-curl -s http://127.0.0.1:8000/health   # → {"status":"ok","mysql":"ok","redis":"ok"}
-id gaokao                               # → uid exists
+curl -s http://127.0.0.1:8000/health  # → {"status":"ok","mysql":"ok","redis":"ok"}
 ```
 
 ---
@@ -59,28 +61,18 @@ id gaokao                               # → uid exists
 | **负责人** | 后端 |
 
 **任务清单**：
-- [ ] 创建 `crawler_staging` 临时表（字段与 `admission_history` 对齐 + `validated_at` / `error_msg`）
-- [ ] 创建 `crawler_error_log` 错误日志表
-- [ ] 为 `orders` 表加 `idempotency_key VARCHAR(36)` + `UNIQUE INDEX uk_idempotency (streamer_id, idempotency_key)`
-- [ ] 确认 `admission_history` 索引：`idx_school_prov_year(school_id, province, year)` 是否存在（如字段为 `school_id`）
-- [ ] 确认 `yifenyidang` 索引：`uk_prov_year_sub_score(province, year, category, score)` 
+- [ ] 创建 `crawler_staging` 临时表 + `crawler_error_log` 错误日志表
+- [ ] 为 `orders` 表加 `idempotency_key` + `UNIQUE INDEX uk_idempotency`
+- [ ] 确认 `admission_history` 索引：`idx_school_prov_year(school_id, province, year)`
+- [ ] 确认 `yifenyidang` 索引：`uk_prov_year_sub_score(province, year, category, score)`
 - [ ] 初始化 `system_config` 表预置数据（省份满分/概率阈值/定价）
-- [ ] 运行 EXPLAIN 验证关键查询是否走索引：
-  ```sql
-  EXPLAIN SELECT * FROM yifenyidang 
-  WHERE province='河南' AND year=2025 AND category='理科' AND score<=580 
-  ORDER BY score DESC LIMIT 1;  -- 预期: Using index
-  ```
+- [ ] 运行 EXPLAIN 验证关键查询走索引
 
-**验收标准**：
-- 所有表 DDL 与 Architecture.md §4 一致
-- `crawler_staging` 表存在且结构正确
-- `orders` 表新增 `uk_idempotency` 唯一索引
-- 关键查询 EXPLAIN 显示走索引
+**验收标准**：关键查询 EXPLAIN 显示 Using index；`uk_idempotency` 存在。
 
 ---
 
-### T1.3 · 爬虫数据网关（修复 ARR R2）
+### T1.3 · 爬虫数据网关基础（修复 ARR R2）
 | 属性 | 内容 |
 |------|------|
 | **工时** | 4h |
@@ -88,34 +80,13 @@ id gaokao                               # → uid exists
 | **负责人** | 后端 |
 
 **任务清单**：
-- [ ] 创建 FastAPI Router：`api/routers/crawler.py`
-- [ ] 实现 `POST /internal/crawler/ingest`
-  - 认证：内部 JWT（与主播 JWT 不同，单一静态 secret）
-  - 写入 `crawler_staging` 临时表（每条记录带 `source_ip` / `crawled_at`）
-  - 返回 `{ingested: N, rejected: M}`
-- [ ] 实现 `crawler_staging` 校验脚本 `scripts/check_staging.py`（crontab 每 5 分钟）：
-  - 字段完整性：`school_id` / `province` / `year` NOT NULL
-  - 值域合理性：`min_rank > 0`，`min_score BETWEEN 0 AND 750`
-  - 去重：`school_id + province + year + category` 唯一
-  - 通过 → `INSERT INTO admission_history ... ON DUPLICATE KEY UPDATE`
-  - 失败 → `INSERT INTO crawler_error_log`
-- [ ] 在 Nginx 配置中限制 `/internal/*` 仅允许爬虫服务器 IP
-- [ ] **爬虫端改造**：（需在 199.193.126.80 上执行）
-  - 将 `fetch_school_facts.py` 的 `MySQL INSERT` 改为 `POST /internal/crawler/ingest`
-  - 增加失败重试（exponential backoff, max 3次）
+- [ ] 创建 `api/routers/crawler.py`
+- [ ] 实现 `POST /internal/crawler/ingest`：内部JWT认证 → 写入 `crawler_staging`
+- [ ] 实现 `scripts/check_staging.py`（crontab 每5分钟）：校验 → MERGE INTO admission_history | 失败 → crawler_error_log
+- [ ] Nginx 限制 `/internal/*` 仅爬虫IP访问
+- [ ] 爬虫端改造：`fetch_school_facts.py` 不直连MySQL，改为 POST /internal/crawler/ingest
 
-**验收标准**：
-```bash
-# 模拟爬虫写入
-curl -X POST https://gaokao.lumenaistudio.co/internal/crawler/ingest \
-  -H "Authorization: Bearer <internal_jwt>" \
-  -d '{"records":[{"school_id":31,"province":"北京","year":2025,"category":"综合","min_score":686,"min_rank":419}]}'
-# → {"ingested": 1, "rejected": 0}
-
-# 等待5分钟后验证数据流入
-mysql -e "SELECT COUNT(*) FROM admission_history WHERE school_id=31 AND year=2025 AND province='北京'"
-# → 1
-```
+**验收标准**：模拟爬虫推送→数据经staging校验后流入admission_history；坏数据进入error_log。
 
 ---
 
@@ -127,25 +98,13 @@ mysql -e "SELECT COUNT(*) FROM admission_history WHERE school_id=31 AND year=202
 | **负责人** | 后端 |
 
 **任务清单**：
-- [ ] 创建项目目录结构（按 Architecture.md 附录B 文件清单）
-- [ ] 配置 `.env`（DB连接串、JWT_SECRET、INTERNAL_JWT_SECRET、REDIS_URL、LLM_API_KEY）
-- [ ] 创建 `api/routers/` 下所有空路由文件：`auth.py`, `schools.py`, `recommendation.py`, `qa.py`, `report.py`, `admin.py`, `crawler.py`
-- [ ] 实现 `/health` 深度检查端点（检查 MySQL 连接 + Redis 连接）：
-  ```python
-  @router.get("/health")
-  async def health():
-      mysql_ok = await check_mysql()
-      redis_ok = await check_redis()
-      return {"status": "ok" if (mysql_ok and redis_ok) else "degraded",
-              "mysql": "ok" if mysql_ok else "error",
-              "redis": "ok" if redis_ok else "error"}
-  ```
+- [ ] 创建项目目录结构（api/routers/, api/services/, api/models/, config/, scripts/）
+- [ ] 配置 `.env`（DB连接串、JWT_SECRET、REDIS_URL、LLM_API_KEY、INTERNAL_JWT_SECRET）
+- [ ] 创建空路由文件：auth.py / schools.py / recommendation.py / qa.py / report.py / admin.py / crawler.py
+- [ ] 实现 `/health` 深度检查（MySQL + Redis 连通性）
 - [ ] 配置 CORS、全局异常处理中间件
-- [ ] 验证：`uvicorn main:app --port 8000` 启动成功，`/health` 返回200
 
-**验收标准**：
-- `curl http://127.0.0.1:8000/health` → `{"status":"ok","mysql":"ok","redis":"ok"}`
-- 项目目录结构符合 Architecture.md 附录B
+**验收标准**：`uvicorn main:app --port 8000` 启动成功；`/health` 返回 `{"status":"ok"}`。
 
 ---
 
@@ -159,25 +118,16 @@ mysql -e "SELECT COUNT(*) FROM admission_history WHERE school_id=31 AND year=202
 | **负责人** | 后端 |
 
 **任务清单**：
-- [ ] 实现 `POST /auth/login`：手机号+密码 → bcrypt验证 → 签发JWT(24h)
-  - 返回 `{token, streamer: {id, name, phone(脱敏), balance}}`
-  - 异常：401 密码错误、403 账号禁用
+- [ ] 实现 `POST /auth/login`：bcrypt验证 → 签发JWT(24h) → 返回 `{token, streamer}`
 - [ ] 实现 `POST /auth/logout`：JWT jti 加入 Redis 黑名单
-  - Redis 不可用时不检查黑名单（降级，日志告警）
-- [ ] 实现 `GET /auth/streamer/profile`：返回当前主播信息+剩余次数
-- [ ] 实现 JWT 验证中间件 `get_current_streamer()`：
-  - 解码 JWT → 检查黑名单(Redis) → 检查账号状态(MySQL) → 返回 streamer 对象
-- [ ] 实现 Admin JWT 中间件（管理员专用，与主播 token 不同）
+- [ ] 实现 `GET /auth/streamer/profile`：返回主播信息+剩余次数
+- [ ] 实现 JWT 验证中间件 `get_current_streamer()`：解码→黑名单检查→账号状态检查
+- [ ] 实现 Admin JWT 中间件（管理员专用，独立于主播token体系）
 
 **验收标准**：
 ```bash
-curl -X POST http://127.0.0.1:8000/auth/login \
-  -d '{"phone":"13800138000","password":"test123"}'
-# → 200 {token, streamer: {...}}
-
-curl http://127.0.0.1:8000/auth/streamer/profile \
-  -H "Authorization: Bearer <token>"
-# → 200 {streamer: {id, name, balance, ...}}
+curl -X POST /auth/login -d '{"phone":"13800138000","password":"test123"}'
+# → 200 {token, streamer: {id, name, balance}}
 ```
 
 ---
@@ -186,36 +136,19 @@ curl http://127.0.0.1:8000/auth/streamer/profile \
 | 属性 | 内容 |
 |------|------|
 | **工时** | 3h |
-| **前置** | T2.1, T1.2（uk_idempotency已建） |
-| **负责人** | 后端 |
+| **前置** | T2.1, T1.2 |
+| **负责人** | 后端 ★ 核心交易 |
 
 **任务清单**：
 - [ ] 实现 `POST /auth/deduct`（Request: `{idempotency_key}`）：
-  ```python
-  # ① Redis 分布式锁（可选，不可用时降级为仅DB锁）
-  try: await redis.set(f"deduct:lock:{sid}", "1", nx=True, ex=5)
-  except: pass
-  # ② 幂等检查
-  existing = await db.fetch_one("SELECT id FROM orders WHERE streamer_id=? AND idempotency_key=?", ...)
-  if existing: return {"success": True, "already_processed": True, "order_id": existing.id}
-  # ③ SELECT FOR UPDATE + 扣费
-  # ④ INSERT orders + INSERT report_tasks
-  ```
-- [ ] 返回标准格式：`{success: true, balance: N, used_total: N, order_id: "GK..."}`
-- [ ] 异常处理：400（余额不足）、409（已处理，幂等返回）
-- [ ] 写入 `orders` 表：订单号生成规则 `GK` + 时间戳 `YYYYMMDD-HHmm` + `-` + 4位随机hex
+  - Redis 分布式锁（可选，失败降级为DB锁）
+  - 幂等检查：`SELECT id FROM orders WHERE streamer_id=? AND idempotency_key=?`
+  - `SELECT ... FOR UPDATE` + 原子扣减
+  - INSERT orders + INSERT report_tasks
+- [ ] 订单号生成：`GK` + `YYYYMMDD-HHmm` + `-` + 4位随机hex
+- [ ] 异常处理：400（余额不足）、409（已处理）
 
-**验收标准**：
-```bash
-# 正常扣费
-curl -X POST /auth/deduct -H "Authorization: Bearer <token>" \
-  -d '{"idempotency_key":"test-uuid-001"}'
-# → 200 {success: true, balance: 7, order_id: "GK..."}
-
-# 幂等重试（同一 key）
-curl ... -d '{"idempotency_key":"test-uuid-001"}'
-# → 200 {success: true, already_processed: true, order_id: "GK..."}  # 余额不减少！
-```
+**验收标准**：同idempotency_key重试2次→余额只减1次；返回 `already_processed: true`。
 
 ---
 
@@ -227,19 +160,11 @@ curl ... -d '{"idempotency_key":"test-uuid-001"}'
 | **负责人** | 后端 |
 
 **任务清单**：
-- [ ] 实现 `GET /api/schools/search?q=郑州&limit=8`
-  - MySQL FULLTEXT 搜索 `schools.name`
-  - 返回字段：`school_id, name, province, city, tags(is_985/is_211/is_double_first)`
-  - city 为空时用 `getCityFromSchoolName()` 从校名提取
-- [ ] 实现 `GET /api/schools/{school_id}`
-  - 返回完整学校信息 + 该校有录取数据的省份列表
-- [ ] 前端 `school_data.js` 如不使用则移除（搜索统一走后端API）
+- [ ] 实现 `GET /api/schools/search?q=郑州&limit=8`：MySQL FULLTEXT 搜索
+- [ ] 实现 `GET /api/schools/{school_id}`：完整学校信息
+- [ ] city 为空时用 `getCityFromSchoolName()` 从校名提取
 
-**验收标准**：
-```bash
-curl "http://127.0.0.1:8000/api/schools/search?q=郑州&limit=5"
-# → {results: [{school_id:123, name:"郑州大学", city:"郑州", ...}, ...]}
-```
+**验收标准**：搜索"郑州"→返回郑州大学等；无结果返回空数组。
 
 ---
 
@@ -248,31 +173,18 @@ curl "http://127.0.0.1:8000/api/schools/search?q=郑州&limit=5"
 |------|------|
 | **工时** | 4h |
 | **前置** | T2.3 |
-| **负责人** | 后端 ★ 核心任务 |
+| **负责人** | 后端 ★ 核心算法 |
 
 **任务清单**：
 - [ ] 实现 `api/services/recommendation.py`
-- [ ] 实现 `estimate_rank(province, score, category)`：
-  - 查询 `yifenyidang` → 如无2025数据则用最新年份回退
-  - L2 Redis 缓存：`recommend:rank:{province}:{year}:{category}:{score}`
-- [ ] 实现 `build_candidate_pool_four_tiers(req)`：
+- [ ] 实现 `estimate_rank()`：yifenyidang查询 + Redis L2缓存
+- [ ] 实现 `build_candidate_pool_four_tiers()`：
   - ① 提取特别关注区（意向学校，不计入15所）
-  - ② L1 意向城市（城市→省份映射，60+城市）
-  - ③ L2 本省学校
-  - ④ L3 意向城市周边（邻省映射表）
-  - ⑤ L4 全国兜底（邻省→沿海→全国）
+  - ② L1 意向城市 → L2 本省 → L3 周边 → L4 全国兜底
   - 每层去重，最多105候选
-- [ ] 实现城市→省份映射表（60+城市）和城市→邻省映射表
+- [ ] 城市→省份映射表（60+城市） + 邻省映射表
 
-**验收标准**：
-```python
-# 单元测试
-pool = build_candidate_pool_four_tiers(
-    province="河南", city_preference=["郑州","武汉"], intended_schools=["北京大学"]
-)
-assert len(pool) <= 105
-assert "北京大学" in [s.name for s in pool.special_attention]
-```
+**验收标准**：候选池≤105所；意向学校单独提取到 special_attention 数组。
 
 ---
 
@@ -281,60 +193,47 @@ assert "北京大学" in [s.name for s in pool.special_attention]
 |------|------|
 | **工时** | 4h |
 | **前置** | T2.4 |
-| **负责人** | 后端 ★ 核心任务 |
+| **负责人** | 后端 ★ 核心算法 |
 
 **任务清单**：
-- [ ] 实现 `batch_query_admission(school_ids, province)`：
-  - 批量查询 `admission_history WHERE school_id IN (...) AND province=?`
-  - L1 Redis 缓存：`recommend:admission:{province}:{school_id}`
-- [ ] 实现 `calc_rank_prob(student_rank, multi_year_history)`：
-  - 取最近3年 min_rank 的中位数
-  - 位次比较法公式（见 Architecture §推荐引擎）
-  - 趋势修正（录取位次逐年收紧→下调5%）
-  - 钳制到 [1, 99]
-- [ ] 实现 `calc_weighted_prob(req, rank_prob, data)`：
-  - 六维度加权：录取概率(35%) + 专业匹配(20%) + 就业(15%) + 城市(10%) + 性格(10%) + 经济(10%)
-  - 性格匹配：外向→文科/综合类+10%、内向→理工科+10% 等
-  - 经济偏好：困难+师范→师范类+10%、困难+无师→≤5000元年费公办+10%
-  - 专业匹配：国家一流20%/省级一流15%/有专业10%/无专业0%
-- [ ] 实现 Tier 分层 + 排序（含性格tiebreaker: rankProb差距≤5%→性格决胜）
-- [ ] 实现 `detect_data_gaps()` → 缺数据写入 `school_admission_crawl_tasks`
+- [ ] 实现 `batch_query_admission()`：批量查询，Redis L1缓存
+- [ ] 实现 `calc_rank_prob()`：取最近3年 min_rank 中位数 → 位次比较法 → 趋势修正
+- [ ] 实现 `calc_weighted_prob()`：六维度加权（录取35%+专业20%+就业15%+城市10%+性格10%+经济10%）
+- [ ] 性格匹配：外向→文科/综合+10%、内向→理工科+10%、动手→工科+10%、艺术→艺术类+10%
+- [ ] Tier分层（冲刺30-60%/稳妥60-85%/保底≥85%）+ 排序（含性格tiebreaker）
+- [ ] 实现 `detect_data_gaps()` → 缺数据写入爬虫任务表
+
+**验收标准**：不同考生产生不同推荐结果；tier分布尽量5+5+5。
+
+---
+
+### T2.6 · 推荐引擎16维度数据填充（v4.0 核心后端任务）
+
+| 属性 | 内容 |
+|------|------|
+| **工时** | 4h |
+| **前置** | T2.5, T7.1（新表已建） |
+| **负责人** | 后端 ★ v4.0 核心 |
+
+**任务清单**：
+- [ ] 实现 `aggregate_school_dimensions(school_id, province, student)` 查询所有新表：
+  - 维度7 推荐专业：查询 `school_majors` → 无则 `major_similarity` 相近专业映射
+  - 维度8 学费：查询 `school_tuition` → 无则按学校类型估算（公办4500-6000/民办15000-30000）
+  - 维度11 就业率：查询 `school_employment` → 无则按专业类型估算
+  - 维度12 薪资：查询 `school_salary` → 无则按城市等级估算
+  - 维度15 城市分析：查询 `city_analysis` → 无则创建 `school_city_crawl_tasks`
+- [ ] 每个维度标记 `data_source`：`"database"` | `"estimated"` | `"pending_crawl"`
+- [ ] 数据降级策略：数据库有→直接用; 无→估算+标记; 冷门学校→创建爬虫任务
 
 **验收标准**：
 ```bash
 curl -X POST /api/recommendation/generate \
-  -H "Authorization: Bearer <token>" \
-  -d '{"province":"河南","score":580,"subject_category":"理科","city_preference":["郑州"]}'
-# → 200 {special_attention:[{name:"北京大学",rank_prob:0,...}], schools:[15所], ...}
-# 验证：每所学校有 rankProb + weightedProb，tier 分布尽量5+5+5
+  -H "Authorization: Bearer *** \
+  -d '{"province":"河南","score":580,"subject_category":"物理",...}'
+# → 每所学校返回完整16维度dimensions对象
+# → 不同学校推荐专业/学费/就业率/薪资差异化
+# → data_quality_summary.crawl_tasks_created >= 0
 ```
-
----
-
-### T2.6 · 推荐引擎16维度数据填充
-| 属性 | 内容 |
-|------|------|
-| **工时** | 3h |
-| **前置** | T2.5 |
-| **负责人** | 后端 |
-
-**任务清单**：
-- [ ] 实现 16 维度数据聚合函数 `aggregate_school_dimensions(school_id, province, student)`：
-  - 维度1-6：学校标签/概率/城市/分数线/位次匹配/趋势（来自 admission_history）
-  - 维度7：推荐专业（匹配 student.major_preference）
-  - 维度8：学费（如无数据，按学校类型估算：公办4500-6000/民办15000-30000）
-  - 维度9：录取趋势（逐年分数变化+趋势方向）
-  - 维度10：专业地位（查询 major_ranks 表）
-  - 维度11-13：就业率/薪资/岗位（查询 employment_data 表，无数据时按专业类型估算）
-  - 维度14：5年趋势（从 employment_data.trend_5yr 读取）
-  - 维度15：城市分析（城市定位+产业优势+起薪+消费+留存率）
-  - 维度16：AI点评（返回 null，异步生成）
-- [ ] 16维度数据降级策略：有数据用数据，无数据用估算并标记 `data_source: "estimated"`
-- [ ] 返回数据结构标记每个维度的 `data_source`：`"database"` | `"estimated"` | `"ai_generated"`
-
-**验收标准**：
-- 每所学校返回完整的 16 个维度对象
-- 缺数据维度有合理估算值（非 null/空字符串）
 
 ---
 
@@ -346,20 +245,11 @@ curl -X POST /api/recommendation/generate \
 | **负责人** | 后端 |
 
 **任务清单**：
-- [ ] 实现 `POST /api/qa/ask`（Request: `{question}`）
-  - System prompt：张雪峰风格口语化，犀利接地气，有数据支撑，200字以内
-  - 调用 DeepSeek API（或配置的 LLM 接口）
-  - 超时设置 10s，失败返回降级回答"AI暂时无法回答，请稍后重试"
-  - 将问答记录写入 `qa_history` 日志表（可选，用于质量分析）
-- [ ] LLM 客户端配置：支持 DeepSeek/Claude/GPT 三选一（环境变量切换）
+- [ ] 实现 `POST /api/qa/ask`：System prompt（口语化直白，200字内，禁用"张雪峰"品牌）
+- [ ] 调用 DeepSeek API，超时10s，失败返回降级回答
+- [ ] LLM 客户端支持 DeepSeek/Claude/GPT 三选一（环境变量切换）
 
-**验收标准**：
-```bash
-curl -X POST /api/qa/ask \
-  -H "Authorization: Bearer <token>" \
-  -d '{"question":"计算机专业好就业吗？"}'
-# → 200 {answer: "计算机这专业吧，不能说闭着眼都能找到工作..."}
-```
+**验收标准**：输入问题→返回口语化回答；LLM不可用时返回降级提示。
 
 ---
 
@@ -371,16 +261,11 @@ curl -X POST /api/qa/ask \
 | **负责人** | 后端 |
 
 **任务清单**：
-- [ ] 实现 `POST /api/report/log`：记录每次报告生成
-  - 写 `report_tasks` 表（student_hash, score_range, province, school_hash）
-- [ ] 实现相似度检测（扣费时触发）：
-  - 查询同主播近10条 report_tasks
-  - 相同省份 + 相同分数段(±5分) + 相同意向学校哈希 → 标记 `similarity_flag=1`
-  - 连续3次 `similarity_flag=1` → 标记 `similarity_flag=2` → 企业微信/钉钉告警
-- [ ] MVP 阶段告警仅打印日志 + 前端提示（不做自动封禁）
+- [ ] 扣费时同步写入 `report_tasks`（student_hash, score_range, province, school_hash）
+- [ ] 检测同主播近10条：同省+同分±5+同意向哈希 → `similarity_flag=1`
+- [ ] 连续3次 → `similarity_flag=2` → 日志告警
 
-**验收标准**：
-- 连续3次提交高度相似报告 → `similarity_flag=2` → 日志输出 `[ALERT]`
+**验收标准**：连续3次高度相似→`similarity_flag=2`→日志输出 `[ALERT]`。
 
 ---
 
@@ -390,27 +275,17 @@ curl -X POST /api/qa/ask \
 | 属性 | 内容 |
 |------|------|
 | **工时** | 4h |
-| **前置** | 无（可与后端并行）|
+| **前置** | 无 |
 | **负责人** | 前端 |
 
 **任务清单**：
-- [ ] 创建 `index.html` 基础框架：
-  - `.phone-frame` 手机模拟框（375×800px 固定）
-  - `.status-bar`（28px）+ `.nav-bar`（flex-shrink:0）+ `.page-container`（flex:1, overflow-y:auto）+ `.home-bar`（24px）
-  - CSS 变量体系（--color-danger/info/success/985/211 等，对齐 UI_Spec §1.2）
-- [ ] 实现 hash-based 页面路由：
-  - `#login` → `#student` → `#pref` → `#analyzing` → `#paywall` → `#report`
-  - `#sample`（无需登录可访问）
-  - `#qa`
-  - 未登录时除 `#login` 和 `#sample` 外全部拦截回 `#login`
-- [ ] 实现全局 Toast 通知组件（4种类型：成功/错误/警告/信息，顶部居中）
-- [ ] 实现导航栏（9个按钮，当前页高亮，auth 控制可见性）
-- [ ] 实现登录态管理：`localStorage` JWT 存取，过期检测，`fetch` 拦截器自动带 Bearer header
+- [ ] 创建 `index.html`——`.phone-frame`（375×800px固定）+ `.status-bar` + `.nav-bar` + `.page-container` + `.home-bar`
+- [ ] CSS 变量体系（--color-danger/info/success/985/211/accent 等，v4.0 预备 Bento Grid 暗色变量但先完成浅色版功能）
+- [ ] hash-based 路由：`#login`→`#student`→`#pref`→`#analyzing`→`#paywall`→`#report`
+- [ ] Toast 通知组件（成功/错误/警告/信息）
+- [ ] 导航栏 + 登录态管理（localStorage JWT + expires检测 + fetch拦截器）
 
-**验收标准**：
-- 浏览器打开 `index.html` → 显示手机框 → 自动跳转 `#login`
-- 导航栏点击切换页面（hash 变化）
-- 配色/字体与 UI_Spec §1.2/§1.3 一致
+**验收标准**：打开 index.html → 手机框 → 自动跳转 `#login`；导航栏页面切换正常。
 
 ---
 
@@ -422,24 +297,12 @@ curl -X POST /api/qa/ask \
 | **负责人** | 前端 |
 
 **任务清单**：
-- [ ] 登录页（`#login`）：
-  - 品牌区（Logo + slogan + 数据背书：2200万+/6年/98.3%）
-  - 手机号输入（type=tel, maxlength=11）+ 密码输入（带👁切换）+ 登录按钮（红色全宽）
-  - 状态：idle/loading/error-credentials/error-disabled/success
-  - 成功后存储 JWT + balance → 跳转 `#student`
-- [ ] 考生信息页（`#student`）7字段表单：
-  - 抖音昵称（text，必填）
-  - 省份（select，31省）+ 选中后动态切换选科组件
-  - 高考分数（number，上海/660 其余/750 动态显示，超限自动钳制）
-  - 省内位次（number，选填，占位"可留空自动估算"）
-  - 选科（动态组件：3+3=6科标签任选3，3+1+2=首选Radio+再选4选2；浙江+技术）
-  - 服从调剂（双选标签）、家庭经济（select）
-- [ ] 表单校验：必填标红+抖动，校验通过→跳转`#pref`
+- [ ] 登录页：品牌区 + 5行宣传文案 + 手机号+密码+登录 + 状态管理
+- [ ] 考生信息页7字段：昵称/省份/分数/位次/选科/调剂/家庭经济
+- [ ] 动态选科：3+3（6科标签任选3，浙江+技术） / 3+1+2（首选Radio+再选4选2）
+- [ ] 表单校验：必填标红+抖动；分数钳制（上海/660，其余/750）
 
-**验收标准**：
-- 选择"上海"→满分显示/660；选择"河南"→选科组件切换为3+1+2
-- 填入580分→选浙江→不能超过750自动钳制
-- 必填为空点"下一步"→标红抖动
+**验收标准**：选上海→满分/660；输入800→钳制750；必填为空→标红。
 
 ---
 
@@ -451,21 +314,12 @@ curl -X POST /api/qa/ask \
 | **负责人** | 前端 |
 
 **任务清单**：
-- [ ] 专业方向：26个标签多选，4列网格排列
-- [ ] 意向城市：16个预设城市标签 + 自定义输入框
-- [ ] 意向院校搜索（最多3所）：
-  - 输入≥2字符 → 300ms防抖 → `GET /api/schools/search?q=...`
-  - 下拉列表最多8条（学校名+城市）
-  - 选中→显示Tag可删除；选满3所→禁用搜索框
-  - 搜索无结果→"未找到该学校"
-- [ ] 性格/倾向：8个标签多选，2列网格
-- [ ] 底部按钮：「← 返回」→ `#student`，「🚀 开始AI分析」→ `#analyzing`
-- [ ] 点击「开始AI分析」→ 调用 `POST /api/recommendation/generate` → 进入分析中页面
+- [ ] 专业方向26标签多选（4列网格）+ 意向城市16预设+自定义
+- [ ] 意向院校搜索：输入≥2字→300ms防抖→API搜索→下拉8条→选Tag可删→最多3所
+- [ ] 性格8标签多选（2列网格）
+- [ ] 「← 返回」→ `#student`，「🚀 开始AI分析」→ 调用推荐API → `#analyzing`
 
-**验收标准**：
-- 搜索"郑州"→显示郑州大学等结果→点击选中→显示Tag+✕
-- 选满3所后搜索框禁用
-- 所有非必填字段可以不填直接点分析
+**验收标准**：搜索"郑州"→显示学校列表→选中→Tag✕；选满3所禁用搜索框。
 
 ---
 
@@ -473,58 +327,44 @@ curl -X POST /api/qa/ask \
 | 属性 | 内容 |
 |------|------|
 | **工时** | 3h |
-| **前置** | T3.3, T2.5（推荐API可用） |
+| **前置** | T3.3, T2.5 |
 | **负责人** | 前端 |
 
 **任务清单**：
-- [ ] 分析中页面（`#analyzing`，浅色科技风，对齐UI_Spec浅色主题规范）：
-  - 背景：`#F5F7FA→#EEF2FF→#F5F7FA`渐变 + 数据网点 + 扫描线
-  - 中心脑图标🧠（56px）+ 标题"⚡ AI 深度分析中"（渐变色）
-  - 三引擎徽章（Claude蓝点/DeepSeek紫点/GPT青点）
-  - 2步动画：加载数据(~800ms)→AI分析(~700ms)，完成自动→`#paywall`
-- [ ] 付款墙（`#paywall`）：
-  - 调用推荐API返回数据 → 学校名称可见，概率+详情全部"——"遮蔽
-  - 4个AI洞察区加密遮蔽
-  - 剩余次数显示 + CTA"🔓 一键解锁完整报告"按钮
-  - 状态切换：idle（可解锁）/loading（解锁中...）/insufficient（余额不足）
+- [ ] 分析中页面（`#analyzing`）：暗色底+网点+扫描线+🧠图标+三引擎徽章+2步动画(~1.5s)
+- [ ] 付款墙：学校名称可见，概率详情"——"遮蔽；剩余次数 + 🔓解锁按钮
+- [ ] 解锁流程：乐观扣减 balance-1 → POST /auth/deduct → 成功→`#report` / 失败→回滚
 
-**验收标准**：
-- 从`#pref`点击"开始AI分析"→分析动画~1.5s→自动跳转付款墙
-- 付款墙显示15所学校名称，概率显示"——"
-- 剩余次数=0时解锁按钮禁用+提示充值
+**验收标准**：分析动画→付款墙；解锁成功→完整报告；余额=0→按钮禁用。
 
 ---
 
-### T3.5 · 完整报告页 + 特别关注区
+### T3.5 · 完整报告页 + 特别关注区（v4.0 已重构为5大板块）
+
 | 属性 | 内容 |
 |------|------|
 | **工时** | 4h |
-| **前端** |  |
 | **前置** | T3.4, T2.6 |
-| **负责人** | 前端 ★ 核心任务 |
+| **负责人** | 前端 ★ 核心页面 |
 
 **任务清单**：
 - [ ] 报告头部：报告编号 + 防伪标识 + 考生摘要行
-- [ ] **📌 特别关注区**（意向学校，不计入15所）：
-  - 展示条件：仅当考生填了意向学校时
-  - 每所学校显示：名称 + rankProb（如实标注，含0%）+ 简要状态
-  - 0%概率加特殊标注"您的成绩无法达到该校录取线"
-- [ ] **饼图概览**：冲/稳/保分布（原生Canvas绘制环形图）
-- [ ] **学校卡片（15所，16维度）**：
-  - Tier 颜色区分（红=冲刺/蓝=稳妥/绿=保底）
-  - 折叠/展开交互（默认展开冲刺，稳妥/保底可折叠）
-  - 录取概率进度条 + 颜色编码
-  - 16维度完整展示，缺数据维度显示"数据收集中..."
-- [ ] 底部三个操作按钮：📥下载PDF / 👤下一位学生 / 🤖直播答疑
+- [ ] **📌 特别关注区**（独立于15所）：
+  - 展示条件：考生填了意向学校时才显示
+  - 琥珀色 `#F59E0B` 强调 + ★标记
+  - 0%概率显示"您的成绩无法达到该校录取线"
+- [ ] **饼图概览**：冲/稳/保环形图（Canvas原生绘制）
+- [ ] **学校卡片（15所，16维度）**：Tier三色 + 折叠/展开 + 概率进度条
+- [ ] **AI 个性化填报建议书**（6节）：成绩定位/梯度策略/调剂风险/经济适配/性格匹配/四大原则
+- [ ] **免责声明**卡片
+- [ ] 底部三按钮：📥下载PDF / 👤测下一个 / 🤖直播答疑
 
-**验收标准**：
-- 报告渲染后页面显示特别关注区(如有意向学校)+饼图+15张卡片
-- 冲刺/稳妥/保底颜色正确
-- 意向学校0%概率的卡片显示特殊标注
+**验收标准**：报告渲染后显示特别关注区+饼图+15张卡片；冲刺/稳妥/保底颜色正确。
 
 ---
 
-### T3.6 · PDF生成 + 下一位学生
+### T3.6 · PDF生成 + 测下一个（v4.0 升级为5种水印）
+
 | 属性 | 内容 |
 |------|------|
 | **工时** | 3h |
@@ -532,22 +372,14 @@ curl -X POST /api/qa/ask \
 | **负责人** | 前端 |
 
 **任务清单**：
-- [ ] PDF生成（html2canvas + jsPDF）：
-  - 点击"📥 下载PDF"→ 按钮变"生成中…" → html2canvas截图 → jsPDF合成
-  - 5种水印：报告编号页眉 + 防伪声明(红色) + 斜纹全页水印(主播手机后4位,45°,8-12%透明) + 考生信息摘要 + 封面二维码
+- [ ] PDF生成（html2canvas scale:3 保证300DPI + jsPDF）：
+  - 5种水印：①报告编号页眉 ②防伪声明(红色) ③斜纹全页(主播手机后4位,45°,8-12%) ④考生信息卡片 ⑤封面二维码
+  - 封面：浅蓝渐变 `#E6F0FF`，5区块（品牌区→大标题→考生信息卡→数据权威卡→底部免责）
+  - 正文页：延续渐变底+水印+16维度卡片+页眉页脚
   - 命名：`志愿报告_[网名]_[报告编号].pdf`
-- [ ] "👤 下一位学生"按钮：
-  - ① 清空 `student` 全局对象所有字段
-  - ② 清空报告 DOM
-  - ③ 跳转 `#student`
-  - ④ 所有输入框/选择器恢复默认值
-  - ⑤ 不清除 JWT / balance
-- [ ] 浮动"回到顶部"按钮（滚动>800px显示）
+- [ ] 「👤 测下一个」：4步清空（student对象→报告DOM→跳转#student→恢复默认值）
 
-**验收标准**：
-- 点击下载PDF → 浏览器弹出文件下载 → 打开PDF包含5种水印
-- 点击下一位学生 → 页面跳转到`#student` → 表单全部清空
-- 余额保持解锁后的值
+**验收标准**：PDF打开含5种水印；封面5区块完整；测下一个→表单全空。
 
 ---
 
@@ -559,20 +391,10 @@ curl -X POST /api/qa/ask \
 | **负责人** | 前端 |
 
 **任务清单**：
-- [ ] 报告样板（`#sample`，无需登录）：
-  - 顶部黄色横幅"★ 样板展示 · 仅供展示，非真实报告"
-  - 硬编码预设数据：抖音用户_小明·河南·560分·物理+化学+政治
-  - 包含完整15所学校卡片（静态HTML，不可交互）
-- [ ] 直播答疑（`#qa`）：
-  - 10个预设问题按钮（2列网格，点击填入输入框）
-  - 自由输入文本框（限100字，实时计数）
-  - 发送按钮 → `POST /api/qa/ask` → 答案气泡展示
-  - 对话历史（本会话，刷新即清）
-  - 清空输入/清空历史按钮
+- [ ] 报告样板（`#sample`）：顶部琥珀横幅"★ 样板展示"，硬编码预设数据，无需登录
+- [ ] 直播答疑（`#qa`）：10预设问题+自由输入(限100字)+AI回答气泡+对话历史
 
-**验收标准**：
-- 未登录可访问 `#sample`，展示完整样板报告
-- qa页面输入问题→发送→返回回答→对话气泡展示
+**验收标准**：未登录可查看样板；qa页面发送问题→显示回答。
 
 ---
 
@@ -584,19 +406,11 @@ curl -X POST /api/qa/ask \
 | **负责人** | 前端 |
 
 **任务清单**：
-- [ ] 导航栏右侧"🔴 直播模式"按钮（脉冲动画，`@keyframes pulse`）
-- [ ] 点击进入：
-  - `requestFullscreen()` 全屏
-  - 隐藏 `.nav-bar`
-  - 隐藏 `.phone-frame` 边框
-  - 根元素字号 ×1.2
-  - 显示悬浮"退出直播"按钮
-- [ ] 退出：Esc 或 点击退出按钮 → 恢复所有样式
-- [ ] 浏览器不支持全屏时：模拟全屏样式（无导航+大字体）+ Toast"请手动全屏(F11)"
+- [ ] 导航栏"🔴 直播模式"按钮（脉冲动画）
+- [ ] 进入：全屏+隐藏导航+隐藏手机框边框+字号×1.2+悬浮退出按钮
+- [ ] 退出：Esc或点击退出按钮→恢复
 
-**验收标准**：
-- 点击"🔴 直播模式"→ 全屏+无导航+大字体
-- 按Esc → 恢复正常
+**验收标准**：点击直播→全屏大字体；Esc→恢复。
 
 ---
 
@@ -606,19 +420,16 @@ curl -X POST /api/qa/ask \
 | 属性 | 内容 |
 |------|------|
 | **工时** | 3h |
-| **前置** | T2.1（auth中间件） |
+| **前置** | T2.1 |
 | **负责人** | 后端+前端 |
 
 **任务清单**：
-- [ ] 创建 `admin.html`（独立页面，桌面端布局，非375px手机框）
-  - 顶部标题栏 + 侧边导航（主播管理/订单查看/系统配置）+ 主内容区
-- [ ] 管理员密码登录（独立JWT，与主播token不同）
-- [ ] 后端：实现 Admin JWT 中间件，验证 `admin` role
-- [ ] 前端：认证流程同主播端（localStorage存取 + 过期检测）
+- [ ] 创建 `admin.html`（桌面端布局：侧边导航+主内容区）
+- [ ] 管理员登录（使用 `admin_accounts` 表，独立 JWT）
+- [ ] Admin JWT 中间件
+- [ ] v4.0 预备：支持 `super_admin` / `admin` 角色
 
-**验收标准**：
-- `admin.html` 打开 → 显示管理后台登录
-- 错误密码→红色提示；正确密码→进入主播管理页
+**验收标准**：admin.html 登录 → 进入主播管理页。
 
 ---
 
@@ -626,22 +437,14 @@ curl -X POST /api/qa/ask \
 | 属性 | 内容 |
 |------|------|
 | **工时** | 3h |
-| **前端+后端** |  |
 | **前置** | T4.1 |
 | **负责人** | 后端+前端 |
 
 **任务清单**：
-- [ ] 后端实现 `GET/POST /admin/streamers`：
-  - 列表：分页（每页20条），7列（手机号/姓名/剩余次数/累计购买/已使用/状态/注册时间）
-  - 新增：手机号+初始密码+主播姓名，`balance=0`
-- [ ] 后端实现 `PUT /admin/streamers/{id}`：编辑手机号/密码/姓名
-- [ ] 后端实现 `PATCH /admin/streamers/{id}/status`：启用/禁用（toggle）
-- [ ] 前端：表格渲染 + 分页 + 新增弹窗 + 编辑弹窗 + 启用/禁用确认
+- [ ] 后端：`GET/POST/PUT /admin/streamers` + `PATCH /admin/streamers/{id}/status`
+- [ ] 前端：表格（7列）+ 分页 + 新增/编辑弹窗 + 启用/禁用确认
 
-**验收标准**：
-- 列表正确显示所有主播 + 分页
-- 新增主播→列表刷新→新主播出现，balance=0
-- 禁用主播→主播无法登录（403禁止）
+**验收标准**：新增主播→列表刷新→balance=0；禁用→主播无法登录。
 
 ---
 
@@ -653,23 +456,10 @@ curl -X POST /api/qa/ask \
 | **负责人** | 后端+前端 |
 
 **任务清单**：
-- [ ] 后端实现 `POST /admin/streamers/{id}/recharge`（事务）：
-  ```python
-  BEGIN TRANSACTION
-    UPDATE streamer_accounts SET balance = balance + count, purchased_total = purchased_total + count
-    INSERT INTO streamer_recharge_logs (streamer_id, amount, count, operator, remark)
-  COMMIT
-  ```
-- [ ] 前端：充值对话框
-  - 显示当前剩余次数
-  - 输入充值次数+金额（联动计算：10次=299元）
-  - 确认→调用API→显示新余额
-- [ ] 充值日志表记录：`streamer_id` / `amount` / `count` / `operator` / `remark`
+- [ ] 后端：`POST /admin/streamers/{id}/recharge`（事务：balance+purchased_total增加 + 写充值日志）
+- [ ] 前端：充值对话框（显示当前次数+输入次数/金额联动+备注）
 
-**验收标准**：
-- 充10次→主播 balance 增加10，purchased_total 增加10
-- 充值记录出现在 `streamer_recharge_logs` 表
-- 前端刷新后主播剩余次数显示正确
+**验收标准**：充10次→balance+10，日志表有记录。
 
 ---
 
@@ -681,15 +471,10 @@ curl -X POST /api/qa/ask \
 | **负责人** | 后端+前端 |
 
 **任务清单**：
-- [ ] 后端实现 `GET /admin/orders`：
-  - 列表：订单号/主播/考生/省份/分数/时间/状态
-  - 支持日期范围筛选、按主播筛选
-  - 按时间倒序，分页
-- [ ] 前端：订单表格 + 筛选器 + 分页
+- [ ] 后端：`GET /admin/orders`（列表+日期/主播筛选+分页）
+- [ ] 前端：订单表格 + 筛选器
 
-**验收标准**：
-- 订单列表正确显示所有解锁订单
-- 日期筛选生效
+**验收标准**：订单列表显示所有解锁记录；筛选生效。
 
 ---
 
@@ -701,18 +486,10 @@ curl -X POST /api/qa/ask \
 | **负责人** | 后端+前端 |
 
 **任务清单**：
-- [ ] 后端实现 `GET /admin/config`：读取 `system_config` 表所有配置
-- [ ] 后端实现 `PUT /admin/config`：更新配置项
-- [ ] 前端：配置表单
-  - 省份满分表（31省可编辑）
-  - 概率阈值：冲刺/稳妥/保底三段滑块
-  - 低分阈值（<400分）
-  - 定价（299元=10次）
-- [ ] 配置缓存：读取时优先Redis，无则查MySQL（TTL 300s）
+- [ ] 后端：`GET/PUT /admin/config`（system_config KV表 + Redis缓存TTL 300s）
+- [ ] 前端：省份满分/概率阈值滑块/低分阈值/定价编辑
 
-**验收标准**：
-- 修改概率阈值→保存→下次推荐使用新阈值
-- 配置更新后无需重启服务即可生效
+**验收标准**：修改阈值→保存→推荐使用新值。
 
 ---
 
@@ -722,20 +499,15 @@ curl -X POST /api/qa/ask \
 | 属性 | 内容 |
 |------|------|
 | **工时** | 4h |
-| **前置** | Phase 2 + Phase 3 全部 |
+| **前置** | Phase 2+3 全部 |
 | **负责人** | 全员 |
 
 **任务清单**：
-- [ ] 端到端走通主流程：登录→填考生信息→填意向偏好→API推荐→付款墙→解锁→完整报告
-- [ ] 验证：特别关注区正确显示意向学校（含0%概率标注）
-- [ ] 验证：tier分布尽量5+5+5
-- [ ] 验证：不同考生产生不同推荐结果（换省份/分数/意向确认差异化）
-- [ ] 验证：扣费幂等（同一idempotency_key重试不重复扣费）
-- [ ] 验证：下一位学生→表单清空→余额不变
+- [ ] 端到端走通：登录→填表→推荐→付费解锁→报告→下一位
+- [ ] 验证特别关注区 + tier分布 + 幂等扣费
+- [ ] 验证不同考生差异化结果
 
-**验收标准**：
-- 全流程无报错，10分钟内完成一个完整考生推荐
-- 幂等测试：同key扣2次→余额只减1次
+**验收标准**：全流程无报错；同key扣2次余额只减1次。
 
 ---
 
@@ -747,19 +519,13 @@ curl -X POST /api/qa/ask \
 | **负责人** | 后端+前端 |
 
 **任务清单**：
-- [ ] 低分场景（<400分）：验证阈值降至5%，推荐学校数量不变
-- [ ] 意向学校0%概率：验证报告顶部特别关注区展示 + "无法达到录取线"
-- [ ] 意向城市无数据：验证降级到本省→周边→全国兜底
-- [ ] 余额不足：验证付款墙按钮禁用 + 提示信息
-- [ ] Token过期：验证自动跳转登录页 + Toast提示
-- [ ] 账号禁用：验证登录返回403 + 提示
-- [ ] 分数钳制：输入800分（非上海）→自动钳制到750
-- [ ] Redis宕机模拟：停止Redis→验证扣费仍可用（降级为DB锁）
-- [ ] 爬虫网关校验：提交`min_score=999`→验证写入`crawler_error_log`而非`admission_history`
+- [ ] 低分<400：阈值降至5%
+- [ ] 意向学校0%概率展示
+- [ ] 余额不足/Token过期/账号禁用/分数钳制
+- [ ] Redis宕机模拟（扣费降级DB锁）
+- [ ] 爬虫网关：坏数据进error_log非admission_history
 
-**验收标准**：
-- 所有边界场景不抛出500错误
-- 低分考生仍能获得15所学校推荐（部分标记estimated）
+**验收标准**：所有边界场景不抛500。
 
 ---
 
@@ -771,22 +537,12 @@ curl -X POST /api/qa/ask \
 | **负责人** | 后端 |
 
 **任务清单**：
-- [ ] 推荐API响应时间（首次，无缓存）：目标<1s
-- [ ] 推荐API响应时间（二次，L1/L2缓存命中）：目标<300ms
-- [ ] 扣费API响应时间：目标<200ms
-- [ ] 并发测试：10个并发请求 `/api/recommendation/generate`（相同参数）→ 验证无死锁/无超时
-- [ ] 使用 `EXPLAIN` 确认关键查询走索引
-- [ ] MySQL 慢查询日志检查（设置 `long_query_time=0.5`）
+- [ ] 推荐API：首次<1s，缓存命中<300ms
+- [ ] 扣费API：<200ms
+- [ ] 10并发→无死锁/无超时
+- [ ] MySQL慢查询日志检查
 
-**验收标准**：
-```bash
-# 简单压测
-for i in {1..10}; do
-  curl -s -o /dev/null -w "%{time_total}\n" -X POST /api/recommendation/generate -H "..." -d '{...}' &
-done
-wait
-# → P50 < 500ms, P99 < 1s
-```
+**验收标准**：P50<500ms，P99<1s。
 
 ---
 
@@ -798,20 +554,15 @@ wait
 | **负责人** | 后端 |
 
 **任务清单**：
-- [ ] 模拟爬虫服务器通过 HTTPS 推送数据（curl 模拟）
-- [ ] 验证 `crawler_staging` 数据 → 校验通过 → 流入 `admission_history`
-- [ ] 验证坏数据被拒绝并记录到 `crawler_error_log`
-- [ ] 验证去重逻辑：同 school_id+province+year 不重复插入
-- [ ] 验证数据质量导致推荐结果变化（爬虫补全前 vs 补全后对比）
-- [ ] 验证 `data_quality` 标记变化：partial → full
+- [ ] 模拟爬虫推送→staging→校验→MERGE→数据流入
+- [ ] 验证坏数据进error_log + 去重逻辑
+- [ ] 数据补全前后推荐结果对比
 
-**验收标准**：
-- 新数据流入后，推荐引擎使用新数据计算概率
-- `crawler_error_log` 中有坏数据的记录
+**验收标准**：新数据流入后推荐使用新数据；error_log有坏数据。
 
 ---
 
-### T5.5 · Nginx配置 + SSL验证
+### T5.5 · Nginx配置验证（v3.2 — IP直连HTTP）
 | 属性 | 内容 |
 |------|------|
 | **工时** | 2h |
@@ -819,19 +570,15 @@ wait
 | **负责人** | 运维 |
 
 **任务清单**：
-- [ ] 确认 Nginx 所有 location 正确代理：
-  - `/auth/*`, `/api/*`, `/admin/*`, `/internal/*`, `/health`
-- [ ] `/internal/*` 限制来源 IP 为爬虫服务器
-- [ ] SSL 证书检查：`openssl x509 -checkend 604800`
+- [ ] 确认 Nginx HTTP:80 `/etc/nginx/sites-enabled/gaokao-ip` 所有 location 正确
+- [ ] `/internal/*` IP白名单限制
+- [ ] `/api/recommendation/generate` 响应 `Cache-Control: no-store`
 - [ ] `nginx -t` 语法检查
-- [ ] 配置缓存头：`school_data.js` 设置 `Cache-Control: public, max-age=3600`
-- [ ] 配置 `/api/recommendation/generate` 响应不缓存：`Cache-Control: no-store`
 
 **验收标准**：
 ```bash
-curl -sk 'https://127.0.0.1/' -H 'Host: gaokao.lumenaistudio.co' | head -1
-# → HTTP 200, content: index.html
-nginx -t  # → syntax is ok / test is successful
+curl -s http://121.41.69.234/health  # → {"status":"ok"}
+nginx -t                              # → syntax ok
 ```
 
 ---
@@ -840,24 +587,16 @@ nginx -t  # → syntax is ok / test is successful
 | 属性 | 内容 |
 |------|------|
 | **工时** | 3h |
-| **前置** | T5.1 ~ T5.5 全部 |
+| **前置** | T5.1~T5.5 |
 | **负责人** | 全员 |
 
 **任务清单**：
-- [ ] 后端：scp 代码到 `/root/gaokao-ai/` → `pkill -HUP -f 'uvicorn.*main:app'`
-- [ ] 前端：scp `index.html` / `admin.html` / `school_data.js` 到 `/www/wwwroot/gaokao.lumenaistudio.co/`
-- [ ] 数据库：如有 DDL 变更，执行 migrate
-- [ ] 冒烟测试（生产环境）：
-  ```bash
-  curl -s https://gaokao.lumenaistudio.co/health  # → 200 ok
-  # 登录 → 获取token → 搜索学校 → 生成推荐 → 扣费 → 查看报告
-  ```
-- [ ] 监控告警配置：企业微信/钉钉 webhook
+- [ ] 后端部署：scp→pkill -HUP uvicorn
+- [ ] 前端部署：scp index.html/admin.html
+- [ ] 如有DDL变更执行migrate
+- [ ] 冒烟测试：登录→推荐→扣费→报告→PDF
 
-**验收标准**：
-- `/health` 返回200
-- 全流程在浏览器中走通（需 Ctrl+F5 强制刷新）
-- nginx 日志无异常
+**验收标准**：`/health` 200；全流程浏览器走通（Ctrl+F5刷新）。
 
 ---
 
@@ -871,22 +610,11 @@ nginx -t  # → syntax is ok / test is successful
 | **负责人** | 运维 |
 
 **任务清单**：
-- [ ] 部署 crontab 健康检查脚本（每5分钟）：
-  ```bash
-  #!/bin/bash
-  HEALTH=$(curl -s http://127.0.0.1:8000/health)
-  if echo "$HEALTH" | grep -q '"status":"ok"'; then exit 0; fi
-  # else: 发送企业微信/钉钉 webhook 告警
-  ```
-- [ ] 磁盘监控：`df -h | awk '$5>80'` → 告警
-- [ ] 异常扣费监控：`SELECT COUNT(*) FROM streamer_accounts WHERE balance < 0` → >0 告警
-- [ ] Redis 内存监控：`redis-cli INFO memory | grep used_memory_human`
-- [ ] SSL 证书过期监控：`openssl x509 -checkend 604800`
-- [ ] MySQL 慢查询日志告警
+- [ ] crontab 健康检查（每5分钟 curl /health → 连续3次失败告警）
+- [ ] 磁盘>80%告警 + 异常扣费(balance<0)告警
+- [ ] Redis 内存监控 + MySQL 慢查询告警
 
-**验收标准**：
-- 模拟磁盘不足 → 企业微信收到告警消息
-- 健康检查脚本可手动执行并返回正确状态
+**验收标准**：企业微信收到告警消息。
 
 ---
 
@@ -898,16 +626,10 @@ nginx -t  # → syntax is ok / test is successful
 | **负责人** | 运维 |
 
 **任务清单**：
-- [ ] 配置 MySQL 每日自动备份到 OSS：
-  ```bash
-  mysqldump gaokao_ai | gzip | ossutil cp - oss://bucket/backup/gaokao_ai_$(date +%Y%m%d).sql.gz
-  ```
-- [ ] 备份保留策略：30天（OSS 生命周期规则）
-- [ ] 验证备份恢复：从 OSS 下载最新备份 → 恢复到测试库 → 验证表数量+关键表行数
+- [ ] MySQL 每日自动备份到 OSS（保留30天）
+- [ ] 验证备份恢复流程
 
-**验收标准**：
-- OSS bucket 中存在最近2天的备份文件
-- 测试库恢复后表数量与原库一致
+**验收标准**：OSS有最近2天备份；恢复后表数量一致。
 
 ---
 
@@ -919,14 +641,10 @@ nginx -t  # → syntax is ok / test is successful
 | **负责人** | 运维+后端 |
 
 **任务清单**：
-- [ ] 确认 Redis RDB 配置生效：`redis-cli CONFIG GET save` → `3600 1`
-- [ ] 确认 maxmemory-policy：`allkeys-lru`
-- [ ] 模拟 Redis 宕机 → 验证扣费仍可用（DB锁降级）→ 验证搜索可用（直接查MySQL）
-- [ ] Redis 恢复后验证缓存重新预热
+- [ ] Redis RDB 配置验证
+- [ ] 停Redis→扣费可用(DB锁)→搜索可用(MySQL LIKE)→重启Redis→缓存预热
 
-**验收标准**：
-- 停止 Redis → 扣费成功（仅DB锁）→ 搜索正常（退化为MySQL LIKE）
-- 启动 Redis → 缓存逐步重建
+**验收标准**：Redis宕机不影响核心业务流程。
 
 ---
 
@@ -938,15 +656,668 @@ nginx -t  # → syntax is ok / test is successful
 | **负责人** | 全员 |
 
 **任务清单**：
-- [ ] 更新 Architecture.md 变更记录（v1.3）
-- [ ] 更新 Tasks.md 完成状态
-- [ ] 编写运维手册（启动/停止/重启/日志查看/备份恢复）
-- [ ] 编写主播使用指南（截图版，1页PDF）
-- [ ] 编写管理员操作指南（充值/新增主播/查看订单）
+- [ ] 更新 Architecture.md 版本记录
+- [ ] 编写运维手册 + 主播使用指南 + 管理员操作指南
+
+**验收标准**：新人可按手册独立操作。
+
+---
+
+## Phase 7：v4.0 数据层升级 ★ 新增
+
+> **此阶段为 PRD v4.0 相对旧版的核心数据层变更。必须在 Phase 1-6 基础上执行。**
+
+### T7.1 · v4.0 新增数据表DDL（5张静态数据表）
+
+| 属性 | 内容 |
+|------|------|
+| **工时** | 3h |
+| **前置** | T1.2（基础DB已就绪） |
+| **负责人** | 后端 ★ v4.0 数据奠基 |
+
+**任务清单**：
+- [ ] 创建 `school_majors` 表（各校专业列表 + `major_level` 分级）：
+  ```sql
+  CREATE TABLE school_majors (
+      school_id INT, major_name VARCHAR(128), major_level VARCHAR(32),
+      discipline VARCHAR(64), UNIQUE KEY uk_school_major (school_id, major_name)
+  );
+  ```
+- [ ] 创建 `major_similarity` 表（专业相似度映射）并预置初始数据：
+  ```sql
+  CREATE TABLE major_similarity (
+      source_major VARCHAR(64), target_major VARCHAR(64),
+      similarity DECIMAL(3,2), UNIQUE KEY uk_pair (source_major, target_major)
+  );
+  -- 预置：26个意向专业 × 每专业3-5个相近专业 ≈ 100条映射
+  -- 示例：通信工程↔信息工程(0.95)/电子信息工程(0.90)/电子科学与技术(0.85)
+  ```
+- [ ] 创建 `school_tuition` 表（学费校×专业）：
+  ```sql
+  CREATE TABLE school_tuition (
+      school_id INT, major_name VARCHAR(128), tuition_per_year INT,
+      duration_years TINYINT DEFAULT 4, data_source VARCHAR(255), data_year INT
+  );
+  ```
+- [ ] 创建 `school_employment` 表（就业率+深造率 + 数据来源标注）：
+  ```sql
+  CREATE TABLE school_employment (
+      school_id INT UNIQUE, employment_rate DECIMAL(5,2),
+      graduate_rate DECIMAL(5,2), data_source VARCHAR(255), data_year INT
+  );
+  ```
+- [ ] 创建 `school_salary` 表（薪资校×专业）：
+  ```sql
+  CREATE TABLE school_salary (
+      school_id INT, major_name VARCHAR(128),
+      salary_start_min INT, salary_start_max INT,
+      salary_3yr_min INT, salary_3yr_max INT,
+      data_source VARCHAR(255), data_year INT
+  );
+  ```
+- [ ] 创建 `city_analysis` 表（城市5维分析）：
+  ```sql
+  CREATE TABLE city_analysis (
+      city_name VARCHAR(32) UNIQUE, location TEXT, advantage TEXT,
+      development TEXT, main_business TEXT, city_level VARCHAR(16)
+  );
+  ```
 
 **验收标准**：
-- 新人按运维手册可独立重启服务
-- 主播按使用指南可独立完成一次志愿推荐
+```sql
+SHOW TABLES LIKE '%school_majors%';       -- → school_majors
+SHOW TABLES LIKE '%major_similarity%';    -- → major_similarity
+SHOW TABLES LIKE '%school_tuition%';      -- → school_tuition
+SHOW TABLES LIKE '%school_employment%';   -- → school_employment
+SHOW TABLES LIKE '%school_salary%';       -- → school_salary
+SHOW TABLES LIKE '%city_analysis%';       -- → city_analysis
+SELECT COUNT(*) FROM major_similarity;    -- → >= 80 条预置映射
+```
+
+**为什么需要**：PRD v4.0 对16维度提出了数据真实性要求——不同学校必须展示不同的专业/学费/就业率/薪资/城市分析，禁止全校统一模板。这5张表是数据差异化呈现的基础设施。
+
+---
+
+### T7.2 · admin_accounts 独立认证体系 + 密码管理API
+
+| 属性 | 内容 |
+|------|------|
+| **工时** | 3h |
+| **前置** | T4.1（管理后台已有框架） |
+| **负责人** | 后端 |
+
+**任务清单**：
+- [ ] 创建 `admin_accounts` 表（独立于 streamer_accounts）：
+  ```sql
+  CREATE TABLE admin_accounts (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      username VARCHAR(64) UNIQUE, password_hash VARCHAR(255),
+      role ENUM('super_admin','admin') DEFAULT 'admin',
+      status ENUM('active','disabled') DEFAULT 'active',
+      last_login_at DATETIME
+  );
+  ```
+- [ ] 修改 T4.1 管理员登录逻辑：从查询 `streamer_accounts` → 改为查询 `admin_accounts`
+- [ ] 实现 `POST /admin/change-password`（v4.0 新增——主播和管理员通用）：
+  - 验证旧密码 → 校验新密码6-20位 → bcrypt更新
+  - 根据 token 类型自动判断更新 `streamer_accounts` 还是 `admin_accounts`
+- [ ] 实现 `POST /admin/streamers/{id}/reset-password`（v4.0 新增——管理员重置主播密码）：
+  - 仅 `super_admin` 可调用
+  - 生成随机8位密码 → 返回明文（仅此一次）→ bcrypt存储
+- [ ] 修改 T2.1 Auth中间件：`get_current_user()` 同时支持主播JWT和管理员JWT
+
+**验收标准**：
+```bash
+# 主播自助改密码
+curl -X POST /admin/change-password \
+  -H "Authorization: Bearer <streamer_token>" \
+  -d '{"old_password":"old","new_password":"new123"}'
+# → 200 {"success": true}
+
+# 管理员重置主播密码
+curl -X POST /admin/streamers/1/reset-password \
+  -H "Authorization: Bearer <admin_token>"
+# → 200 {"new_password": "aB3xK9mQ"}  # 随机8位
+
+# 旧密码登录失败
+curl -X POST /auth/login -d '{"phone":"138...", "password":"old"}'
+# → 401
+```
+
+**为什么需要**：PRD v4.0 §1.2 明确要求管理员账号独立于主播体系；§1.1 新增主播自助改密码和密码重置功能。
+
+---
+
+### T7.3 · 6类爬虫任务表DDL + 爬虫端改造
+
+| 属性 | 内容 |
+|------|------|
+| **工时** | 3h |
+| **前置** | T1.3（爬虫网关基础已有） |
+| **负责人** | 后端 |
+
+**任务清单**：
+- [ ] 创建 6 类爬虫任务表（Architecture v2.0 §4.5）：
+  ```sql
+  -- 模板结构（6张表共用）
+  CREATE TABLE school_admission_crawl_tasks (
+      school_id INT, province VARCHAR(32), year INT,
+      status ENUM('pending','running','done','failed') DEFAULT 'pending',
+      retry_count INT DEFAULT 0, error_msg TEXT
+  );
+  -- 同理创建：school_major_crawl_tasks / school_tuition_crawl_tasks /
+  --           school_employment_crawl_tasks / school_salary_crawl_tasks /
+  --           school_city_crawl_tasks (city_name 替代 school_id)
+  ```
+- [ ] 更新 `scripts/check_staging.py`：从仅处理 `admission_history` → 扩展为处理 6 类数据（admission / major / tuition / employment / salary / city）
+- [ ] 更新 `POST /internal/crawler/ingest`：Request body 新增 `data_type` 字段 → 路由到对应的 staging 处理逻辑
+- [ ] 爬虫端（199.193.126.80）改造：
+  - 新增专业爬虫脚本 `fetch_school_majors.py`
+  - 新增学费爬虫脚本 `fetch_school_tuition.py`
+  - 新增就业/薪资/城市爬虫脚本
+  - 所有脚本统一 POST 到 `/internal/crawler/ingest`
+- [ ] 爬取优先级调度：`check_staging.py` 按优先级处理 pending 任务（录取>专业>学费>就业>薪资>城市）
+
+**验收标准**：
+```sql
+SHOW TABLES LIKE '%crawl_tasks';  
+-- → school_admission_crawl_tasks, school_major_crawl_tasks, 
+--    school_tuition_crawl_tasks, school_employment_crawl_tasks,
+--    school_salary_crawl_tasks, school_city_crawl_tasks
+-- 共6张
+
+-- 模拟专业数据推送
+curl -X POST /internal/crawler/ingest \
+  -H "Authorization: Bearer <internal_jwt>" \
+  -d '{"data_type":"major","records":[{"school_id":123,"major_name":"计算机科学与技术","major_level":"国家级一流"}]}'
+# → {"ingested": 1}
+```
+
+**为什么需要**：PRD v4.0 §1.3 定义了6类爬虫任务表以支持16维度数据补全。旧版只有1类（录取数据），v4.0 需扩展为专业/学费/就业/薪资/城市共6类。
+
+---
+
+### T7.4 · 推荐引擎适配新数据表（16维度查询）
+
+| 属性 | 内容 |
+|------|------|
+| **工时** | 4h |
+| **前置** | T7.1, T7.3, T2.5 |
+| **负责人** | 后端 ★ v4.0 核心重构 |
+
+**任务清单**：
+- [ ] 重构 `aggregate_school_dimensions()` 函数，从新表查询而非使用估算值：
+  ```python
+  async def aggregate_school_dimensions(school_id, student, db):
+      dims = {}
+      
+      # 维度7：推荐专业（★ 核心差异化逻辑）
+      intended_majors = student.major_preference or []
+      school_majors = await db.fetch_all(
+          "SELECT major_name, major_level FROM school_majors WHERE school_id=?", (school_id,)
+      )
+      if school_majors:
+          # 精确匹配意向专业
+          matched = [m for m in school_majors if m['major_name'] in intended_majors]
+          if matched:
+              dims['recommended_major'] = matched[0]
+          else:
+              # 相似度映射
+              similar = await db.fetch_all(
+                  """SELECT target_major FROM major_similarity 
+                     WHERE source_major IN ({}) ORDER BY similarity DESC LIMIT 1"""
+                  .format(','.join('?'*len(intended_majors))),
+                  intended_majors
+              )
+              dims['recommended_major'] = similar[0] if similar else school_majors[0]
+              dims['major_note'] = '相近专业'  # 标注
+      else:
+          # 创建爬虫任务 + 标记pending
+          await create_crawl_task('major', school_id)
+          dims['recommended_major'] = {'major_name': '数据获取中…'}
+      
+      # 维度8：学费（★ 差异化）
+      tuition = await db.fetch_one(
+          "SELECT * FROM school_tuition WHERE school_id=? AND major_name=?",
+          (school_id, dims['recommended_major']['major_name'])
+      )
+      if tuition:
+          dims['tuition_per_year'] = f"{tuition['tuition_per_year']}元/年"
+          dims['tuition_total'] = f"4年约{tuition['tuition_per_year']*4/10000:.1f}万"
+      else:
+          # 按学校类型估算 + 创建爬虫任务
+          dims['tuition_per_year'] = estimate_tuition(school_type)
+          await create_crawl_task('tuition', school_id)
+      
+      # 维度11：就业率（★ 差异化 + 来源标注）
+      emp = await db.fetch_one(
+          "SELECT * FROM school_employment WHERE school_id=?", (school_id,)
+      )
+      if emp:
+          dims['employment_rate'] = f"{emp['employment_rate']}%"
+          dims['employment_source'] = f"数据来源：{emp['data_source']}（{emp['data_year']}年）"
+      else:
+          # 按专业类型估算 + 创建爬虫任务
+          dims['employment_rate'] = estimate_employment(major_category)
+          await create_crawl_task('employment', school_id)
+      
+      # 维度12：薪资（★ 差异化）
+      salary = await db.fetch_one(
+          "SELECT * FROM school_salary WHERE school_id=?", (school_id,)
+      )
+      if salary:
+          dims['avg_salary'] = f"应届起薪{salary['salary_start_min']}-{salary['salary_start_max']}元/月；3年后{salary['salary_3yr_min']}-{salary['salary_3yr_max']}元/月"
+      else:
+          dims['avg_salary'] = estimate_salary(city_level, major_category)
+          await create_crawl_task('salary', school_id)
+      
+      # 维度15：城市5维分析（★ 同城前4维缓存复用，第5维微调）
+      city_data = await db.fetch_one(
+          "SELECT * FROM city_analysis WHERE city_name=?", (school_city,)
+      )
+      if city_data:
+          dims['city_analysis'] = {
+              'location': city_data['location'],
+              'advantage': city_data['advantage'],
+              'development': city_data['development'],
+              'main_business': city_data['main_business'],
+              'career_impact': generate_career_impact(city_data, school_id, dims['recommended_major'])
+          }
+      else:
+          await create_crawl_task('city', city_name=city_name)
+          dims['city_analysis'] = {'location': f'{city_name}（数据获取中…）'}
+      
+      return dims
+  ```
+- [ ] 每个维度标记 `data_source`：`"database"` / `"estimated"` / `"pending_crawl"`
+- [ ] 更新 `data_quality_summary` 返回格式：按类型统计爬虫任务创建数量
+- [ ] 确保不同学校的推荐专业/学费/就业率/薪资/城市分析差异化
+
+**验收标准**：
+```bash
+# 测试：河南580分，意向计算机
+curl -X POST /api/recommendation/generate \
+  -H "Authorization: Bearer <token>" \
+  -d '{"province":"河南","score":580,"subject_category":"物理","major_preference":["计算机"]}'
+# → 返回15所学校
+# 验证：不同学校的 dimensions.recommended_major 不同（有计算机的显示计算机，无的显示相近专业+标注）
+# 验证：不同学校的 dimensions.tuition_per_year 不同
+# 验证：不同学校的 dimensions.avg_salary 不同
+# 验证：不同学校的 dimensions.city_analysis 随城市变化
+```
+
+**为什么需要**：PRD v4.0 §⑦-⑫ 对推荐专业/学费/就业率/薪资/城市分析提出了严格的"不同学校必须差异化"要求。旧版 T2.6 使用估算值填充，v4.0 需从新增数据表查询真实数据。
+
+---
+
+### T7.5 · 专业相似度映射预置数据（major_similarity seeding）
+
+| 属性 | 内容 |
+|------|------|
+| **工时** | 2h |
+| **前置** | T7.1 |
+| **负责人** | 后端/数据 |
+
+**任务清单**：
+- [ ] 编写 `scripts/seed_major_similarity.py`：为 PRD §附录A 的26个意向专业创建相似度映射
+- [ ] 每个专业至少3-5个相近专业，按相似度递减排列：
+  ```
+  计算机科学与技术 → 软件工程(0.95) / 人工智能(0.85) / 数据科学(0.85) / 信息安全(0.80) / 物联网工程(0.75)
+  通信工程       → 信息工程(0.95) / 电子信息工程(0.90) / 电子科学与技术(0.85) / 光电信息(0.75)
+  临床医学       → 基础医学(0.80) / 医学影像学(0.75) / 麻醉学(0.70) / 预防医学(0.60)
+  金融学         → 经济学(0.85) / 国际经济与贸易(0.75) / 保险学(0.70) / 财政学(0.70)
+  ...
+  ```
+- [ ] 26 × 4 = ~104 条映射数据
+- [ ] 运行脚本 insert 到 `major_similarity` 表（ON DUPLICATE KEY UPDATE）
+
+**验收标准**：
+```sql
+SELECT COUNT(*) FROM major_similarity;  -- → >= 100
+SELECT * FROM major_similarity WHERE source_major='通信工程';  
+-- → 至少3条，包含信息工程/电子信息工程/电子科学与技术
+```
+
+---
+
+### T7.6 · 热门院校学费数据初始化
+
+| 属性 | 内容 |
+|------|------|
+| **工时** | 3h |
+| **前置** | T7.1 |
+| **负责人** | 后端/数据 |
+
+**任务清单**：
+- [ ] 编写 `scripts/seed_hot_school_tuition.py`：
+  - 目标：985/211/双一流院校（约150所）的专业学费数据
+  - 每条数据格式：`{school_id, major_name, tuition_per_year, duration_years, data_source, data_year}`
+- [ ] 按院校×专业维度插入：
+  - 公办本科常见专业：4500-6000元/年
+  - 计算机/电子信息类：5000-6500元/年
+  - 医学类：5000-7000元/年
+  - 艺术类：8000-12000元/年
+- [ ] 标注数据来源为"各高校2025年招生章程"
+- [ ] 冷门院校（非985/211/双一流）不预填，留待首次推荐时异步爬取
+
+**验收标准**：
+```sql
+SELECT COUNT(DISTINCT school_id) FROM school_tuition;  -- → >= 100所院校
+SELECT COUNT(*) FROM school_tuition;                    -- → >= 500条专业学费
+```
+
+**为什么需要**：PRD v4.0 §维度8 规定学费采用混合爬取策略——热门院校全量预爬，冷门院校首次推荐时异步爬取。本任务预填热门院校数据避免推荐中出现大量"数据获取中"。
+
+---
+
+### T7.7 · 爬虫数据网关扩展（支持6类数据校验入库）
+
+| 属性 | 内容 |
+|------|------|
+| **工时** | 4h |
+| **前置** | T7.3, T1.3 |
+| **负责人** | 后端 ★ 数据安全 |
+
+**任务清单**：
+- [ ] 更新 `POST /internal/crawler/ingest`：根据 `data_type` 路由到对应 staging 处理
+- [ ] 为每类数据编写校验规则：
+  - admission: min_rank>0, min_score∈[0,750], school_id+province+year去重
+  - major: school_id存在, major_name非空, school_id+major_name去重
+  - tuition: tuition_per_year>0且<100000, school_id存在
+  - employment: employment_rate∈[0,100], graduate_rate∈[0,100]
+  - salary: salary_start_max>salary_start_min, salary范围内合理
+  - city: city_name非空, location/advantage/development三字段不为纯空格
+- [ ] 校验失败→写入 `crawler_error_log`（统一表，增加 `data_type` 字段区分）
+- [ ] 校验通过→MERGE INTO 对应目标表（admission_history / school_majors / school_tuition 等）
+- [ ] 更新 `check_staging.py` 支持6类数据的批量校验+合并
+
+**验收标准**：
+```bash
+# 测试各类数据推送
+# 合法数据→入库
+curl ... -d '{"data_type":"tuition","records":[{...}]}'  # → ingested: 1
+
+# 非法数据→error_log
+curl ... -d '{"data_type":"employment","records":[{"employment_rate":150}]}'  
+# → ingested: 0, rejected: 1
+# 验证 crawler_error_log 中有此条记录
+```
+
+**为什么需要**：ARR R2 修复仅覆盖了 admission_history 的数据校验。v4.0 新增5张数据表，每类数据都需要独立的校验规则和入库逻辑。本任务将爬虫网关从单通道扩展为6通道。
+
+---
+
+## Phase 8：v4.0 前端与体验升级 ★ 新增
+
+> **此阶段负责 PRD v4.0 视觉重塑（Bento Grid 暗色主题）和 16 维度卡片渲染。**
+
+### T8.1 · Bento Grid 暗色主题 CSS 系统
+
+| 属性 | 内容 |
+|------|------|
+| **工时** | 4h |
+| **前置** | T3.1（前端框架已有浅色版） |
+| **负责人** | 前端 ★ v4.0 视觉核心 |
+
+**任务清单**：
+- [ ] 在 `index.html` `<head>` 中建立完整的暗色 CSS 变量体系（对齐 UI_Spec v4.0 §1.2）：
+  ```css
+  :root {
+    /* 背景 */
+    --bg-primary: #0F172A;        /* Slate 900 主背景 */
+    --bg-card: #1E293B;           /* Slate 800 卡片 */
+    --bg-card-hover: #334155;     /* Slate 700 悬停 */
+    --bg-input: #1E293B;          /* 输入框 */
+    /* 文字 */
+    --text-primary: #F1F5F9;      /* Slate 100 */
+    --text-secondary: #94A3B8;    /* Slate 400 */
+    --text-muted: #64748B;        /* Slate 500 */
+    /* 强调 */
+    --color-accent: #818CF8;      /* Indigo 400 — CTA/主按钮 */
+    --color-accent-hover: #6366F1;/* Indigo 500 */
+    --color-cyan: #22D3EE;        /* Cyan 400 — 数据高亮 */
+    /* 标签 */
+    --color-985: #F59E0B;         /* Amber 500 */
+    --color-211: #818CF8;         /* Indigo 400 */
+    --color-double-first: #06B6D4;/* Cyan 600 */
+    /* Tier */
+    --color-danger: #EF4444;      /* 冲刺 */
+    --color-info: #3B82F6;        /* 稳妥 */
+    --color-success: #22C55E;     /* 保底 */
+    /* UI */
+    --border: rgba(148,163,184,0.08);
+    --shadow-card: 0 4px 24px rgba(0,0,0,0.3);
+    --shadow-glow: 0 2px 8px rgba(129,140,248,0.25);
+  }
+  ```
+- [ ] 全局应用暗色主题到所有页面块：
+  - `body` / `.phone-frame` → `background: var(--bg-primary)`
+  - `.nav-bar` → `background: rgba(15,23,42,0.92); backdrop-filter: blur(12px)`
+  - 所有 `.card` → `background: var(--bg-card); border-radius: 16px; box-shadow: var(--shadow-card)`
+  - 所有 `input/select` → `background: var(--bg-input); border: 1px solid var(--border)`
+  - CTA 按钮 → `background: var(--color-accent); color: #fff; box-shadow: var(--shadow-glow)`
+- [ ] 更新付款墙遮蔽色：从浅色 `#E2E8F0` → 暗色 `#475569`（斜纹对比度增强）
+- [ ] 骨架屏 shimmer 动画：`background: linear-gradient(90deg, #334155 0%, #475569 50%, #334155 100%)`
+- [ ] 微交互：卡片 hover→上移2px+阴影加深；按钮 hover→缩放1.02+发光增强；标签选中→0.2s过渡
+
+**验收标准**：
+- 浏览器打开 index.html → 全局暗色 Slate 900 底色
+- 所有卡片 rounded-16px + shadow-card
+- CTA 按钮 Indigo 紫 + 发光阴影
+- 付款墙遮蔽有足够对比度（直播压缩后仍可辨识）
+- 与 UI_Spec v4.0 §1.2 配色完全一致
+
+**为什么需要**：PRD v4.0 全面采用 Bento Grid 暗色设计系统。旧版浅色主题需完整的 CSS 变量替换。适配直播投屏时暗色对眼睛更友好，卡片悬浮感和"精密仪器"秩序感需要圆角+阴影+微交互支撑。
+
+---
+
+### T8.2 · 16维度学校卡片渲染（新维度字段展示）
+
+| 属性 | 内容 |
+|------|------|
+| **工时** | 4h |
+| **前置** | T8.1, T3.5, T7.4 |
+| **负责人** | 前端 ★ v4.0 核心页面 |
+
+**任务清单**：
+- [ ] 更新 T3.5 学校卡片渲染逻辑，适配 API 返回的 16 维度新字段：
+  - 维度7 **推荐专业**：显示 `recommended_major` + 如有 `major_note:"相近专业"` 显示灰色小字标注
+  - 维度8 **学费**：`tuition_per_year` + `tuition_total` + `tuition_fit`（经济友好 💚 标记学费≤5000）
+  - 维度11 **就业率**：显示百分比 + 下方小字标注 `employment_source`（数据来源+年份）
+  - 维度12 **薪资**：应届起薪 + 3年后薪资，两行显示
+  - 维度15 **城市分析**：折叠面板展开显示5个子维度（location/advantage/development/main_business/career_impact）
+- [ ] 缺数据维度降级展示：
+  - `data_source="pending_crawl"` → 骨架屏占位 + "数据获取中…"文字
+  - `data_source="estimated"` → 正常显示但附加灰色 `(估算)` 标记
+  - `data_source="database"` → 正常显示
+- [ ] 确保不同学校卡片的专业/学费/就业率/薪资/城市分析字段值**确实不同**（不是模板复制）
+- [ ] Bento Grid 嵌套布局：16维度以 `grid: repeat(auto-fill, minmax(160px, 1fr))` 排列
+
+**验收标准**：
+- 15所学校卡片，每所16维度完整显示
+- 不同学校推荐专业不同（有计算机的显示计算机，无的显示"相近专业：信息工程"）
+- 不同学校学费不同（公办4500-6000，民办15000-30000）
+- 不同学校就业率/薪资不同
+- 城市分析折叠面板展开显示5个子维度
+- 缺数据维度显示骨架屏
+
+---
+
+### T8.3 · PDF 5种水印 + 封面重设计（扁平商务极简风）
+
+| 属性 | 内容 |
+|------|------|
+| **工时** | 4h |
+| **前置** | T8.2, T3.6 |
+| **负责人** | 前端 ★ v4.0 PDF 核心 |
+
+**任务清单**：
+- [ ] PDF 封面重设计（对齐 PRD v4.0 §PDF报告规范）：
+  - 整体底色：`#E6F0FF` 浅蓝渐变
+  - ① 顶部品牌区：学士帽图标 + "高考志愿规划师" + "AI 智能报考分析系统 - 2026"
+  - ② 核心大标题："AI 高考志愿智能规划报告 (2026)"
+  - ③ 考生信息卡片：白色底，6字段双栏（报告编号/生成时间/昵称/省份分数/位次/选科调剂）
+  - ④ 数据权威性保障卡片：浅蓝底，3条项目符号（数据来源/AI引擎/数据规模）
+  - ⑤ 底部：免责文字 + 红色"严禁倒卖"
+- [ ] 5种水印完整实现：
+  1. **报告编号**（页眉）：`GK` + 时间戳 + 随机码，灰色小字
+  2. **防伪声明**（页眉/封面底部）：红色 `#E53935` "防伪 · 严禁转卖"
+  3. **斜纹全页水印**：主播手机号后4位 + 报告编号，45°斜角，opacity 8-12%，Canvas 绘制
+  4. **考生信息卡片**（封面）：6字段双栏白色卡片
+  5. **二维码**（封面右下角）：生成含报告编号+考生信息哈希的二维码（使用 qrcode.js 或 Canvas 手绘）
+- [ ] 正文页：延续浅蓝渐变 + 页眉报告编号/防伪声明 + 页脚页码
+- [ ] PDF画质：`html2canvas({ scale: 3 })` 保证 300DPI
+- [ ] 命名：`志愿报告_[网名]_[报告编号].pdf`
+
+**验收标准**：
+- PDF打开封面5区块完整（品牌→大标题→考生信息→数据权威→底部免责）
+- 正文每页含报告编号页眉 + 红色防伪声明
+- 全页45°斜纹水印可见但不遮挡文字
+- 封面右下角二维码可扫码
+- 300DPI清晰度（放大不失真）
+
+---
+
+### T8.4 · 报告5大板块结构调整
+
+| 属性 | 内容 |
+|------|------|
+| **工时** | 3h |
+| **前置** | T8.2, T3.5 |
+| **负责人** | 前端 |
+
+**任务清单**：
+- [ ] 将 T3.5 报告页重构为以5大板块为骨架的 DOM 结构（对齐 PRD v4.0 §页面⑥）：
+  - **板块一**：封面基础信息（报告编号+考生摘要+数据权威说明）
+  - **板块二**：核心定位分析（分数定位+院校分层规划饼图+调剂提示）
+  - **板块三**：分层院校明细（冲/稳/保三色卡片区，每区5张学校卡片）
+  - **板块四**：AI个性化填报建议书（6节：成绩定位/梯度策略/调剂风险/经济适配/性格匹配/四大原则）
+  - **板块五**：免责声明卡片
+- [ ] 板块三特别关注区升级：独立 Bento 卡片，★图标+琥珀色强调，置于板块二饼图上方
+- [ ] 底部三按钮保持：📥下载PDF / 👤测下一个 / 🤖直播答疑
+
+**验收标准**：
+- 报告页面按5大板块清晰分区
+- 特别关注区位于板块二之上、独立卡片
+- 板块四 AI建议书6节完整
+- 板块五免责声明底部居中
+
+---
+
+### T8.5 · 管理后台暗色主题同步 + 密码管理前端
+
+| 属性 | 内容 |
+|------|------|
+| **工时** | 3h |
+| **前置** | T8.1, T4.1, T7.2 |
+| **负责人** | 前端+后端 |
+
+**任务清单**：
+- [ ] 将 `admin.html` 同步为暗色主题（复用 T8.1 CSS变量）
+- [ ] 密码管理前端：
+  - 管理员顶部导航新增"修改密码"入口 → 弹窗（旧密码+新密码+确认）
+  - 主播管理列表操作列新增"重置密码"按钮 → 确认弹窗 → 显示新密码明文
+- [ ] 调用 `POST /admin/change-password` 和 `POST /admin/streamers/{id}/reset-password`
+- [ ] 直播模式适配暗色主题（全屏后仍保持暗色）
+
+**验收标准**：
+- admin.html 显示暗色主题
+- 管理员可修改自己的密码
+- 管理员可重置主播密码并获得新密码明文
+
+---
+
+## Phase 9：v4.0 集成验证 ★ 新增
+
+> **此阶段验证 Phase 7-8 新增功能与 Phase 1-6 已有功能的兼容性和数据真实性。**
+
+### T9.1 · v4.0 全流程回归测试
+
+| 属性 | 内容 |
+|------|------|
+| **工时** | 4h |
+| **前置** | Phase 7+8 全部 |
+| **负责人** | 全员 |
+
+**任务清单**：
+- [ ] 端到端回归：登录→填表→推荐→付费解锁→完整报告→PDF下载→下一位
+- [ ] 验证暗色主题在所有页面一致（登录/考生信息/意向/分析中/付款墙/报告/管理后台）
+- [ ] 验证特别关注区：意向学校0%概率正常展示 + 标注
+- [ ] 验证16维度卡片：展开所有15所→每所维度完整→不同学校数据差异化
+- [ ] 验证城市分析折叠面板展开/收起
+- [ ] 验证 PDF 封面5区块 + 5种水印完整
+- [ ] 验证密码管理：主播自助改密码→旧密码失效→新密码登录 / 管理员重置密码
+- [ ] 验证 admin.html 暗色主题
+
+**验收标准**：
+- 全流程无不一致视觉或功能断点
+- 不同考生（换省份/分数/选科/专业意向）→ 推荐结果差异化
+- Ctrl+F5 强制刷新后所有页面暗色主题一致
+
+---
+
+### T9.2 · 数据差异化验证
+
+| 属性 | 内容 |
+|------|------|
+| **工时** | 3h |
+| **前置** | T9.1 |
+| **负责人** | 后端+前端 |
+
+**任务清单**：
+- [ ] 构造3个不同考生场景，对比推荐结果：
+  | 考生 | 省份 | 分数 | 选科 | 意向专业 | 意向城市 | 验证重点 |
+  |------|------|:---:|------|---------|---------|---------|
+  | A | 河南 | 580 | 物理 | 计算机 | 郑州 | 基准线 |
+  | B | 河南 | 380 | 物理 | 计算机 | 郑州 | 低分阈值(5%) |
+  | C | 广东 | 580 | 物理 | 计算机 | 深圳 | 不同省份差异化 |
+- [ ] 验证：A和C推荐学校列表完全不同（不同省份）
+- [ ] 验证：同一考生A的15所学校：
+  - 推荐专业差异化（不能所有学校都是"计算机科学与技术"）
+  - 学费差异化（不能所有学校都是"5000-5500元/年"）
+  - 就业率差异化（不能所有学校都是"92-97%"）
+  - 薪资差异化（985/211学校高于普通院校）
+  - 城市分析差异化（不同城市5个子维度不同）
+- [ ] 验证低分考生B仍有15所学校推荐（不返回空数组）
+- [ ] 验证数据真实性原则：无全校统一模板填充
+
+**验收标准**：
+- 3个考生推荐结果全部不同
+- 同一考生的15所学校卡片中推荐专业≥3种不同值
+- 同一考生的15所学校卡片中学费≥3种不同值
+- 无两所学校所有16维度完全相同的"克隆卡片"
+
+---
+
+### T9.3 · 16维度缺数据降级展示验证
+
+| 属性 | 内容 |
+|------|------|
+| **工时** | 3h |
+| **前置** | T9.1 |
+| **负责人** | 前端+后端 |
+
+**任务清单**：
+- [ ] 模拟以下缺数据场景并验证前端降级展示：
+  | 缺数据维度 | 模拟方式 | 预期前端展示 |
+  |-----------|---------|------------|
+  | school_majors 无数据 | DELETE FROM school_majors WHERE school_id=X | 显示"数据获取中…"骨架屏 |
+  | school_tuition 无数据 | DELETE FROM school_tuition WHERE school_id=X | 显示估算值 + `(估算)` 标记 |
+  | school_employment 无数据 | DELETE FROM school_employment WHERE school_id=X | 按专业类型估算 + 无数据来源标注 |
+  | school_salary 无数据 | DELETE FROM school_salary WHERE school_id=X | 按城市等级估算 |
+  | city_analysis 无数据 | DELETE FROM city_analysis WHERE city_name='郑州' | 显示"郑州（数据获取中…）" |
+- [ ] 验证缺数据时自动创建对应的爬虫任务：
+  ```sql
+  SELECT COUNT(*) FROM school_major_crawl_tasks WHERE status='pending';  -- >0
+  SELECT COUNT(*) FROM school_tuition_crawl_tasks WHERE status='pending';  -- >0
+  ```
+- [ ] 恢复数据后验证推荐返回完整数据
+
+**验收标准**：
+- 缺数据维度不显示空白/null/undefined
+- 骨架屏和数据获取中文字清晰可见
+- data_source 标记正确（pending_crawl / estimated）
+- 对应爬虫任务表有 pending 记录
 
 ---
 
@@ -959,53 +1330,105 @@ Phase 1 (基础设施)
          └── T1.4
                │
 Phase 2 (核心后端)         Phase 3 (前端)
-  T2.1 ← T1.4              T3.1 (独立，可并行)
-   ├── T2.2 ← T2.1+T1.2     ├── T3.2
-   ├── T2.3 ← T1.4           │    ├── T3.3
-   ├── T2.4 ← T2.3           │    │    ├── T3.4 ← T3.3+[T2.5]
-   │    └── T2.5              │    │    │    └── T3.5 ← T3.4+[T2.6]
-   │         └── T2.6         │    │    │         ├── T3.6
-   ├── T2.7 ← T2.1           │    │    │         ├── T3.7
-   └── T2.8 ← T2.2           │    │    │         └── T3.8
-                              │    │    │
-Phase 4 (管理与交易)          │    │    │
-  T4.1 ← T2.1                │    │    │
-   └── T4.2                  │    │    │
-        ├── T4.3             │    │    │
-        ├── T4.4             │    │    │
-        └── T4.5             │    │    │
-                              │    │    │
-Phase 5 (集成部署)            │    │    │
-  T5.1 ← Phase 2+3 ──────────┘────┘────┘
-   ├── T5.2
-   ├── T5.3
-   ├── T5.4
-   ├── T5.5
+  T2.1 ← T1.4              T3.1 (独立)
+   ├── T2.2                 ├── T3.2
+   ├── T2.3                  │    └── T3.3
+   │    └── T2.4             │         └── T3.4 ← [T2.5]
+   │         └── T2.5        │              └── T3.5 ← [T2.6]
+   │              └── T2.6 ← [T7.1]          ├── T3.6
+   ├── T2.7                  │              ├── T3.7
+   └── T2.8                  │              └── T3.8
+                              │
+Phase 4 (管理与交易)          │
+  T4.1 ← T2.1               │
+   └── T4.2                  │
+        ├── T4.3             │
+        ├── T4.4             │
+        └── T4.5             │
+                              │
+Phase 5 (集成部署)            │
+  T5.1 ← Phase 2+3 ──────────┘
+   ├── T5.2 / T5.3 / T5.4 / T5.5
    └── T5.6
         │
 Phase 6 (上线加固)
-  T6.1 ← T5.6
-  T6.2 ← T5.6
-  T6.3 ← T5.6
-  T6.4 ← T5.6  (可与T6.1-6.3并行)
+  T6.1~T6.4 ← T5.6
+        │
+        │   ★ v4.0 新增阶段 ★
+        │
+Phase 7 (v4.0 数据层升级)
+  T7.1 ──┬── T7.4 ← [T2.5]   ← 推荐引擎适配新表
+         ├── T7.5             ← 专业映射预置
+         └── T7.6             ← 学费预置
+  T7.2 ← [T4.1]               ← 密码管理API
+  T7.3 ← [T1.3]               ← 6类爬虫表
+       └── T7.7               ← 爬虫网关扩展
+
+Phase 8 (v4.0 前端升级)
+  T8.1 ← [T3.1]               ← 暗色CSS
+   ├── T8.2 ← [T3.5,T7.4]    ← 16维度卡片
+   │    ├── T8.3 ← [T3.6]    ← PDF重设计
+   │    └── T8.4              ← 5大板块
+   └── T8.5 ← [T4.1,T7.2]    ← 管理后台暗色+密码
+
+Phase 9 (验证)
+  T9.1 ← Phase 7+8 全部
+   ├── T9.2
+   └── T9.3
 ```
+
+```
+图例：
+  [T2.5] = 跨 Phase 依赖（前置任务在另一个 Phase 中）
+  ──     = 同 Phase 串行依赖
+  ├──    = 兄弟任务（可并行）
+```
+
+---
 
 ## 关键路径（最短交付时间）
 
 ```
-T1.1 → T1.4 → T2.1 → T2.3 → T2.4 → T2.5 → T2.6 (后端核心)
-T3.1 → T3.2 → T3.3 → T3.4 → T3.5 → T3.6 (前端核心)
+Phase 1: T1.1 → T1.4 → 后端入口     (7h)
+Phase 2: T2.1 → T2.3 → T2.4 → T2.5 → T2.6  (17h, 推荐引擎)
+Phase 3: T3.1 → T3.2 → T3.3 → T3.4 → T3.5 → T3.6  (21h, 前端主流程)
                                     ↓
-                              T5.1 → T5.6 (联调+部署)
+Phase 5: T5.1 → T5.6                  (7h, 联调部署)
                                     ↓
-                              T6.1 → T6.3 (上线加固)
-
-关键路径总工时: ~72h (约9人天，单人开发)
-前后端并行开发: ~60h (约7.5人天，双人开发)
+Phase 6: T6.1~T6.4                    (6h, 加固)
+                                    ↓
+Phase 7: T7.1 → T7.4 → T7.7          (11h, v4.0数据层)
+Phase 8: T8.1 → T8.2 → T8.3          (12h, v4.0前端)
+                                    ↓
+Phase 9: T9.1 → T9.2                  (7h, 验证)
+                                    ─────────
+                                    最短 ~88h (约11人天)
 ```
+
+> **并行策略**：Phase 2（后端）和 Phase 3（前端）可完全并行开发。Phase 7（数据层）和 Phase 8（前端升级）可并行。Phase 9 必须在 Phase 7+8 全部完成后串行执行。
+
+---
+
+## 工时汇总
+
+| Phase | 任务数 | 工时 | 可并行 |
+|-------|:---:|:---:|:---:|
+| Phase 1: 基础设施 | 4 | 14h | 部分 |
+| Phase 2: 核心后端 | 8 | 24h | 与Phase 3并行 |
+| Phase 3: 前端页面 | 8 | 27h | 与Phase 2并行 |
+| Phase 4: 管理与交易 | 5 | 14h | 部分 |
+| Phase 5: 集成测试 | 6 | 19h | 部分 |
+| Phase 6: 上线加固 | 4 | 10h | 部分 |
+| ★ Phase 7: v4.0数据层 | 7 | 22h | 与Phase 8并行 |
+| ★ Phase 8: v4.0前端 | 5 | 18h | 与Phase 7并行 |
+| ★ Phase 9: v4.0验证 | 3 | 10h | 串行 |
+| **合计** | **50** | **~158h** | — |
+
+> **按2人团队计算**：Phase 1→6 = 后端约50h + 前端约56h ≈ 可并行约56h ≈ 7人天完成MVP。Phase 7→9 = 约30h ≈ 4人天完成v4.0升级。**总计约11人天到v4.0上线状态。**
 
 ---
 
 | 版本 | 日期 | 变更 |
 |------|------|------|
-| v1.0 | 2026-06-17 | 初始版本：35个任务，6个Phase，~122h总工时 |
+| v1.0 | 2026-06-16 | 初始任务拆分：35任务6Phase~122h（对齐Architecture v1.2） |
+| **v2.0** | **2026-06-17** | **★ 对齐 Architecture v2.0 / PRD v4.0 新增：Phase 7（数据层升级 7任务22h）+ Phase 8（前端升级 5任务18h）+ Phase 9（验证 3任务10h），总计50任务~158h。关键新增：T7.1（5张新表DDL）、T7.2（admin_accounts+密码管理）、T7.4（推荐引擎16维度查询）、T8.1（Bento Grid暗色CSS）、T8.2（16维度卡片）、T8.3（PDF 5种水印+封面重设计）** |
