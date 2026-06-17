@@ -31,9 +31,7 @@ class GenerateRequest(BaseModel):
     def validate_score(cls, v, info):
         province = info.data.get("province", "")
         max_score = _SCORE_MAX.get(province, _DEFAULT_SCORE_MAX)
-        if v > max_score:
-            raise ValueError(f"分数超出该省满分 {max_score}")
-        return v
+        return min(v, max_score)
 
 
 @router.post("/generate")
@@ -42,12 +40,6 @@ async def generate(
     current_streamer: dict = Depends(get_current_streamer),
     db: AsyncSession = Depends(get_db),
 ):
-    max_score = _SCORE_MAX.get(body.province, _DEFAULT_SCORE_MAX)
-    if body.score > max_score:
-        raise HTTPException(
-            status.HTTP_422_UNPROCESSABLE_ENTITY,
-            f"分数超出该省满分",
-        )
 
     req = SvcReq(
         province=body.province,
