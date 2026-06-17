@@ -1,0 +1,1842 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>AI高考志愿规划师 · v3.0</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --color-danger:#EF4444;--color-info:#3B82F6;--color-success:#22C55E;
+  --color-985:#F59E0B;--color-211:#8B5CF6;--color-double-first:#06B6D4;
+  --color-live:#DC2626;--color-blur:#E2E8F0;
+  --bg-primary:#F5F7FA;--bg-card:#FFFFFF;
+  --text-primary:#1E293B;--text-secondary:#64748B;--border:#E2E8F0;
+  --radius-sm:6px;--radius-md:10px;--radius-lg:16px;
+  --shadow-sm:0 1px 3px rgba(0,0,0,.08);--shadow-md:0 4px 16px rgba(0,0,0,.10);
+  --transition:all .18s ease;
+}
+body{background:#94A3B8;min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:24px 16px;font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif}
+.prototype-wrapper{display:flex;gap:24px;align-items:flex-start;width:100%;max-width:1200px}
+
+/* ── Phone Frame ── */
+.phone-frame{
+  width:375px;min-width:375px;height:800px;background:var(--bg-primary);
+  border-radius:24px;box-shadow:0 20px 60px rgba(0,0,0,.3);
+  display:flex;flex-direction:column;overflow:hidden;position:relative;flex-shrink:0;
+}
+.phone-frame.live-mode{
+  width:100vw;min-width:unset;max-width:100%;height:100vh;border-radius:0;
+  position:fixed;top:0;left:0;z-index:1000;
+}
+.status-bar{
+  height:28px;background:#1E293B;color:#fff;
+  display:flex;justify-content:space-between;align-items:center;
+  padding:0 16px;font-size:12px;font-weight:500;flex-shrink:0;
+}
+.status-bar-right{display:flex;gap:4px;align-items:center}
+
+/* ── Nav Bar ── */
+.nav-bar{
+  background:#fff;border-bottom:1px solid var(--border);
+  padding:0 12px;display:flex;align-items:center;justify-content:space-between;
+  flex-shrink:0;min-height:40px;gap:4px;flex-wrap:wrap;
+}
+.nav-user{font-size:12px;color:var(--text-secondary);display:flex;align-items:center;gap:8px;flex:1;min-width:0}
+.nav-user strong{color:var(--text-primary);white-space:nowrap}
+.nav-balance{background:#FEF3C7;color:#92400E;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+.nav-actions{display:flex;gap:4px;align-items:center;flex-shrink:0}
+.nav-btn-small{border:none;background:none;cursor:pointer;font-size:12px;color:var(--text-secondary);padding:4px 8px;border-radius:var(--radius-sm)}
+.nav-btn-small:hover{background:var(--bg-primary)}
+.btn-live{
+  background:var(--color-live);color:#fff;border:none;padding:5px 12px;
+  border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;
+  animation:pulse-live 1.5s ease-in-out infinite;
+}
+@keyframes pulse-live{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.4)}50%{box-shadow:0 0 0 6px rgba(220,38,38,0)}}
+
+/* ── Page Container ── */
+.page-container{flex:1;overflow-y:auto;position:relative}
+.page-container::-webkit-scrollbar{width:4px}
+.page-container::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.page{display:none;padding:12px;flex-direction:column;gap:10px;min-height:100%}
+.page.active{display:flex}
+
+/* ── Home Bar ── */
+.home-bar{height:24px;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.home-bar::after{content:'';width:120px;height:4px;background:#1E293B;border-radius:2px;opacity:.2}
+
+/* ── Toast ── */
+.toast{
+  position:absolute;top:44px;left:50%;transform:translateX(-50%) translateY(-8px);
+  background:#1E293B;color:#fff;padding:8px 16px;border-radius:20px;
+  font-size:13px;white-space:nowrap;opacity:0;pointer-events:none;z-index:200;
+  transition:opacity .2s,transform .2s;max-width:90%;text-align:center;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.success{background:#166534}
+.toast.error{background:#991B1B}
+.toast.warning{background:#92400E}
+
+/* ── Cards ── */
+.card{background:var(--bg-card);border-radius:var(--radius-md);padding:12px;border:1px solid var(--border);box-shadow:var(--shadow-sm)}
+
+/* ── Buttons ── */
+.btn{border:none;border-radius:var(--radius-sm);padding:8px 16px;font-size:14px;font-weight:500;cursor:pointer;transition:var(--transition);display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.btn-danger{background:var(--color-danger);color:#fff}
+.btn-danger:hover{background:#DC2626}
+.btn-danger:disabled{background:#FCA5A5;cursor:not-allowed}
+.btn-primary{background:var(--color-info);color:#fff}
+.btn-primary:hover{background:#2563EB}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text-primary)}
+.btn-ghost:hover{background:var(--bg-primary)}
+.btn-block{width:100%}
+.btn-lg{padding:12px 20px;font-size:15px;border-radius:var(--radius-md)}
+
+/* ── Forms ── */
+.form-group{display:flex;flex-direction:column}
+.form-label{font-size:13px;font-weight:500;color:var(--text-primary);margin-bottom:4px}
+.form-input,.form-select,.form-textarea{
+  width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);
+  font-size:14px;color:var(--text-primary);background:#fff;outline:none;transition:var(--transition);
+  font-family:inherit;
+}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--color-info);box-shadow:0 0 0 3px rgba(59,130,246,.1)}
+.form-input.error{border-color:var(--color-danger);animation:shake .3s ease}
+.form-textarea{resize:none;height:80px;line-height:1.5}
+.form-error-text{font-size:12px;color:var(--color-danger);margin-top:3px;display:none}
+.form-error-text.show{display:block}
+.input-with-suffix{display:flex;align-items:center;gap:6px}
+.input-with-suffix input{flex:1;padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;outline:none;transition:var(--transition)}
+.input-with-suffix input:focus{border-color:var(--color-info)}
+.suffix{font-size:13px;color:var(--text-secondary);white-space:nowrap}
+.password-wrap{position:relative}
+.password-wrap input{width:100%;padding:9px 40px 9px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;outline:none;transition:var(--transition)}
+.password-wrap input:focus{border-color:var(--color-info)}
+.toggle-pwd{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;padding:0}
+
+/* ── Tags ── */
+.tag-group{display:flex;flex-wrap:wrap;gap:6px}
+.tag{
+  padding:5px 10px;border-radius:20px;font-size:12px;cursor:pointer;
+  background:var(--bg-primary);border:1px solid var(--border);color:var(--text-secondary);
+  transition:var(--transition);user-select:none;
+}
+.tag:hover{border-color:var(--color-info);color:var(--color-info)}
+.tag.selected{background:var(--color-info);border-color:var(--color-info);color:#fff}
+.tag-radio{
+  padding:5px 14px;border-radius:20px;font-size:13px;cursor:pointer;
+  background:var(--bg-primary);border:1.5px solid var(--border);color:var(--text-secondary);
+  transition:var(--transition);user-select:none;
+}
+.tag-radio.selected{background:var(--color-danger);border-color:var(--color-danger);color:#fff}
+
+/* ── Section / Page titles ── */
+.page-title{font-size:20px;font-weight:700;color:var(--text-primary)}
+.page-subtitle{font-size:13px;color:var(--text-secondary);margin-top:2px}
+.section-title{font-size:14px;font-weight:600;color:var(--text-primary);margin-bottom:6px}
+.step-indicator{font-size:11px;font-weight:600;color:var(--color-info);background:rgba(59,130,246,.1);padding:2px 8px;border-radius:20px;display:inline-block;margin-bottom:4px}
+
+/* ── Login Page ── */
+.brand-section{text-align:center;padding:16px 0 8px}
+.brand-logo{font-size:22px;font-weight:800;background:linear-gradient(135deg,var(--color-info),#6366F1);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.brand-subtitle{font-size:12px;color:var(--text-secondary);margin-top:2px}
+.trust-badge{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
+.trust-badge span{font-size:12px;color:var(--text-secondary);background:var(--bg-primary);padding:3px 10px;border-radius:20px}
+
+/* ── Analyzing Page ── */
+.analyzing-bg{background:linear-gradient(135deg,#EFF6FF,#F0F0FF);border-radius:var(--radius-lg);padding:20px;text-align:center;position:relative;overflow:hidden}
+.analyzing-bg::before{content:'';position:absolute;inset:0;background-image:radial-gradient(rgba(59,130,246,.06) 1px,transparent 1px);background-size:18px 18px}
+.analyzing-bg::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(180deg,transparent 0%,rgba(59,130,246,.2) 50%,transparent 100%);
+  background-size:100% 40px;animation:scan 2s linear infinite;
+}
+@keyframes scan{0%{background-position:0 -40px}100%{background-position:0 200%}}
+.analyzing-icon{font-size:48px;margin-bottom:12px;animation:bounce .8s ease-in-out infinite alternate;position:relative;z-index:1}
+@keyframes bounce{from{transform:translateY(0)}to{transform:translateY(-6px)}}
+.analyzing-title{font-size:18px;font-weight:700;color:var(--text-primary);position:relative;z-index:1}
+.analyzing-subtitle{font-size:13px;color:var(--text-secondary);margin-top:4px;position:relative;z-index:1}
+.engine-badges{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:8px;position:relative;z-index:1}
+.engine-badge{display:flex;align-items:center;gap:4px;font-size:11px;background:rgba(255,255,255,.8);padding:3px 10px;border-radius:20px;border:1px solid var(--border)}
+.dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.dot.blue{background:#3B82F6;animation:blink 1s infinite}
+.dot.purple{background:#8B5CF6;animation:blink 1.2s infinite}
+.dot.cyan{background:#06B6D4;animation:blink 1.4s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.analyzing-steps{display:flex;flex-direction:column;gap:8px}
+.analyzing-step{display:flex;align-items:center;gap:10px;padding:10px 12px;background:#fff;border-radius:var(--radius-sm);border:1px solid var(--border)}
+.analyzing-step.active{border-color:var(--color-info)}
+.analyzing-step.done{background:#F0FDF4;border-color:var(--color-success)}
+.step-icon{font-size:20px;flex-shrink:0}
+.step-info{flex:1;min-width:0}
+.step-label{font-size:13px;font-weight:500;color:var(--text-primary)}
+.step-progress-bar{height:4px;background:var(--border);border-radius:2px;margin-top:4px;overflow:hidden}
+.step-progress-bar .fill{height:100%;background:var(--color-info);border-radius:2px;transition:width .1s linear;width:0}
+.step-status{font-size:12px;color:var(--text-secondary);flex-shrink:0;min-width:48px;text-align:right}
+.analyzing-info{display:flex;flex-direction:column;gap:8px}
+.analyzing-info-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px}
+.info-card-title{font-size:12px;font-weight:600;color:var(--text-primary);margin-bottom:4px}
+.info-card-text{font-size:12px;color:var(--text-secondary);line-height:1.5}
+
+/* ── Paywall ── */
+.blur-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;font-size:13px;color:transparent;text-shadow:0 0 8px rgba(0,0,0,.3);user-select:none;filter:blur(3px)}
+.insights-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.insight-item{text-align:center;padding:8px;background:var(--bg-primary);border-radius:var(--radius-sm)}
+.insight-item .label{font-size:11px;color:var(--text-secondary);margin-bottom:2px}
+.insight-item .value{font-size:15px;font-weight:700;color:var(--text-primary)}
+.insight-item .value.blurred{filter:blur(5px);user-select:none}
+.report-summary{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--text-secondary)}
+.data-source{font-size:11px;color:#94A3B8;text-align:center;line-height:1.5}
+
+/* ── Report ── */
+.tier-section{display:flex;flex-direction:column;gap:8px}
+.tier-header{font-size:14px;font-weight:700;padding:6px 10px;border-radius:var(--radius-sm);display:flex;align-items:center;gap:6px}
+.tier-header.rush{background:#FEF2F2;color:var(--color-danger)}
+.tier-header.safe{background:#EFF6FF;color:var(--color-info)}
+.tier-header.bottom{background:#F0FDF4;color:var(--color-success)}
+.tier-count{font-size:12px;font-weight:400;opacity:.7}
+.school-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden}
+.school-card-header{display:flex;align-items:center;gap:6px;padding:10px 12px;border-bottom:1px solid var(--bg-primary)}
+.school-name{flex:1;font-size:15px;font-weight:700;color:var(--text-primary)}
+.school-prob{font-size:16px;font-weight:800;flex-shrink:0}
+.school-prob.tier-rush{color:var(--color-danger)}
+.school-prob.tier-safe{color:var(--color-info)}
+.school-prob.tier-bottom{color:var(--color-success)}
+.school-card-body{padding:8px 12px;display:flex;flex-direction:column;gap:4px}
+.school-row{display:flex;align-items:flex-start;gap:6px;font-size:12px}
+.school-row .label{color:var(--text-secondary);white-space:nowrap;min-width:70px;flex-shrink:0}
+.school-row .value{color:var(--text-primary);line-height:1.4;flex:1}
+.school-match{color:var(--color-success);font-size:11px;font-weight:500}
+.school-ai-comment{background:#FFFBEB;border-top:1px solid #FDE68A;padding:8px 12px;font-size:12px;color:#92400E;line-height:1.5}
+.school-ai-comment .speaker{font-weight:700;color:#78350F}
+.badge{padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700}
+.badge-985{background:#FEF3C7;color:#92400E}
+.badge-211{background:#EDE9FE;color:#5B21B6}
+.badge-double-first{background:#ECFEFF;color:#0E7490}
+.badge-public{background:#F1F5F9;color:var(--text-secondary)}
+.special-attention-section{border-left:3px solid var(--color-info);padding-left:10px}
+.special-attention-label{font-size:12px;font-weight:600;color:var(--color-info);margin-bottom:6px}
+
+/* ── Sample Banner ── */
+.sample-banner{background:#FEF9C3;border:1px solid #FDE047;color:#854D0E;font-size:12px;font-weight:600;padding:6px 12px;border-radius:var(--radius-sm);text-align:center}
+
+/* ── QA ── */
+.chat-area{background:var(--bg-primary);border-radius:var(--radius-sm);padding:10px;display:flex;flex-direction:column;gap:8px;max-height:240px;overflow-y:auto}
+.chat-bubble{padding:8px 12px;border-radius:10px;font-size:13px;line-height:1.5;max-width:90%}
+.chat-bubble.user{background:var(--color-info);color:#fff;align-self:flex-end;border-radius:10px 10px 2px 10px}
+.chat-bubble.ai{background:#fff;color:var(--text-primary);align-self:flex-start;border:1px solid var(--border);border-radius:10px 10px 10px 2px}
+
+/* ── School Search ── */
+.search-wrap{position:relative}
+.search-dropdown{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1px solid var(--border);border-radius:var(--radius-sm);box-shadow:var(--shadow-md);z-index:100;max-height:200px;overflow-y:auto}
+.search-dropdown.show{display:block}
+.search-dropdown-item{padding:8px 12px;cursor:pointer;font-size:13px;display:flex;justify-content:space-between;align-items:center}
+.search-dropdown-item:hover{background:var(--bg-primary)}
+.search-dropdown-item .city{font-size:11px;color:var(--text-secondary)}
+.selected-schools{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.selected-school-tag{background:var(--color-info);color:#fff;padding:4px 8px;border-radius:20px;font-size:12px;display:flex;align-items:center;gap:4px}
+.selected-school-tag .remove{cursor:pointer;opacity:.7}
+.selected-school-tag .remove:hover{opacity:1}
+
+/* ── Spinner ── */
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner-dark{border-color:rgba(30,41,59,.2);border-top-color:var(--text-primary)}
+
+/* ── Flex helpers ── */
+.flex-row{display:flex;align-items:center;gap:8px}
+.flex-between{display:flex;justify-content:space-between;align-items:center}
+
+/* ── Shake animation ── */
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+
+/* ── Admin Panel ── */
+.admin-wrapper{flex:1;background:#fff;border-radius:var(--radius-lg);padding:20px;box-shadow:var(--shadow-md);display:none;min-width:600px}
+.admin-header{font-size:18px;font-weight:700;color:var(--text-primary);margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.admin-login{max-width:360px;margin:40px auto;text-align:center}
+.admin-login h3{font-size:18px;font-weight:700;margin-bottom:16px}
+.admin-nav{display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:0}
+.admin-nav-btn{background:none;border:none;padding:8px 16px;font-size:14px;cursor:pointer;color:var(--text-secondary);border-bottom:2px solid transparent;transition:var(--transition)}
+.admin-nav-btn.active{color:var(--color-info);border-bottom-color:var(--color-info);font-weight:600}
+.admin-table{width:100%;border-collapse:collapse;font-size:13px}
+.admin-table th,.admin-table td{padding:8px 10px;border:1px solid var(--border);text-align:left}
+.admin-table th{background:var(--bg-primary);font-weight:600}
+.status-active{color:var(--color-success);font-weight:600}
+.status-disabled{color:var(--color-danger);font-weight:600}
+.action-btns{display:flex;gap:4px}
+.action-btns button{font-size:11px;padding:2px 8px;border-radius:4px;border:1px solid var(--border);background:#fff;cursor:pointer}
+.action-btns button:hover{background:var(--bg-primary)}
+.admin-pagination{text-align:center;margin-top:12px;font-size:12px;color:var(--text-secondary);display:flex;align-items:center;justify-content:center;gap:8px}
+.admin-pagination button{border:1px solid var(--border);background:#fff;padding:4px 10px;border-radius:4px;cursor:pointer;font-size:12px}
+.admin-pagination button:disabled{opacity:.5;cursor:not-allowed}
+
+/* ── Modal ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal{background:#fff;border-radius:var(--radius-lg);padding:20px;width:320px;max-width:90vw;box-shadow:var(--shadow-md)}
+.modal h3{font-size:16px;font-weight:700;margin-bottom:12px}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+.modal .form-group{margin-top:10px}
+
+/* ── Toggle Button ── */
+#btnToggleView{
+  position:fixed;bottom:24px;right:24px;
+  background:#1E293B;color:#fff;border:none;
+  padding:10px 16px;border-radius:24px;
+  font-size:13px;cursor:pointer;z-index:50;
+  box-shadow:0 4px 12px rgba(0,0,0,.3);
+}
+</style>
+</head>
+<body>
+
+<div class="prototype-wrapper">
+
+<!-- ====== PHONE FRAME ====== -->
+<div class="phone-frame" id="phoneFrame">
+  <div class="status-bar"><span id="statusTime">9:41</span><span class="status-bar-right">📶 🔋</span></div>
+
+  <div class="nav-bar" id="navBar" style="display:none">
+    <div class="nav-user">
+      <strong id="navName">—</strong>
+      <span class="nav-balance" id="navBalance">0 次</span>
+    </div>
+    <div class="nav-actions">
+      <button class="nav-btn-small" onclick="doLogout()">注销</button>
+      <button class="btn-live" id="btnLive" onclick="toggleLiveMode()">🔴 直播</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <div class="page-container" id="pageContainer">
+
+    <!-- ====== LOGIN ====== -->
+    <div class="page active" id="page-login">
+      <div class="brand-section">
+        <div class="brand-logo">🎓 AI高考志愿规划师</div>
+        <div class="brand-subtitle">直播辅助工具 · v3.0</div>
+      </div>
+      <div class="trust-badge">
+        <span>📊 2200万+</span>
+        <span>📅 6年覆盖</span>
+        <span>✅ 98.3% 准确率</span>
+      </div>
+      <div class="card" style="margin-top:4px">
+        <div class="form-group">
+          <label class="form-label">📱 手机号</label>
+          <input class="form-input" id="loginPhone" type="tel" maxlength="11" placeholder="请输入手机号" autocomplete="username">
+        </div>
+        <div class="form-group" style="margin-top:10px">
+          <label class="form-label">🔒 密码</label>
+          <div class="password-wrap">
+            <input id="loginPwd" type="password" placeholder="请输入密码" autocomplete="current-password">
+            <button class="toggle-pwd" type="button" onclick="togglePwd()">👁</button>
+          </div>
+        </div>
+        <div class="form-error-text" id="loginError" style="margin-top:6px"></div>
+        <button class="btn btn-danger btn-block btn-lg" id="btnLogin" onclick="doLogin()" style="margin-top:14px">登录</button>
+      </div>
+    </div>
+
+    <!-- ====== STUDENT INFO ====== -->
+    <div class="page" id="page-student">
+      <div>
+        <span class="step-indicator">STEP 1 / 2</span>
+        <div class="page-title">考生基本信息</div>
+        <div class="page-subtitle">录入考生成绩与选科信息</div>
+      </div>
+      <div class="card">
+        <div class="form-group">
+          <label class="form-label">抖音昵称 <span style="color:var(--color-danger)">*</span></label>
+          <input class="form-input" id="stuNickname" placeholder="建议录入用户抖音名" maxlength="64">
+          <span class="form-error-text" id="errNick">请填写抖音昵称</span>
+        </div>
+        <div class="form-group" style="margin-top:10px">
+          <label class="form-label">省份 <span style="color:var(--color-danger)">*</span></label>
+          <select class="form-select" id="stuProvince" onchange="onProvinceChange()">
+            <option value="">请选择省份</option>
+            <optgroup label="3+3 模式（6省）">
+              <option value="浙江">浙江</option><option value="上海">上海</option>
+              <option value="北京">北京</option><option value="天津">天津</option>
+              <option value="山东">山东</option><option value="海南">海南</option>
+            </optgroup>
+            <optgroup label="3+1+2 模式（25省）">
+              <option value="河北">河北</option><option value="辽宁">辽宁</option>
+              <option value="江苏">江苏</option><option value="福建">福建</option>
+              <option value="湖北">湖北</option><option value="湖南">湖南</option>
+              <option value="广东">广东</option><option value="重庆">重庆</option>
+              <option value="吉林">吉林</option><option value="黑龙江">黑龙江</option>
+              <option value="安徽">安徽</option><option value="江西">江西</option>
+              <option value="广西">广西</option><option value="贵州">贵州</option>
+              <option value="甘肃">甘肃</option><option value="山西">山西</option>
+              <option value="内蒙古">内蒙古</option><option value="河南">河南</option>
+              <option value="四川">四川</option><option value="云南">云南</option>
+              <option value="陕西">陕西</option><option value="青海">青海</option>
+              <option value="宁夏">宁夏</option><option value="新疆">新疆</option>
+              <option value="西藏">西藏</option>
+            </optgroup>
+          </select>
+        </div>
+        <div class="form-group" style="margin-top:10px">
+          <label class="form-label">高考分数 <span style="color:var(--color-danger)">*</span></label>
+          <div class="input-with-suffix">
+            <input type="number" id="stuScore" placeholder="请输入分数" oninput="clampScore()" min="0" max="900">
+            <span class="suffix" id="scoreMax">/750</span>
+          </div>
+        </div>
+        <div class="form-group" style="margin-top:10px">
+          <label class="form-label">省内位次 <span style="font-size:11px;color:var(--text-secondary)">（选填，可留空自动估算）</span></label>
+          <input class="form-input" id="stuRank" type="number" placeholder="可留空自动估算" min="1">
+        </div>
+        <div class="form-group" style="margin-top:10px">
+          <label class="form-label">选科 <span style="color:var(--color-danger)">*</span></label>
+          <div id="subjectArea" style="margin-top:6px">
+            <span style="font-size:12px;color:var(--text-secondary)">请先选择省份</span>
+          </div>
+        </div>
+        <div class="form-group" style="margin-top:10px">
+          <label class="form-label">服从调剂</label>
+          <div class="flex-row" style="gap:8px">
+            <div class="tag-radio selected" id="toggleObey" onclick="setObey(true)">服从</div>
+            <div class="tag-radio" id="toggleNotObey" onclick="setObey(false)">不服从</div>
+          </div>
+        </div>
+        <div class="form-group" style="margin-top:10px">
+          <label class="form-label">家庭经济 <span style="font-size:11px;color:var(--text-secondary)">（影响院校推荐）</span></label>
+          <select class="form-select" id="stuEconomy">
+            <option value="">请选择</option>
+            <option value="较为困难">较为困难</option>
+            <option value="一般" selected>一般</option>
+            <option value="良好">良好</option>
+            <option value="比较优越">比较优越</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn btn-danger btn-block btn-lg" onclick="goToPref()">下一步：意向偏好 →</button>
+    </div>
+
+    <!-- ====== PREFERENCES ====== -->
+    <div class="page" id="page-pref">
+      <div>
+        <span class="step-indicator">STEP 2 / 2</span>
+        <div class="page-title">意向偏好</div>
+        <div class="page-subtitle">选择越细致，推荐越精准</div>
+      </div>
+      <div class="card">
+        <div class="section-title">📚 专业方向（多选）</div>
+        <div class="tag-group" id="majorTags">
+          <span class="tag" data-val="计算机">计算机</span>
+          <span class="tag" data-val="软件工程">软件工程</span>
+          <span class="tag" data-val="人工智能">人工智能</span>
+          <span class="tag" data-val="数据科学">数据科学</span>
+          <span class="tag" data-val="电子信息">电子信息</span>
+          <span class="tag" data-val="通信工程">通信工程</span>
+          <span class="tag" data-val="电气工程">电气工程</span>
+          <span class="tag" data-val="自动化">自动化</span>
+          <span class="tag" data-val="机械工程">机械工程</span>
+          <span class="tag" data-val="土木工程">土木工程</span>
+          <span class="tag" data-val="建筑学">建筑学</span>
+          <span class="tag" data-val="临床医学">临床医学</span>
+          <span class="tag" data-val="口腔医学">口腔医学</span>
+          <span class="tag" data-val="药学">药学</span>
+          <span class="tag" data-val="护理学">护理学</span>
+          <span class="tag" data-val="金融学">金融学</span>
+          <span class="tag" data-val="会计学">会计学</span>
+          <span class="tag" data-val="法学">法学</span>
+          <span class="tag" data-val="汉语言文学">汉语言文学</span>
+          <span class="tag" data-val="英语">英语</span>
+          <span class="tag" data-val="新闻传播">新闻传播</span>
+          <span class="tag" data-val="数学">数学</span>
+          <span class="tag" data-val="物理学">物理学</span>
+          <span class="tag" data-val="化学">化学</span>
+          <span class="tag" data-val="生物学">生物学</span>
+          <span class="tag" data-val="环境工程">环境工程</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="section-title">🏙️ 意向城市（多选）</div>
+        <div class="tag-group" id="cityTags">
+          <span class="tag" data-val="北京">北京</span><span class="tag" data-val="上海">上海</span>
+          <span class="tag" data-val="广州">广州</span><span class="tag" data-val="深圳">深圳</span>
+          <span class="tag" data-val="杭州">杭州</span><span class="tag" data-val="南京">南京</span>
+          <span class="tag" data-val="武汉">武汉</span><span class="tag" data-val="成都">成都</span>
+          <span class="tag" data-val="西安">西安</span><span class="tag" data-val="郑州">郑州</span>
+          <span class="tag" data-val="长沙">长沙</span><span class="tag" data-val="合肥">合肥</span>
+          <span class="tag" data-val="重庆">重庆</span><span class="tag" data-val="天津">天津</span>
+          <span class="tag" data-val="苏州">苏州</span><span class="tag" data-val="青岛">青岛</span>
+        </div>
+        <input class="form-input" id="cityCustom" placeholder="其他城市（自填，如：郑州、洛阳）" style="margin-top:8px;font-size:13px">
+      </div>
+      <div class="card">
+        <div class="section-title">🏫 意向院校（最多3所）</div>
+        <div class="search-wrap">
+          <input class="form-input" id="schoolSearch" placeholder="🔍 输入学校名称搜索…" autocomplete="off">
+          <div class="search-dropdown" id="schoolDropdown"></div>
+        </div>
+        <div class="selected-schools" id="selectedSchools"></div>
+      </div>
+      <div class="card">
+        <div class="section-title">🧠 性格/倾向（多选）</div>
+        <div class="tag-group" id="personalityTags" style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+          <span class="tag" data-val="外向活泼">外向活泼</span>
+          <span class="tag" data-val="沉稳内敛">沉稳内敛</span>
+          <span class="tag" data-val="钻研学术">钻研学术</span>
+          <span class="tag" data-val="领导管理">领导管理</span>
+          <span class="tag" data-val="艺术创作">艺术创作</span>
+          <span class="tag" data-val="社交沟通">社交沟通</span>
+          <span class="tag" data-val="动手实践">动手实践</span>
+          <span class="tag" data-val="逻辑分析">逻辑分析</span>
+        </div>
+      </div>
+      <div class="flex-row" style="gap:8px">
+        <button class="btn btn-ghost" onclick="navigate('student')" style="flex:1">← 返回</button>
+        <button class="btn btn-danger btn-lg" onclick="startAnalyze()" style="flex:2">🚀 开始AI分析</button>
+      </div>
+    </div>
+
+    <!-- ====== ANALYZING ====== -->
+    <div class="page" id="page-analyzing">
+      <div class="analyzing-bg">
+        <div class="analyzing-icon">🧠</div>
+        <div class="analyzing-title">⚡ AI 深度分析中</div>
+        <div class="analyzing-subtitle">近6年 <strong>2200万+</strong> 历史录取记录 · 请稍候</div>
+        <div class="engine-badges">
+          <span class="engine-badge"><span class="dot blue"></span> Claude</span>
+          <span class="engine-badge"><span class="dot purple"></span> DeepSeek V4</span>
+          <span class="engine-badge"><span class="dot cyan"></span> GPT-5.5</span>
+        </div>
+      </div>
+      <div class="analyzing-steps" id="analyzingSteps">
+        <div class="analyzing-step" id="step0">
+          <div class="step-icon">📊</div>
+          <div class="step-info">
+            <div class="step-label">加载省份历年录取数据</div>
+            <div class="step-progress-bar"><div class="fill" id="stepBar0"></div></div>
+          </div>
+          <div class="step-status" id="stepStatus0">0%</div>
+        </div>
+        <div class="analyzing-step" id="step1">
+          <div class="step-icon">⚡</div>
+          <div class="step-info"><div class="step-label">AI 交叉验证分析中</div></div>
+          <div class="step-status" id="stepStatus1">—</div>
+        </div>
+      </div>
+      <div class="analyzing-info">
+        <div class="analyzing-info-card">
+          <div class="info-card-title">📂 数据基础</div>
+          <div class="info-card-text">教育部官网2020-2025年公开录取数据 · 覆盖全国<strong>2000+</strong>所高校 · 34个省份 · 近6年<strong>2200万+</strong>录取记录</div>
+        </div>
+        <div class="analyzing-info-card">
+          <div class="info-card-title">🤖 分析引擎</div>
+          <div class="info-card-text">Claude · DeepSeek V4 Pro · GPT-5.5 三大顶尖AI引擎 <strong>交叉验证</strong> · 多模型权重融合 · 置信度校验通过后输出</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====== PAYWALL ====== -->
+    <div class="page" id="page-paywall">
+      <div style="text-align:center">
+        <div class="page-title">📋 志愿规划报告</div>
+        <div class="report-summary" style="justify-content:center;margin-top:4px" id="paywallMeta">
+          <span id="pwOrderId">报告编号：—</span><span>·</span><span>防伪</span>
+        </div>
+      </div>
+      <div class="flex-row" style="justify-content:center;flex-wrap:wrap;gap:6px" id="paywallStudentInfo"></div>
+      <div class="card">
+        <div class="section-title" style="margin-bottom:8px">🤖 AI 洞察</div>
+        <div class="insights-grid">
+          <div class="insight-item"><div class="label">院校-分数匹配度</div><div class="value blurred">——</div></div>
+          <div class="insight-item"><div class="label">录取概率置信度</div><div class="value blurred">——</div></div>
+          <div class="insight-item"><div class="label">专业就业契合度</div><div class="value blurred">——</div></div>
+          <div class="insight-item"><div class="label">近6年数据覆盖率</div><div class="value blurred">——</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="section-title">🏫 AI 推荐院校（15所）· 已加密</div>
+        <div id="blurredSchools" style="display:flex;flex-direction:column;gap:6px"></div>
+      </div>
+      <div class="card" style="text-align:center;background:#FEF2F2;border-color:#FECACA">
+        <div style="font-size:13px;color:var(--text-secondary);margin-bottom:4px">
+          剩余解锁次数：<strong style="color:var(--text-primary);font-size:16px" id="remainCount">—</strong> 次
+        </div>
+        <div style="font-size:11px;color:#94A3B8;margin-bottom:10px">次数不足时请联系平台充值</div>
+        <button class="btn btn-danger btn-block btn-lg" id="btnUnlock" onclick="doUnlock()">🔓 一键解锁完整报告</button>
+      </div>
+      <div class="data-source">数据来源：教育部官网 · 阳光高考<br>近6年 2200万+ 录取记录</div>
+    </div>
+
+    <!-- ====== FULL REPORT ====== -->
+    <div class="page" id="page-report">
+      <div id="reportContent">
+        <!-- Rendered by renderReport() -->
+      </div>
+      <div class="flex-row" style="gap:6px;margin-top:4px">
+        <button class="btn btn-ghost" style="flex:1;font-size:12px" onclick="downloadPDF()">📥 下载PDF</button>
+        <button class="btn btn-ghost" style="flex:1;font-size:12px" onclick="nextStudent()">👤 下一位学生</button>
+        <button class="btn btn-primary" style="flex:1;font-size:12px" onclick="navigate('qa')">🤖 直播答疑</button>
+      </div>
+    </div>
+
+    <!-- ====== SAMPLE REPORT ====== -->
+    <div class="page" id="page-sample">
+      <div class="sample-banner">★ 样板展示 · 仅供展示，非真实报告</div>
+      <div style="text-align:center;margin-top:4px">
+        <div style="font-size:12px;color:var(--text-secondary)">样板编号：SAMPLE-001</div>
+        <div class="flex-row" style="justify-content:center;flex-wrap:wrap;gap:6px;margin-top:4px">
+          <span class="badge badge-211">📌 抖音用户_小明</span>
+          <span style="font-size:12px;color:var(--text-secondary)">河南 · 560分 · 物理+化学+政治</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="section-title">📊 冲/稳/保 分布</div>
+        <div class="flex-row" style="justify-content:space-around;text-align:center;margin-top:8px">
+          <div><div style="font-size:24px;font-weight:800;color:var(--color-danger)">4</div><div style="font-size:11px;color:var(--text-secondary)">冲刺</div></div>
+          <div><div style="font-size:24px;font-weight:800;color:var(--color-info)">3</div><div style="font-size:11px;color:var(--text-secondary)">稳妥</div></div>
+          <div><div style="font-size:24px;font-weight:800;color:var(--color-success)">3</div><div style="font-size:11px;color:var(--text-secondary)">保底</div></div>
+        </div>
+      </div>
+      <div class="tier-section">
+        <div class="tier-header rush">🚀 冲刺 <span class="tier-count">（共4所）</span></div>
+        <div class="school-card">
+          <div class="school-card-header">
+            <span class="badge badge-985">985</span>
+            <span class="school-name">武汉大学</span>
+            <span class="school-prob tier-rush">15%</span>
+          </div>
+          <div class="school-card-body">
+            <div class="school-row"><span class="label">📍 城市</span><span class="value">武汉</span></div>
+            <div class="school-row"><span class="label">📊 近年线</span><span class="value">约645分</span></div>
+            <div class="school-row"><span class="label">🎓 推荐专业</span><span class="value">计算机科学与技术</span></div>
+          </div>
+          <div class="school-ai-comment"><span class="speaker">💬 点评：</span>武大985，计算机实力强，但560分差距较大，属于大胆一冲型，仅供展示参考。</div>
+        </div>
+      </div>
+      <div class="tier-section" style="margin-top:4px">
+        <div class="tier-header safe">🎯 稳妥 <span class="tier-count">（共3所）</span></div>
+        <div class="school-card">
+          <div class="school-card-header">
+            <span class="badge badge-211">211</span>
+            <span class="school-name">郑州大学</span>
+            <span class="school-prob tier-safe">68%</span>
+          </div>
+          <div class="school-card-body">
+            <div class="school-row"><span class="label">📍 城市</span><span class="value">郑州</span></div>
+            <div class="school-row"><span class="label">📊 近年线</span><span class="value">约604分</span></div>
+            <div class="school-row"><span class="label">🎓 推荐专业</span><span class="value">软件工程</span></div>
+          </div>
+          <div class="school-ai-comment"><span class="speaker">💬 点评：</span>郑大是河南考生稳妥首选，211牌子硬，计算机类专业就业面广。</div>
+        </div>
+      </div>
+      <div class="tier-section" style="margin-top:4px">
+        <div class="tier-header bottom">🟢 保底 <span class="tier-count">（共3所）</span></div>
+        <div class="school-card">
+          <div class="school-card-header">
+            <span style="font-size:10px;color:var(--text-secondary)">公办</span>
+            <span class="school-name">河南理工大学</span>
+            <span class="school-prob tier-bottom">95%</span>
+          </div>
+          <div class="school-card-body">
+            <div class="school-row"><span class="label">📍 城市</span><span class="value">焦作</span></div>
+            <div class="school-row"><span class="label">📊 近年线</span><span class="value">约530分</span></div>
+            <div class="school-row"><span class="label">🎓 推荐专业</span><span class="value">安全工程</span></div>
+          </div>
+          <div class="school-ai-comment"><span class="speaker">💬 点评：</span>95%保底，安全工程全国前3，特色鲜明就业稳，属于低调的实力派。</div>
+        </div>
+      </div>
+      <div style="text-align:center;font-size:11px;color:#94A3B8;margin-top:4px">以上为样板数据，实际推荐将根据考生真实分数和偏好生成。</div>
+    </div>
+
+    <!-- ====== Q&A ====== -->
+    <div class="page" id="page-qa">
+      <div class="page-title">🤖 AI 直播答疑</div>
+      <div class="card">
+        <div class="section-title">快捷提问（点击填入）</div>
+        <div class="tag-group" style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+          <span class="tag" onclick="fillQA(this.textContent)" style="text-align:center">这个专业好就业吗？</span>
+          <span class="tag" onclick="fillQA(this.textContent)" style="text-align:center">这所学校值得报吗？</span>
+          <span class="tag" onclick="fillQA(this.textContent)" style="text-align:center">这个专业未来薪资怎么样？</span>
+          <span class="tag" onclick="fillQA(this.textContent)" style="text-align:center">冲这所学校风险大吗？</span>
+          <span class="tag" onclick="fillQA(this.textContent)" style="text-align:center">要不要服从调剂？</span>
+          <span class="tag" onclick="fillQA(this.textContent)" style="text-align:center">这所学校省内认可度怎样？</span>
+          <span class="tag" onclick="fillQA(this.textContent)" style="text-align:center">这个城市适合毕业后留下来吗？</span>
+          <span class="tag" onclick="fillQA(this.textContent)" style="text-align:center">这个专业考研好考吗？</span>
+        </div>
+      </div>
+      <div class="card">
+        <textarea class="form-textarea" id="qaInput" placeholder="观众问啥，你就输啥，最多100字…" maxlength="100" oninput="updateCharCount()"></textarea>
+        <div class="flex-between" style="margin-top:4px">
+          <span style="font-size:11px;color:var(--text-secondary)" id="charCount">0/100</span>
+          <button class="btn btn-primary btn-lg" id="btnSendQA" onclick="sendQA()">发送 →</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="section-title">对话历史</div>
+        <div class="chat-area" id="chatArea"></div>
+        <div class="flex-row" style="margin-top:8px;gap:6px">
+          <button class="btn btn-ghost" style="font-size:12px;flex:1" onclick="document.getElementById('qaInput').value='';updateCharCount()">清空输入</button>
+          <button class="btn btn-ghost" style="font-size:12px;flex:1" onclick="clearQAChat()">清空历史</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /page-container -->
+  <div class="home-bar"></div>
+</div><!-- /phone-frame -->
+
+<!-- ====== ADMIN PANEL ====== -->
+<div class="admin-wrapper" id="adminPanel" style="display:none">
+  <div class="admin-header">⚙️ AI高考志愿规划师 · 管理后台</div>
+  <div id="adminLoginSection" style="display:none">
+    <div class="admin-login">
+      <h3>🔐 管理员登录</h3>
+      <div class="form-group"><label class="form-label">用户名</label><input class="form-input" id="adminUser" placeholder="admin" autocomplete="username"></div>
+      <div class="form-group" style="margin-top:10px"><label class="form-label">密码</label><input class="form-input" id="adminPass" type="password" placeholder="管理员密码" autocomplete="current-password"></div>
+      <div class="form-error-text" id="adminLoginErr" style="margin-top:6px"></div>
+      <button class="btn btn-primary btn-block" style="margin-top:14px" onclick="doAdminLogin()">登录管理后台</button>
+    </div>
+  </div>
+  <div id="adminMainSection" style="display:none">
+    <div class="admin-nav">
+      <button class="admin-nav-btn active" data-tab="streamers" onclick="switchAdminTab('streamers')">主播管理</button>
+      <button class="admin-nav-btn" data-tab="orders" onclick="switchAdminTab('orders')">订单查看</button>
+      <button class="admin-nav-btn" data-tab="config" onclick="switchAdminTab('config')">系统配置</button>
+      <button class="admin-nav-btn" style="margin-left:auto;color:var(--color-danger)" onclick="doAdminLogout()">退出</button>
+    </div>
+
+    <!-- Streamers tab -->
+    <div id="adminTab-streamers">
+      <button class="btn btn-primary" style="margin-bottom:12px;font-size:13px" onclick="showModal('createStreamer')">+ 新增主播</button>
+      <table class="admin-table" id="streamersTable">
+        <thead><tr><th>手机号</th><th>姓名</th><th>剩余次数</th><th>累计购买</th><th>已使用</th><th>状态</th><th>操作</th></tr></thead>
+        <tbody id="streamersTbody"><tr><td colspan="7" style="text-align:center;color:var(--text-secondary)">加载中…</td></tr></tbody>
+      </table>
+      <div class="admin-pagination">
+        <button id="prevStreamers" onclick="loadStreamers(-1)" disabled>上一页</button>
+        <span id="streamerPageInfo">1 / 1</span>
+        <button id="nextStreamers" onclick="loadStreamers(1)" disabled>下一页</button>
+      </div>
+    </div>
+
+    <!-- Orders tab -->
+    <div id="adminTab-orders" style="display:none">
+      <div class="flex-row" style="gap:8px;margin-bottom:12px;flex-wrap:wrap">
+        <input class="form-input" id="filterOrderDate" type="date" style="width:150px">
+        <button class="btn btn-primary" style="font-size:13px" onclick="loadOrders(0)">查询</button>
+      </div>
+      <table class="admin-table">
+        <thead><tr><th>订单号</th><th>主播</th><th>考生</th><th>省份</th><th>分数</th><th>时间</th><th>状态</th></tr></thead>
+        <tbody id="ordersTbody"><tr><td colspan="7" style="text-align:center;color:var(--text-secondary)">加载中…</td></tr></tbody>
+      </table>
+      <div class="admin-pagination">
+        <button id="prevOrders" onclick="loadOrders(-1)" disabled>上一页</button>
+        <span id="ordersPageInfo">1 / 1</span>
+        <button id="nextOrders" onclick="loadOrders(1)" disabled>下一页</button>
+      </div>
+    </div>
+
+    <!-- Config tab -->
+    <div id="adminTab-config" style="display:none">
+      <div class="card" style="margin-bottom:12px">
+        <div class="section-title">概率阈值配置</div>
+        <div class="form-group" style="margin-top:8px">
+          <label class="form-label">冲刺下限（默认 30%）</label>
+          <input class="form-input" id="cfgBoostMin" type="number" value="30" style="width:100px">
+        </div>
+        <div class="form-group" style="margin-top:8px">
+          <label class="form-label">稳妥下限（默认 60%）</label>
+          <input class="form-input" id="cfgSolidMin" type="number" value="60" style="width:100px">
+        </div>
+        <div class="form-group" style="margin-top:8px">
+          <label class="form-label">保底下限（默认 85%）</label>
+          <input class="form-input" id="cfgSafeMin" type="number" value="85" style="width:100px">
+        </div>
+        <button class="btn btn-primary" style="margin-top:12px;font-size:13px" onclick="saveConfig()">保存配置</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /prototype-wrapper -->
+
+<!-- ====== MODALS ====== -->
+<div class="modal-overlay" id="modal-recharge">
+  <div class="modal">
+    <h3>💰 充值</h3>
+    <div style="font-size:13px;color:var(--text-secondary);margin-bottom:4px" id="rechargeTarget"></div>
+    <div class="form-group"><label class="form-label">充值次数</label><input class="form-input" type="number" id="rechargeCount" value="10" min="1" oninput="calcRechargeAmt()"></div>
+    <div class="form-group"><label class="form-label">充值金额（元）</label><input class="form-input" type="number" id="rechargeAmount" value="299" oninput="calcRechargeCount()"></div>
+    <div class="form-group"><label class="form-label">备注（可选）</label><input class="form-input" id="rechargeRemark" placeholder="如：微信转账"></div>
+    <div class="form-error-text" id="rechargeErr" style="margin-top:6px"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('recharge')">取消</button>
+      <button class="btn btn-primary" id="btnDoRecharge" onclick="doRecharge()">确认充值</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-createStreamer">
+  <div class="modal">
+    <h3>➕ 新增主播</h3>
+    <div class="form-group"><label class="form-label">手机号</label><input class="form-input" id="newPhone" maxlength="11" placeholder="11位手机号"></div>
+    <div class="form-group"><label class="form-label">姓名/昵称</label><input class="form-input" id="newName" maxlength="64" placeholder="主播昵称"></div>
+    <div class="form-group"><label class="form-label">密码</label><input class="form-input" id="newPassword" type="password" placeholder="至少6位"></div>
+    <div class="form-error-text" id="createStreamerErr" style="margin-top:6px"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('createStreamer')">取消</button>
+      <button class="btn btn-primary" id="btnDoCreate" onclick="doCreateStreamer()">创建</button>
+    </div>
+  </div>
+</div>
+
+<button id="btnToggleView" onclick="toggleAdminView()">📱 手机端 / 💻 管理后台</button>
+
+<script>
+// ══════════════════════════════════════════════════════════
+// State
+// ══════════════════════════════════════════════════════════
+const S = {
+  token: null,
+  streamer: null,
+  student: {},
+  pref: {},
+  reportData: null,
+  orderId: null,
+  idempotencyKey: null,
+  obey: true,
+  selectedSchools: [],
+  schoolSearchTimer: null,
+  adminToken: null,
+  streamerPage: 1,
+  streamerTotal: 0,
+  ordersPage: 1,
+  ordersTotal: 0,
+  rechargeTargetId: null,
+  analysisAbort: null,
+};
+
+const PAGE_SIZE = 20;
+const PROVINCES_33 = ['浙江','上海','北京','天津','山东','海南'];
+
+// ══════════════════════════════════════════════════════════
+// Init
+// ══════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  S.token = localStorage.getItem('gk_token');
+  const sv = localStorage.getItem('gk_streamer');
+  if (sv) { try { S.streamer = JSON.parse(sv); } catch(e){} }
+
+  const reportSv = sessionStorage.getItem('gk_report');
+  if (reportSv) { try { S.reportData = JSON.parse(reportSv); } catch(e){} }
+  const orderSv = sessionStorage.getItem('gk_order');
+  if (orderSv) S.orderId = orderSv;
+  const studentSv = sessionStorage.getItem('gk_student');
+  if (studentSv) { try { S.student = JSON.parse(studentSv); } catch(e){} }
+  const prefSv = sessionStorage.getItem('gk_pref');
+  if (prefSv) { try { S.pref = JSON.parse(prefSv); } catch(e){} }
+
+  updateStatusTime();
+  setInterval(updateStatusTime, 30000);
+  setupTagListeners();
+  setupSchoolSearch();
+
+  window.addEventListener('hashchange', onHashChange);
+  onHashChange();
+});
+
+function onHashChange() {
+  const page = location.hash.slice(1) || 'login';
+  navigate(page, false);
+}
+
+function updateStatusTime() {
+  const now = new Date();
+  document.getElementById('statusTime').textContent =
+    now.getHours() + ':' + String(now.getMinutes()).padStart(2,'0');
+}
+
+// ══════════════════════════════════════════════════════════
+// Router
+// ══════════════════════════════════════════════════════════
+function navigate(page, updateHash = true) {
+  const publicPages = ['login', 'sample'];
+  if (!publicPages.includes(page) && !S.token) {
+    page = 'login';
+  }
+  if ((page === 'paywall' || page === 'report') && !S.reportData) {
+    page = S.token ? 'student' : 'login';
+  }
+
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const el = document.getElementById('page-' + page);
+  if (!el) return;
+  el.classList.add('active');
+  document.getElementById('pageContainer').scrollTop = 0;
+
+  if (updateHash) {
+    history.pushState(null, '', '#' + page);
+  }
+
+  const navBar = document.getElementById('navBar');
+  if (S.token && page !== 'login') {
+    navBar.style.display = '';
+    updateNavBar();
+  } else {
+    navBar.style.display = 'none';
+  }
+
+  if (page === 'paywall') renderPaywall();
+  if (page === 'report') renderReport();
+}
+
+function updateNavBar() {
+  if (!S.streamer) return;
+  document.getElementById('navName').textContent = S.streamer.name;
+  document.getElementById('navBalance').textContent = (S.streamer.balance ?? 0) + ' 次';
+}
+
+// ══════════════════════════════════════════════════════════
+// API
+// ══════════════════════════════════════════════════════════
+async function api(method, path, body, adminMode = false) {
+  const headers = { 'Content-Type': 'application/json' };
+  const token = adminMode ? S.adminToken : S.token;
+  if (token) headers['Authorization'] = 'Bearer ' + token;
+
+  const res = await fetch(path, {
+    method,
+    headers,
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  });
+
+  if (res.status === 401 && !adminMode) {
+    doLogout(false);
+    throw new Error('登录已过期，请重新登录');
+  }
+  if (res.status === 204) return null;
+
+  const data = await res.json().catch(() => ({ detail: '服务器无响应' }));
+  if (!res.ok) throw new Error(data.detail || `请求失败 (${res.status})`);
+  return data;
+}
+
+// ══════════════════════════════════════════════════════════
+// Toast
+// ══════════════════════════════════════════════════════════
+let _toastTimer = null;
+function showToast(msg, type = 'info') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + type + ' show';
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ══════════════════════════════════════════════════════════
+// Auth
+// ══════════════════════════════════════════════════════════
+function togglePwd() {
+  const inp = document.getElementById('loginPwd');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
+async function doLogin() {
+  const phone = document.getElementById('loginPhone').value.trim();
+  const pwd = document.getElementById('loginPwd').value;
+  const errEl = document.getElementById('loginError');
+  const btn = document.getElementById('btnLogin');
+
+  errEl.classList.remove('show');
+  if (!phone || phone.length < 11) {
+    errEl.textContent = '⚠ 请输入正确的手机号'; errEl.classList.add('show'); return;
+  }
+  if (!pwd) {
+    errEl.textContent = '⚠ 请输入密码'; errEl.classList.add('show'); return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> 登录中…';
+
+  try {
+    const data = await api('POST', '/auth/login', { phone, password: pwd });
+    S.token = data.token;
+    S.streamer = data.streamer;
+    localStorage.setItem('gk_token', S.token);
+    localStorage.setItem('gk_streamer', JSON.stringify(S.streamer));
+    showToast('✓ 登录成功！', 'success');
+    setTimeout(() => navigate('student'), 300);
+  } catch (e) {
+    errEl.textContent = '⚠ ' + e.message;
+    errEl.classList.add('show');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '登录';
+  }
+}
+
+// Login on Enter key
+document.getElementById('loginPwd').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
+
+function doLogout(redirect = true) {
+  const token = S.token;
+  S.token = null;
+  S.streamer = null;
+  S.reportData = null;
+  S.orderId = null;
+  localStorage.removeItem('gk_token');
+  localStorage.removeItem('gk_streamer');
+  sessionStorage.clear();
+  if (token) {
+    fetch('/auth/logout/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+    }).catch(() => {});
+  }
+  if (redirect) navigate('login');
+}
+
+// ══════════════════════════════════════════════════════════
+// Student Info Page
+// ══════════════════════════════════════════════════════════
+function onProvinceChange() {
+  const prov = document.getElementById('stuProvince').value;
+  const area = document.getElementById('subjectArea');
+  const maxEl = document.getElementById('scoreMax');
+  maxEl.textContent = prov === '上海' ? '/660' : '/750';
+
+  if (!prov) {
+    area.innerHTML = '<span style="font-size:12px;color:var(--text-secondary)">请先选择省份</span>';
+    return;
+  }
+
+  if (PROVINCES_33.includes(prov)) {
+    area.innerHTML = `
+      <div class="tag-group" id="sub33"></div>
+      <span style="font-size:11px;color:var(--text-secondary);margin-top:4px;display:block">任选3门（浙江可选技术）</span>`;
+    const subjects33 = ['物理','化学','生物','政治','历史','地理'];
+    if (prov === '浙江') subjects33.push('技术');
+    const g = document.getElementById('sub33');
+    subjects33.forEach(s => {
+      const el = document.createElement('span');
+      el.className = 'tag';
+      el.textContent = s;
+      el.dataset.val = s;
+      el.onclick = () => toggle33(el);
+      g.appendChild(el);
+    });
+  } else {
+    area.innerHTML = `
+      <div style="margin-bottom:6px;font-size:12px;color:var(--text-secondary)">首选1门（必填）</div>
+      <div class="flex-row" style="gap:8px" id="subFirst">
+        <div class="tag-radio selected" onclick="select312First(this,'物理')">物理</div>
+        <div class="tag-radio" onclick="select312First(this,'历史')" style="margin-left:0">历史</div>
+      </div>
+      <div style="margin-top:8px;margin-bottom:4px;font-size:12px;color:var(--text-secondary)">再选2门</div>
+      <div class="tag-group" id="subSecond">
+        <span class="tag" data-val="化学" onclick="toggle312Second(this)">化学</span>
+        <span class="tag" data-val="生物" onclick="toggle312Second(this)">生物</span>
+        <span class="tag" data-val="政治" onclick="toggle312Second(this)">政治</span>
+        <span class="tag" data-val="地理" onclick="toggle312Second(this)">地理</span>
+      </div>`;
+    S._312secondCount = 0;
+  }
+}
+
+let _33count = 0;
+function toggle33(el) {
+  const grp = el.parentElement;
+  const sel = grp.querySelectorAll('.tag.selected').length;
+  if (el.classList.contains('selected')) {
+    el.classList.remove('selected'); return;
+  }
+  if (sel >= 3) { showToast('最多选3门', 'warning'); return; }
+  el.classList.add('selected');
+}
+
+function select312First(el) {
+  el.parentElement.querySelectorAll('.tag-radio').forEach(t => t.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function toggle312Second(el) {
+  if (el.classList.contains('selected')) {
+    el.classList.remove('selected'); S._312secondCount = Math.max(0, (S._312secondCount||0)-1);
+  } else if ((S._312secondCount||0) >= 2) {
+    showToast('再选最多2门', 'warning');
+  } else {
+    el.classList.add('selected'); S._312secondCount = (S._312secondCount||0)+1;
+  }
+}
+
+function setObey(val) {
+  S.obey = val;
+  document.getElementById('toggleObey').classList.toggle('selected', val);
+  document.getElementById('toggleNotObey').classList.toggle('selected', !val);
+}
+
+function clampScore() {
+  const inp = document.getElementById('stuScore');
+  const max = parseInt(document.getElementById('scoreMax').textContent.replace('/','')) || 750;
+  const v = parseInt(inp.value);
+  if (v > max) { inp.value = max; inp.classList.add('error'); setTimeout(() => inp.classList.remove('error'), 400); }
+  if (v < 0) inp.value = 0;
+}
+
+function getSubjectData() {
+  const prov = document.getElementById('stuProvince').value;
+  let subjects = [], category = '';
+  if (PROVINCES_33.includes(prov)) {
+    const grp = document.getElementById('sub33');
+    if (grp) subjects = [...grp.querySelectorAll('.tag.selected')].map(t => t.dataset.val);
+    category = subjects[0] || '综合';
+  } else {
+    const firstEl = document.querySelector('#subFirst .tag-radio.selected');
+    category = firstEl ? firstEl.textContent : '物理';
+    const secondEls = document.querySelectorAll('#subSecond .tag.selected');
+    subjects = [category, ...[...secondEls].map(t => t.dataset.val)];
+  }
+  return { subjects, category };
+}
+
+function goToPref() {
+  const nick = document.getElementById('stuNickname').value.trim();
+  const prov = document.getElementById('stuProvince').value;
+  const score = document.getElementById('stuScore').value;
+  const rank = document.getElementById('stuRank').value;
+  const economy = document.getElementById('stuEconomy').value || '一般';
+
+  if (!nick) { document.getElementById('errNick').classList.add('show'); return; }
+  document.getElementById('errNick').classList.remove('show');
+  if (!prov) { showToast('请选择省份', 'warning'); return; }
+  if (!score) { showToast('请输入高考分数', 'warning'); return; }
+
+  const { subjects, category } = getSubjectData();
+  if (subjects.length === 0) { showToast('请选择选科', 'warning'); return; }
+
+  S.student = {
+    nickname: nick,
+    province: prov,
+    score: parseInt(score),
+    rank: rank ? parseInt(rank) : null,
+    subjects,
+    subjectCategory: category,
+    subjectStr: subjects.join('+'),
+    economy,
+    obey: S.obey,
+  };
+  sessionStorage.setItem('gk_student', JSON.stringify(S.student));
+  navigate('pref');
+}
+
+// ══════════════════════════════════════════════════════════
+// Preference Page
+// ══════════════════════════════════════════════════════════
+function setupTagListeners() {
+  document.querySelectorAll('#majorTags .tag, #cityTags .tag, #personalityTags .tag').forEach(tag => {
+    tag.addEventListener('click', () => tag.classList.toggle('selected'));
+  });
+}
+
+function getSelectedTags(groupId) {
+  return [...document.querySelectorAll('#' + groupId + ' .tag.selected')].map(t => t.dataset.val);
+}
+
+// ── School search with debounce ──
+function setupSchoolSearch() {
+  const inp = document.getElementById('schoolSearch');
+  inp.addEventListener('input', () => {
+    clearTimeout(S.schoolSearchTimer);
+    S.schoolSearchTimer = setTimeout(() => doSchoolSearch(inp.value.trim()), 300);
+  });
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.search-wrap')) {
+      document.getElementById('schoolDropdown').classList.remove('show');
+    }
+  });
+}
+
+async function doSchoolSearch(q) {
+  const dropdown = document.getElementById('schoolDropdown');
+  if (q.length < 2) { dropdown.classList.remove('show'); return; }
+  if (!S.token) return;
+
+  try {
+    const data = await api('GET', `/api/schools/search?q=${encodeURIComponent(q)}&limit=8`);
+    const results = (data.results || []).filter(r => !S.selectedSchools.find(s => s.name === r.name));
+    if (results.length === 0) {
+      dropdown.innerHTML = '<div class="search-dropdown-item" style="color:var(--text-secondary)">未找到该学校</div>';
+    } else {
+      dropdown.innerHTML = results.map(r => {
+        const badge = r.tags.includes('985') ? '<span class="badge badge-985">985</span>' :
+                      r.tags.includes('211') ? '<span class="badge badge-211">211</span>' :
+                      r.tags.includes('双一流') ? '<span class="badge badge-double-first">双一流</span>' : '';
+        return `<div class="search-dropdown-item" onclick="selectSchool(${r.school_id},'${r.name}','${r.city||r.province}')">
+          <span>${r.name} ${badge}</span><span class="city">${r.city || r.province}</span>
+        </div>`;
+      }).join('');
+    }
+    dropdown.classList.add('show');
+  } catch(e) {
+    dropdown.classList.remove('show');
+  }
+}
+
+function selectSchool(id, name, city) {
+  if (S.selectedSchools.length >= 3) { showToast('最多选3所院校', 'warning'); return; }
+  S.selectedSchools.push({ id, name, city });
+  renderSelectedSchools();
+  document.getElementById('schoolSearch').value = '';
+  document.getElementById('schoolDropdown').classList.remove('show');
+}
+
+function removeSchool(name) {
+  S.selectedSchools = S.selectedSchools.filter(s => s.name !== name);
+  renderSelectedSchools();
+}
+
+function renderSelectedSchools() {
+  document.getElementById('selectedSchools').innerHTML = S.selectedSchools.map(s =>
+    `<span class="selected-school-tag">${s.name}<span class="remove" onclick="removeSchool('${s.name}')"> ✕</span></span>`
+  ).join('');
+}
+
+// ══════════════════════════════════════════════════════════
+// Analysis Flow
+// ══════════════════════════════════════════════════════════
+function startAnalyze() {
+  const majors = getSelectedTags('majorTags');
+  const cities = getSelectedTags('cityTags');
+  const customCity = document.getElementById('cityCustom').value.trim();
+  const personality = getSelectedTags('personalityTags');
+  const allCities = [...cities, ...(customCity ? customCity.split(/[，,、\s]+/).filter(c=>c) : [])];
+
+  S.pref = {
+    majors,
+    cities: allCities,
+    schools: S.selectedSchools.map(s => s.name),
+    personality,
+    economy: S.student.economy || '一般',
+  };
+  sessionStorage.setItem('gk_pref', JSON.stringify(S.pref));
+  S.idempotencyKey = null;
+
+  navigate('analyzing');
+  runAnalysis();
+}
+
+async function runAnalysis() {
+  const animPromise = runAnalysisAnimation();
+
+  const req = {
+    province: S.student.province,
+    score: S.student.score,
+    subject_category: S.student.subjectCategory,
+    rank: S.student.rank || null,
+    city_preference: S.pref.cities,
+    intended_schools: S.pref.schools,
+    major_preference: S.pref.majors,
+    personality: S.pref.personality,
+    economic_level: S.pref.economy,
+  };
+
+  try {
+    const [, result] = await Promise.all([animPromise, api('POST', '/api/recommendation/generate', req)]);
+    S.reportData = result;
+    sessionStorage.setItem('gk_report', JSON.stringify(result));
+    navigate('paywall');
+    showToast('✓ 分析完成！15所院校已就绪', 'success');
+  } catch(e) {
+    showToast('分析失败：' + e.message, 'error');
+    navigate('pref');
+  }
+}
+
+function runAnalysisAnimation() {
+  return new Promise(resolve => {
+    const steps = [
+      { bar: 'stepBar0', status: 'stepStatus0', el: 'step0', hasBar: true, duration: 800 },
+      { status: 'stepStatus1', el: 'step1', hasBar: false, duration: 700 },
+    ];
+    steps.forEach(s => {
+      document.getElementById(s.el).classList.remove('active','done');
+      if (s.hasBar) document.getElementById(s.bar).style.width = '0%';
+      document.getElementById(s.status).textContent = s.hasBar ? '0%' : '—';
+    });
+
+    const timings = [0, 800];
+    const durations = [800, 700];
+
+    function completeStep(i) {
+      document.getElementById(steps[i].el).classList.remove('active');
+      document.getElementById(steps[i].el).classList.add('done');
+      document.getElementById(steps[i].status).textContent = '✓ 完成';
+      if (i === steps.length - 1) resolve();
+    }
+
+    steps.forEach((s, i) => {
+      setTimeout(() => {
+        document.getElementById(s.el).classList.add('active');
+        if (s.hasBar) {
+          let pct = 0;
+          const bar = document.getElementById(s.bar);
+          const iv = setInterval(() => {
+            pct += Math.random() * 15 + 8;
+            if (pct >= 100) { pct = 100; clearInterval(iv); }
+            bar.style.width = pct + '%';
+            document.getElementById(s.status).textContent = Math.round(pct) + '%';
+          }, 60);
+          setTimeout(() => { clearInterval(iv); bar.style.width='100%'; document.getElementById(s.status).textContent='100%'; completeStep(i); }, durations[i]);
+        } else {
+          const dots = ['','.','..',  '...'];
+          let di = 0;
+          const dv = setInterval(() => { di=(di+1)%dots.length; document.getElementById(s.status).textContent='分析中'+dots[di]; }, 200);
+          setTimeout(() => { clearInterval(dv); completeStep(i); }, durations[i]);
+        }
+      }, timings[i]);
+    });
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+// Paywall
+// ══════════════════════════════════════════════════════════
+function renderPaywall() {
+  if (!S.reportData || !S.student.nickname) return;
+
+  document.getElementById('pwOrderId').textContent = '报告编号：待解锁';
+  const infoHtml = `
+    <span class="badge badge-211">📌 ${esc(S.student.nickname)}</span>
+    <span style="font-size:12px;color:var(--text-secondary)">${esc(S.student.province)}</span>
+    <span style="font-size:12px;color:var(--text-secondary)">${S.student.score}分</span>
+    <span style="font-size:12px;color:var(--text-secondary)">${esc(S.student.subjectStr)}</span>`;
+  document.getElementById('paywallStudentInfo').innerHTML = infoHtml;
+
+  const schools = S.reportData.schools || [];
+  const blurHtml = schools.slice(0,5).map(s => `<div class="blur-card">🔒 ${s.name} —— ——</div>`).join('');
+  const moreText = schools.length > 5 ? `<div style="text-align:center;font-size:11px;color:#94A3B8;margin-top:4px">… 共 ${schools.length} 所学校已加密 …</div>` : '';
+  document.getElementById('blurredSchools').innerHTML = blurHtml + moreText;
+
+  const bal = S.streamer ? (S.streamer.balance ?? 0) : 0;
+  document.getElementById('remainCount').textContent = bal;
+}
+
+async function doUnlock() {
+  if (!S.streamer) return;
+  const bal = S.streamer.balance ?? 0;
+  if (bal <= 0) { showToast('次数不足，请联系平台充值', 'error'); return; }
+
+  const btn = document.getElementById('btnUnlock');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> 解锁中…';
+
+  if (!S.idempotencyKey) {
+    S.idempotencyKey = Date.now() + '-' + Math.random().toString(36).slice(2,8);
+  }
+
+  try {
+    const result = await api('POST', '/auth/deduct', {
+      idempotency_key: S.idempotencyKey,
+      student_nickname: S.student.nickname || '',
+      student_province: S.student.province || '',
+      student_score: S.student.score || 0,
+      student_subject: S.student.subjectStr || '',
+      intended_schools: S.pref.schools || [],
+    });
+
+    S.orderId = result.order_id || S.orderId;
+    S.streamer.balance = result.balance ?? (bal - 1);
+    localStorage.setItem('gk_streamer', JSON.stringify(S.streamer));
+    sessionStorage.setItem('gk_order', S.orderId || '');
+    updateNavBar();
+
+    if (S.reportData) {
+      S.reportData._orderId = S.orderId;
+    }
+
+    showToast('✓ 解锁成功！', 'success');
+    setTimeout(() => navigate('report'), 400);
+  } catch(e) {
+    showToast('解锁失败：' + e.message, 'error');
+    S.idempotencyKey = null;
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '🔓 一键解锁完整报告';
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// Report Rendering
+// ══════════════════════════════════════════════════════════
+function renderReport() {
+  if (!S.reportData) return;
+  const data = S.reportData;
+  const stu = S.student;
+  const orderId = data._orderId || S.orderId || '—';
+  const ts = data.tier_summary || {};
+  const boostCount = ts.boost?.count ?? 0;
+  const solidCount = ts.solid?.count ?? 0;
+  const safeCount = ts.safe?.count ?? 0;
+
+  const rush = (data.schools || []).filter(s => s.tier === 0);
+  const safe = (data.schools || []).filter(s => s.tier === 1);
+  const bottom = (data.schools || []).filter(s => s.tier === 2);
+  const special = data.special_attention || [];
+
+  let html = `
+    <div style="text-align:center;margin-bottom:8px">
+      <div style="font-size:12px;color:var(--text-secondary)">${esc(orderId)} · 防伪</div>
+      <div class="flex-row" style="justify-content:center;flex-wrap:wrap;gap:6px;margin-top:4px">
+        <span class="badge badge-211">📌 ${esc(stu.nickname||'')}</span>
+        <span style="font-size:12px;color:var(--text-secondary)">${esc(stu.province||'')} · ${stu.score||0}分 · ${esc(stu.subjectStr||'')} · 位次${data.student_rank||'估算中'}</span>
+      </div>
+    </div>`;
+
+  // Tier distribution
+  html += `
+    <div class="card">
+      <div class="section-title">📊 冲/稳/保 分布</div>
+      <div class="flex-row" style="justify-content:space-around;text-align:center;margin-top:8px">
+        <div><div style="font-size:24px;font-weight:800;color:var(--color-danger)">${boostCount}</div><div style="font-size:11px;color:var(--text-secondary)">冲刺</div></div>
+        <div><div style="font-size:24px;font-weight:800;color:var(--color-info)">${solidCount}</div><div style="font-size:11px;color:var(--text-secondary)">稳妥</div></div>
+        <div><div style="font-size:24px;font-weight:800;color:var(--color-success)">${safeCount}</div><div style="font-size:11px;color:var(--text-secondary)">保底</div></div>
+      </div>
+      <div style="display:flex;gap:2px;height:8px;margin-top:8px">
+        <div style="flex:${boostCount||1};background:var(--color-danger);border-radius:4px 0 0 4px"></div>
+        <div style="flex:${solidCount||1};background:var(--color-info)"></div>
+        <div style="flex:${safeCount||1};background:var(--color-success);border-radius:0 4px 4px 0"></div>
+      </div>
+    </div>`;
+
+  // Special attention
+  if (special.length > 0) {
+    html += `<div class="card special-attention-section">
+      <div class="special-attention-label">⭐ 意向院校分析</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        ${special.map(s => renderSchoolCard(s, 'special')).join('')}
+      </div>
+    </div>`;
+  }
+
+  // Tier sections
+  if (rush.length) html += `<div class="tier-section"><div class="tier-header rush">🚀 冲刺 <span class="tier-count">（共${rush.length}所）</span></div><div style="display:flex;flex-direction:column;gap:10px">${rush.map(s=>renderSchoolCard(s,'rush')).join('')}</div></div>`;
+  if (safe.length) html += `<div class="tier-section"><div class="tier-header safe">🎯 稳妥 <span class="tier-count">（共${safe.length}所）</span></div><div style="display:flex;flex-direction:column;gap:10px">${safe.map(s=>renderSchoolCard(s,'safe')).join('')}</div></div>`;
+  if (bottom.length) html += `<div class="tier-section"><div class="tier-header bottom">🟢 保底 <span class="tier-count">（共${bottom.length}所）</span></div><div style="display:flex;flex-direction:column;gap:10px">${bottom.map(s=>renderSchoolCard(s,'bottom')).join('')}</div></div>`;
+
+  if (!rush.length && !safe.length && !bottom.length) {
+    html += `<div class="card" style="text-align:center;color:var(--text-secondary);padding:24px">暂无推荐数据，请检查输入信息后重试</div>`;
+  }
+
+  html += `<div class="data-source">数据来源：教育部官网 · 阳光高考 · 近6年2200万+录取记录</div>`;
+  document.getElementById('reportContent').innerHTML = html;
+}
+
+function renderSchoolCard(s, tierKey) {
+  const dim = s.dimensions || {};
+  const adm = s.admission_data || {};
+  const probVal = s.rank_prob || s.weighted_prob || 0;
+  const probClass = tierKey === 'rush' ? 'tier-rush' : tierKey === 'safe' ? 'tier-safe' : tierKey === 'bottom' ? 'tier-bottom' : 'tier-safe';
+
+  const badgeHtml = (s.tags||[]).includes('985') ? '<span class="badge badge-985">985</span>' :
+                    (s.tags||[]).includes('211') ? '<span class="badge badge-211">211</span>' :
+                    (s.tags||[]).includes('双一流') ? '<span class="badge badge-double-first">双一流</span>' :
+                    `<span style="font-size:10px;color:var(--text-secondary)">${(s.tags||['本科'])[0]}</span>`;
+
+  const trend = adm.trend_detail || dim.trend_detail || '暂无趋势数据';
+  const score = adm.latest_min_score ? `约${adm.latest_min_score}分` : '暂无数据';
+  const note = s.note ? `<div style="font-size:11px;color:var(--color-danger);margin-top:4px">⚠ ${esc(s.note)}</div>` : '';
+
+  return `<div class="school-card">
+    <div class="school-card-header">
+      ${badgeHtml}
+      <span class="school-name">${esc(s.name)}</span>
+      ${tierKey !== 'special' ? `<span class="school-prob ${probClass}">${Math.round(probVal)}%</span>` : ''}
+    </div>
+    <div class="school-card-body">
+      <div class="school-row"><span class="label">📍 城市</span><span class="value">${esc(s.city||s.province||'')}</span></div>
+      <div class="school-row"><span class="label">📊 近年线</span><span class="value">${esc(score)}</span></div>
+      ${adm.trend_detail ? `<div class="school-row"><span class="label">📈 趋势</span><span class="value">${esc(trend)}</span></div>` : ''}
+      ${dim.recommended_major ? `<div class="school-row"><span class="label">🎓 推荐专业</span><span class="value">${esc(dim.recommended_major)}</span></div>` : ''}
+      ${dim.tuition ? `<div class="school-row"><span class="label">💰 学费</span><span class="value">${esc(dim.tuition)} · ${esc(dim.tuition_total||'')} · ${esc(dim.tuition_fit||'')}</span></div>` : ''}
+      ${dim.employment_rate ? `<div class="school-row"><span class="label">💼 就业率</span><span class="value">${esc(dim.employment_rate)}</span></div>` : ''}
+      ${dim.avg_salary_start ? `<div class="school-row"><span class="label">💵 薪资</span><span class="value">应届${esc(dim.avg_salary_start)}，3年后${esc(dim.avg_salary_3yr||'')}</span></div>` : ''}
+      ${dim.city_analysis ? `<div class="school-row"><span class="label">🏙️ 城市</span><span class="value">${esc(dim.city_analysis)}</span></div>` : ''}
+      ${note}
+    </div>
+    ${dim.ai_review ? `<div class="school-ai-comment"><span class="speaker">💬 张雪峰点评：</span>${esc(dim.ai_review)}</div>` : ''}
+  </div>`;
+}
+
+// ══════════════════════════════════════════════════════════
+// PDF Generation
+// ══════════════════════════════════════════════════════════
+async function downloadPDF() {
+  const btn = document.querySelector('.btn-ghost');
+  if (!window.jspdf || !window.html2canvas) {
+    showToast('PDF库加载中，请稍候重试', 'warning'); return;
+  }
+  showToast('PDF生成中，请稍候…', 'info');
+  try {
+    const el = document.getElementById('reportContent');
+    const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: '#F5F7FA' });
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const W = pdf.internal.pageSize.getWidth();
+    const H = pdf.internal.pageSize.getHeight();
+    const imgH = (canvas.height * W) / canvas.width;
+
+    pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, W, imgH);
+
+    // 5 watermarks
+    pdf.setFontSize(18);
+    pdf.setTextColor(200, 200, 200);
+    pdf.setGState(new pdf.GState({ opacity: 0.15 }));
+    const wm = 'AI高考志愿规划师';
+    const positions = [[20,60],[80,40],[40,120],[100,100],[20,160]];
+    positions.forEach(([x,y]) => { pdf.text(wm, x, y, { angle: 30 }); });
+
+    const name = S.student.nickname || '考生';
+    const date = new Date().toISOString().slice(0,10);
+    pdf.save(`志愿报告_${name}_${date}.pdf`);
+    showToast('✓ PDF下载成功', 'success');
+  } catch(e) {
+    showToast('PDF生成失败：' + e.message, 'error');
+  }
+}
+
+function nextStudent() {
+  S.student = {};
+  S.pref = {};
+  S.reportData = null;
+  S.orderId = null;
+  S.idempotencyKey = null;
+  S.selectedSchools = [];
+  sessionStorage.removeItem('gk_report');
+  sessionStorage.removeItem('gk_order');
+  sessionStorage.removeItem('gk_student');
+  sessionStorage.removeItem('gk_pref');
+  renderSelectedSchools();
+  // Reset form fields
+  ['stuNickname','stuScore','stuRank'].forEach(id => { const el = document.getElementById(id); if(el) el.value=''; });
+  const prov = document.getElementById('stuProvince');
+  if (prov) { prov.value=''; onProvinceChange(); }
+  document.querySelectorAll('#majorTags .tag, #cityTags .tag, #personalityTags .tag').forEach(t => t.classList.remove('selected'));
+  document.getElementById('cityCustom').value = '';
+  navigate('student');
+}
+
+// ══════════════════════════════════════════════════════════
+// Q&A Page
+// ══════════════════════════════════════════════════════════
+function fillQA(text) {
+  document.getElementById('qaInput').value = text;
+  updateCharCount();
+}
+
+function updateCharCount() {
+  const len = document.getElementById('qaInput').value.length;
+  document.getElementById('charCount').textContent = len + '/100';
+}
+
+async function sendQA() {
+  const inp = document.getElementById('qaInput');
+  const text = inp.value.trim();
+  if (!text) { showToast('请输入问题', 'warning'); return; }
+
+  const chatArea = document.getElementById('chatArea');
+  chatArea.innerHTML += `<div class="chat-bubble user">${esc(text)}</div>`;
+  inp.value = ''; updateCharCount();
+
+  const loadEl = document.createElement('div');
+  loadEl.className = 'chat-bubble ai';
+  loadEl.innerHTML = '<span class="spinner spinner-dark"></span> AI思考中…';
+  chatArea.appendChild(loadEl);
+  chatArea.scrollTop = chatArea.scrollHeight;
+
+  const btn = document.getElementById('btnSendQA');
+  btn.disabled = true;
+
+  try {
+    const data = await api('POST', '/api/qa/ask', { question: text });
+    loadEl.textContent = data.answer || data.response || '暂时无法回答该问题，请稍后再试。';
+  } catch(e) {
+    loadEl.textContent = '⚠ ' + e.message;
+    loadEl.style.color = 'var(--color-danger)';
+  } finally {
+    btn.disabled = false;
+    chatArea.scrollTop = chatArea.scrollHeight;
+  }
+}
+
+function clearQAChat() {
+  document.getElementById('chatArea').innerHTML = '';
+}
+
+// ══════════════════════════════════════════════════════════
+// Live Mode
+// ══════════════════════════════════════════════════════════
+function toggleLiveMode() {
+  const frame = document.getElementById('phoneFrame');
+  const navBar = document.getElementById('navBar');
+  const btn = document.getElementById('btnLive');
+  const isLive = frame.classList.toggle('live-mode');
+
+  if (isLive) {
+    navBar.style.display = 'none';
+    btn.textContent = '⚪ 退出直播';
+    btn.style.animation = 'none';
+    showToast('🔴 直播模式已开启', 'info');
+    frame.style.fontSize = '1.2em';
+  } else {
+    navBar.style.display = '';
+    btn.textContent = '🔴 直播';
+    btn.style.animation = '';
+    frame.style.fontSize = '';
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// Admin Panel
+// ══════════════════════════════════════════════════════════
+function toggleAdminView() {
+  const phone = document.getElementById('phoneFrame');
+  const admin = document.getElementById('adminPanel');
+  const showing = admin.style.display === 'block';
+  phone.style.display = showing ? '' : 'none';
+  admin.style.display = showing ? 'none' : 'block';
+  if (!showing) initAdminPanel();
+}
+
+function initAdminPanel() {
+  S.adminToken = localStorage.getItem('gk_admin_token');
+  if (S.adminToken) {
+    showAdminMain();
+  } else {
+    document.getElementById('adminLoginSection').style.display = '';
+    document.getElementById('adminMainSection').style.display = 'none';
+  }
+}
+
+async function doAdminLogin() {
+  const user = document.getElementById('adminUser').value.trim();
+  const pass = document.getElementById('adminPass').value;
+  const errEl = document.getElementById('adminLoginErr');
+  errEl.classList.remove('show');
+
+  try {
+    const data = await api('POST', '/admin/login', { username: user, password: pass });
+    S.adminToken = data.token;
+    localStorage.setItem('gk_admin_token', S.adminToken);
+    showAdminMain();
+  } catch(e) {
+    errEl.textContent = '⚠ ' + e.message;
+    errEl.classList.add('show');
+  }
+}
+
+function doAdminLogout() {
+  S.adminToken = null;
+  localStorage.removeItem('gk_admin_token');
+  document.getElementById('adminLoginSection').style.display = '';
+  document.getElementById('adminMainSection').style.display = 'none';
+}
+
+function showAdminMain() {
+  document.getElementById('adminLoginSection').style.display = 'none';
+  document.getElementById('adminMainSection').style.display = '';
+  loadStreamers(0);
+}
+
+function switchAdminTab(tab) {
+  document.querySelectorAll('.admin-nav-btn[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  ['streamers','orders','config'].forEach(t => {
+    document.getElementById('adminTab-' + t).style.display = t === tab ? '' : 'none';
+  });
+  if (tab === 'orders') loadOrders(0);
+  if (tab === 'config') loadConfig();
+}
+
+// ─── Streamers ───────────────────────────────────────────
+async function loadStreamers(delta) {
+  S.streamerPage = Math.max(1, S.streamerPage + delta);
+  const tbody = document.getElementById('streamersTbody');
+  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-secondary)">加载中…</td></tr>';
+  try {
+    const data = await api('GET', `/admin/streamers?page=${S.streamerPage}`, undefined, true);
+    S.streamerTotal = data.total;
+    const totalPages = Math.ceil(data.total / PAGE_SIZE) || 1;
+    document.getElementById('streamerPageInfo').textContent = `${S.streamerPage} / ${totalPages}`;
+    document.getElementById('prevStreamers').disabled = S.streamerPage <= 1;
+    document.getElementById('nextStreamers').disabled = S.streamerPage >= totalPages;
+
+    tbody.innerHTML = (data.streamers || []).map(s => `
+      <tr>
+        <td>${esc(s.phone)}</td>
+        <td>${esc(s.name)}</td>
+        <td><strong>${s.balance}</strong></td>
+        <td>${s.purchased_total}</td>
+        <td>${s.used_total}</td>
+        <td class="${s.status==='active'?'status-active':'status-disabled'}">● ${s.status==='active'?'启用':'禁用'}</td>
+        <td class="action-btns">
+          <button onclick="openRecharge(${s.id},'${esc(s.name)}')">充值</button>
+          <button onclick="toggleStatus(${s.id},'${s.status}')">${s.status==='active'?'禁用':'启用'}</button>
+        </td>
+      </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-secondary)">暂无数据</td></tr>';
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--color-danger)">${esc(e.message)}</td></tr>`;
+  }
+}
+
+async function toggleStatus(id, currentStatus) {
+  try {
+    await api('PATCH', `/admin/streamers/${id}/status`, undefined, true);
+    showToast(currentStatus==='active' ? '已禁用' : '已启用', 'success');
+    loadStreamers(0);
+  } catch(e) { showToast(e.message, 'error'); }
+}
+
+function openRecharge(id, name) {
+  S.rechargeTargetId = id;
+  document.getElementById('rechargeTarget').textContent = `主播：${name}`;
+  document.getElementById('rechargeCount').value = 10;
+  document.getElementById('rechargeAmount').value = 299;
+  document.getElementById('rechargeRemark').value = '';
+  document.getElementById('rechargeErr').classList.remove('show');
+  showModal('recharge');
+}
+
+async function doRecharge() {
+  const count = parseInt(document.getElementById('rechargeCount').value);
+  const amount = parseFloat(document.getElementById('rechargeAmount').value);
+  const remark = document.getElementById('rechargeRemark').value;
+  const errEl = document.getElementById('rechargeErr');
+
+  if (!count || count < 1) { errEl.textContent='请输入有效次数'; errEl.classList.add('show'); return; }
+
+  const btn = document.getElementById('btnDoRecharge');
+  btn.disabled = true;
+  try {
+    await api('POST', `/admin/streamers/${S.rechargeTargetId}/recharge`, { count, amount, remark }, true);
+    closeModal('recharge');
+    showToast(`充值成功 +${count} 次`, 'success');
+    loadStreamers(0);
+  } catch(e) { errEl.textContent = e.message; errEl.classList.add('show'); }
+  finally { btn.disabled = false; }
+}
+
+function calcRechargeAmt() {
+  const c = parseInt(document.getElementById('rechargeCount').value)||0;
+  document.getElementById('rechargeAmount').value = (c * 29.9).toFixed(0);
+}
+function calcRechargeCount() {
+  const a = parseFloat(document.getElementById('rechargeAmount').value)||0;
+  document.getElementById('rechargeCount').value = Math.round(a/29.9);
+}
+
+async function doCreateStreamer() {
+  const phone = document.getElementById('newPhone').value.trim();
+  const name = document.getElementById('newName').value.trim();
+  const password = document.getElementById('newPassword').value;
+  const errEl = document.getElementById('createStreamerErr');
+  errEl.classList.remove('show');
+
+  if (phone.length !== 11) { errEl.textContent='请输入11位手机号'; errEl.classList.add('show'); return; }
+  if (!name) { errEl.textContent='请输入姓名'; errEl.classList.add('show'); return; }
+  if (password.length < 6) { errEl.textContent='密码至少6位'; errEl.classList.add('show'); return; }
+
+  const btn = document.getElementById('btnDoCreate');
+  btn.disabled = true;
+  try {
+    await api('POST', '/admin/streamers', { phone, name, password }, true);
+    closeModal('createStreamer');
+    showToast(`主播 ${name} 创建成功`, 'success');
+    loadStreamers(0);
+  } catch(e) { errEl.textContent = e.message; errEl.classList.add('show'); }
+  finally { btn.disabled = false; }
+}
+
+// ─── Orders ──────────────────────────────────────────────
+async function loadOrders(delta) {
+  S.ordersPage = Math.max(1, S.ordersPage + delta);
+  const tbody = document.getElementById('ordersTbody');
+  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-secondary)">加载中…</td></tr>';
+  const date = document.getElementById('filterOrderDate').value;
+  const params = new URLSearchParams({ page: S.ordersPage });
+  if (date) { params.set('date_from', date); params.set('date_to', date + ' 23:59:59'); }
+  try {
+    const data = await api('GET', `/admin/orders?${params}`, undefined, true);
+    S.ordersTotal = data.total;
+    const totalPages = Math.ceil(data.total / PAGE_SIZE) || 1;
+    document.getElementById('ordersPageInfo').textContent = `${S.ordersPage} / ${totalPages}`;
+    document.getElementById('prevOrders').disabled = S.ordersPage <= 1;
+    document.getElementById('nextOrders').disabled = S.ordersPage >= totalPages;
+
+    tbody.innerHTML = (data.orders||[]).map(o => `
+      <tr>
+        <td style="font-size:11px">${esc(o.id)}</td>
+        <td>${esc(o.streamer_name)}</td>
+        <td>${esc(o.student_nickname)}</td>
+        <td>${esc(o.student_province)}</td>
+        <td>${o.student_score}</td>
+        <td style="font-size:11px">${esc(String(o.created_at).slice(0,16))}</td>
+        <td style="color:var(--color-success)">${esc(o.status)}</td>
+      </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-secondary)">暂无数据</td></tr>';
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--color-danger)">${esc(e.message)}</td></tr>`;
+  }
+}
+
+// ─── Config ──────────────────────────────────────────────
+async function loadConfig() {
+  try {
+    const data = await api('GET', '/admin/config', undefined, true);
+    const cfg = data.config || {};
+    if (cfg.boost_min) document.getElementById('cfgBoostMin').value = cfg.boost_min.value || 30;
+    if (cfg.solid_min) document.getElementById('cfgSolidMin').value = cfg.solid_min.value || 60;
+    if (cfg.safe_min) document.getElementById('cfgSafeMin').value = cfg.safe_min.value || 85;
+  } catch(e) {}
+}
+
+async function saveConfig() {
+  const body = {
+    boost_min: document.getElementById('cfgBoostMin').value,
+    solid_min: document.getElementById('cfgSolidMin').value,
+    safe_min: document.getElementById('cfgSafeMin').value,
+  };
+  try {
+    await api('PUT', '/admin/config', body, true);
+    showToast('配置已保存', 'success');
+  } catch(e) { showToast(e.message, 'error'); }
+}
+
+// ══════════════════════════════════════════════════════════
+// Modal helpers
+// ══════════════════════════════════════════════════════════
+function showModal(name) {
+  document.getElementById('modal-' + name).classList.add('show');
+}
+function closeModal(name) {
+  document.getElementById('modal-' + name).classList.remove('show');
+}
+document.querySelectorAll('.modal-overlay').forEach(mo => {
+  mo.addEventListener('click', e => { if (e.target === mo) mo.classList.remove('show'); });
+});
+
+// ══════════════════════════════════════════════════════════
+// Escape helper
+// ══════════════════════════════════════════════════════════
+function esc(s) {
+  if (s == null) return '';
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+</script>
+</body>
+</html>

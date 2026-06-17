@@ -28,6 +28,10 @@ class Settings(BaseSettings):
     jwt_expire_hours: int = 24
     internal_jwt_secret: str = ""
 
+    # Admin
+    admin_username: str = "admin"
+    admin_password: str = ""
+
     # LLM
     llm_provider: str = "deepseek"
     llm_api_key: str = ""

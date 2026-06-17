@@ -1,8 +1,10 @@
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 
 from api.database import engine
@@ -51,6 +53,18 @@ app.include_router(qa.router)
 app.include_router(report.router)
 app.include_router(admin.router)
 app.include_router(crawler.router)
+
+
+# ─── Frontend ────────────────────────────────────────────────────────────────
+
+_FRONTEND = os.path.join(os.path.dirname(__file__), "frontend")
+
+@app.get("/", include_in_schema=False)
+async def serve_index():
+    return FileResponse(os.path.join(_FRONTEND, "index.html"))
+
+if os.path.isdir(_FRONTEND):
+    app.mount("/static", StaticFiles(directory=_FRONTEND), name="static")
 
 
 # ─── Health ──────────────────────────────────────────────────────────────────

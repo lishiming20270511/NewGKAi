@@ -1,11 +1,15 @@
+import hashlib
+import json
 import uuid
 from datetime import datetime, timedelta, timezone
+from typing import Optional
 
 import bcrypt
 from fastapi import APIRouter, Depends, HTTPException, status
 from jose import jwt
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..config import settings
@@ -35,7 +39,26 @@ class LoginResponse(BaseModel):
     streamer: StreamerOut
 
 
+class DeductRequest(BaseModel):
+    idempotency_key: str = Field(..., min_length=1, max_length=36)
+    student_nickname: str = Field("", max_length=64)
+    student_province: str = Field("", max_length=32)
+    student_score: int = Field(0, ge=0, le=900)
+    student_subject: str = Field("", max_length=32)
+    intended_schools: Optional[list[str]] = None
+
+
 # ─── Helpers ─────────────────────────────────────────────────────────────────
+
+def _generate_order_id() -> str:
+    now = datetime.now(timezone.utc)
+    return f"GK{now.strftime('%Y%m%d-%H%M')}-{uuid.uuid4().hex[:4]}"
+
+
+def _score_range(score: int) -> str:
+    low = (score // 5) * 5
+    return f"{low}-{low + 5}"
+
 
 def _make_token(streamer_id: int) -> tuple[str, str]:
     jti = str(uuid.uuid4())
@@ -123,3 +146,146 @@ async def streamer_profile(current_streamer: dict = Depends(get_current_streamer
             "used_total": current_streamer["used_total"],
         }
     }
+
+
+@router.post("/deduct")
+async def deduct(
+    body: DeductRequest,
+    current_streamer: dict = Depends(get_current_streamer),
+    db: AsyncSession = Depends(get_db),
+):
+    sid = current_streamer["id"]
+    lock_key = f"deduct:lock:{sid}"
+    redis_client = None
+
+    # ① Redis distributed lock (best-effort; degrade to DB lock if unavailable)
+    try:
+        redis_client = get_redis()
+        locked = await redis_client.set(lock_key, "1", nx=True, ex=5)
+        if locked is None:
+            raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, "操作过于频繁，请稍后重试")
+    except HTTPException:
+        raise
+    except Exception:
+        redis_client = None  # Redis unavailable — DB lock only
+
+    try:
+        async with db.begin():
+            # ② Idempotency check
+            dup = await db.execute(
+                text("SELECT id FROM orders WHERE streamer_id=:sid AND idempotency_key=:key"),
+                {"sid": sid, "key": body.idempotency_key},
+            )
+            existing = dup.mappings().first()
+            if existing:
+                acc_row = await db.execute(
+                    text("SELECT balance, used_total FROM streamer_accounts WHERE id=:id"),
+                    {"id": sid},
+                )
+                acc = acc_row.mappings().first()
+                return {
+                    "success": True,
+                    "already_processed": True,
+                    "order_id": existing["id"],
+                    "balance": acc["balance"],
+                    "used_total": acc["used_total"],
+                }
+
+            # ③ SELECT FOR UPDATE — row-level lock prevents concurrent deducts
+            acc_row = await db.execute(
+                text("SELECT balance, used_total FROM streamer_accounts WHERE id=:id FOR UPDATE"),
+                {"id": sid},
+            )
+            account = acc_row.mappings().first()
+            if account["balance"] < 1:
+                raise HTTPException(status.HTTP_400_BAD_REQUEST, "剩余次数不足")
+
+            # ④ Atomic deduct
+            await db.execute(
+                text("UPDATE streamer_accounts SET balance=balance-1, used_total=used_total+1 WHERE id=:id"),
+                {"id": sid},
+            )
+
+            # ⑤ Create order
+            order_id = _generate_order_id()
+            intended_json = json.dumps(body.intended_schools or [], ensure_ascii=False)
+            await db.execute(
+                text("""
+                    INSERT INTO orders
+                        (id, streamer_id, student_nickname, student_province,
+                         student_score, student_subject, intended_schools, idempotency_key)
+                    VALUES
+                        (:id, :sid, :nick, :prov, :score, :subj, :intended, :ikey)
+                """),
+                {
+                    "id": order_id,
+                    "sid": sid,
+                    "nick": body.student_nickname,
+                    "prov": body.student_province,
+                    "score": body.student_score,
+                    "subj": body.student_subject,
+                    "intended": intended_json,
+                    "ikey": body.idempotency_key,
+                },
+            )
+
+            # ⑥ Insert report_tasks (anti-fraud similarity check done in T2.8 service)
+            student_hash = hashlib.sha256(
+                f"{body.student_nickname}:{body.student_province}:{body.student_score}".encode()
+            ).hexdigest()[:64]
+            school_hash = hashlib.sha256(
+                json.dumps(sorted(body.intended_schools or []), ensure_ascii=False).encode()
+            ).hexdigest()[:64]
+            await db.execute(
+                text("""
+                    INSERT INTO report_tasks
+                        (order_id, streamer_id, student_hash, score_range,
+                         province, school_hash, similarity_flag)
+                    VALUES
+                        (:oid, :sid, :shash, :srange, :prov, :schash, 0)
+                """),
+                {
+                    "oid": order_id,
+                    "sid": sid,
+                    "shash": student_hash,
+                    "srange": _score_range(body.student_score),
+                    "prov": body.student_province,
+                    "schash": school_hash,
+                },
+            )
+
+        return {
+            "success": True,
+            "balance": account["balance"] - 1,
+            "used_total": account["used_total"] + 1,
+            "order_id": order_id,
+        }
+
+    except IntegrityError:
+        # Duplicate idempotency_key race condition — treat as already processed
+        acc_row = await db.execute(
+            text("SELECT id FROM orders WHERE streamer_id=:sid AND idempotency_key=:key"),
+            {"sid": sid, "key": body.idempotency_key},
+        )
+        existing = acc_row.mappings().first()
+        if existing:
+            acc2 = await db.execute(
+                text("SELECT balance, used_total FROM streamer_accounts WHERE id=:id"),
+                {"id": sid},
+            )
+            acc = acc2.mappings().first()
+            return {
+                "success": True,
+                "already_processed": True,
+                "order_id": existing["id"],
+                "balance": acc["balance"],
+                "used_total": acc["used_total"],
+            }
+        raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "扣费失败，请重试")
+
+    finally:
+        if redis_client is not None:
+            try:
+                await redis_client.delete(lock_key)
+            except Exception:
+                pass
