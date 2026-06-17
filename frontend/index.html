@@ -6,25 +6,30 @@
 <title>AI高考志愿规划师 · v3.0</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
+  --bg-primary:#0F172A;--bg-card:#1E293B;--bg-card-hover:#334155;--bg-input:#1E293B;
+  --text-primary:#F1F5F9;--text-secondary:#94A3B8;--text-muted:#64748B;
+  --color-accent:#818CF8;--color-accent-hover:#6366F1;--color-cyan:#22D3EE;
   --color-danger:#EF4444;--color-info:#3B82F6;--color-success:#22C55E;
-  --color-985:#F59E0B;--color-211:#8B5CF6;--color-double-first:#06B6D4;
-  --color-live:#DC2626;--color-blur:#E2E8F0;
-  --bg-primary:#F5F7FA;--bg-card:#FFFFFF;
-  --text-primary:#1E293B;--text-secondary:#64748B;--border:#E2E8F0;
-  --radius-sm:6px;--radius-md:10px;--radius-lg:16px;
-  --shadow-sm:0 1px 3px rgba(0,0,0,.08);--shadow-md:0 4px 16px rgba(0,0,0,.10);
-  --transition:all .18s ease;
+  --color-985:#F59E0B;--color-211:#818CF8;--color-double-first:#06B6D4;
+  --color-live:#DC2626;--color-blur:#475569;
+  --border:rgba(148,163,184,0.08);--border-subtle:rgba(148,163,184,0.15);
+  --radius-sm:8px;--radius-md:12px;--radius-lg:20px;
+  --shadow-sm:0 1px 3px rgba(0,0,0,.15);--shadow-md:0 4px 16px rgba(0,0,0,.30);
+  --shadow-card:0 4px 24px rgba(0,0,0,.3);--shadow-glow:0 2px 8px rgba(129,140,248,.25);
+  --transition:all .2s cubic-bezier(.4,0,.2,1);
+  color-scheme:dark;
 }
-body{background:#94A3B8;min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:24px 16px;font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif}
+body{background:#080D1A;min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:24px 16px;font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif}
 .prototype-wrapper{display:flex;gap:24px;align-items:flex-start;width:100%;max-width:1200px}
 
 /* ── Phone Frame ── */
 .phone-frame{
   width:375px;min-width:375px;height:800px;background:var(--bg-primary);
-  border-radius:24px;box-shadow:0 20px 60px rgba(0,0,0,.3);
+  border-radius:24px;box-shadow:0 20px 60px rgba(0,0,0,.6);
   display:flex;flex-direction:column;overflow:hidden;position:relative;flex-shrink:0;
 }
 .phone-frame.live-mode{
@@ -32,7 +37,7 @@ body{background:#94A3B8;min-height:100vh;display:flex;align-items:flex-start;jus
   position:fixed;top:0;left:0;z-index:1000;
 }
 .status-bar{
-  height:28px;background:#1E293B;color:#fff;
+  height:28px;background:#0A0F1E;color:var(--text-secondary);
   display:flex;justify-content:space-between;align-items:center;
   padding:0 16px;font-size:12px;font-weight:500;flex-shrink:0;
 }
@@ -40,16 +45,16 @@ body{background:#94A3B8;min-height:100vh;display:flex;align-items:flex-start;jus
 
 /* ── Nav Bar ── */
 .nav-bar{
-  background:#fff;border-bottom:1px solid var(--border);
+  background:rgba(15,23,42,0.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--border-subtle);
   padding:0 12px;display:flex;align-items:center;justify-content:space-between;
   flex-shrink:0;min-height:40px;gap:4px;flex-wrap:wrap;
 }
 .nav-user{font-size:12px;color:var(--text-secondary);display:flex;align-items:center;gap:8px;flex:1;min-width:0}
 .nav-user strong{color:var(--text-primary);white-space:nowrap}
-.nav-balance{background:#FEF3C7;color:#92400E;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+.nav-balance{background:rgba(129,140,248,.15);color:var(--color-accent);padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
 .nav-actions{display:flex;gap:4px;align-items:center;flex-shrink:0}
 .nav-btn-small{border:none;background:none;cursor:pointer;font-size:12px;color:var(--text-secondary);padding:4px 8px;border-radius:var(--radius-sm)}
-.nav-btn-small:hover{background:var(--bg-primary)}
+.nav-btn-small:hover{background:var(--bg-card-hover)}
 .btn-live{
   background:var(--color-live);color:#fff;border:none;padding:5px 12px;
   border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;
@@ -60,18 +65,18 @@ body{background:#94A3B8;min-height:100vh;display:flex;align-items:flex-start;jus
 /* ── Page Container ── */
 .page-container{flex:1;overflow-y:auto;position:relative}
 .page-container::-webkit-scrollbar{width:4px}
-.page-container::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.page-container::-webkit-scrollbar-thumb{background:var(--border-subtle);border-radius:2px}
 .page{display:none;padding:12px;flex-direction:column;gap:10px;min-height:100%}
 .page.active{display:flex}
 
 /* ── Home Bar ── */
-.home-bar{height:24px;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.home-bar::after{content:'';width:120px;height:4px;background:#1E293B;border-radius:2px;opacity:.2}
+.home-bar{height:24px;background:var(--bg-card);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.home-bar::after{content:'';width:120px;height:4px;background:var(--text-muted);border-radius:2px;opacity:.5}
 
 /* ── Toast ── */
 .toast{
   position:absolute;top:44px;left:50%;transform:translateX(-50%) translateY(-8px);
-  background:#1E293B;color:#fff;padding:8px 16px;border-radius:20px;
+  background:#334155;color:var(--text-primary);padding:8px 16px;border-radius:20px;
   font-size:13px;white-space:nowrap;opacity:0;pointer-events:none;z-index:200;
   transition:opacity .2s,transform .2s;max-width:90%;text-align:center;
 }
@@ -81,18 +86,18 @@ body{background:#94A3B8;min-height:100vh;display:flex;align-items:flex-start;jus
 .toast.warning{background:#92400E}
 
 /* ── Cards ── */
-.card{background:var(--bg-card);border-radius:var(--radius-md);padding:12px;border:1px solid var(--border);box-shadow:var(--shadow-sm)}
+.card{background:var(--bg-card);border-radius:var(--radius-md);padding:12px;border:1px solid var(--border-subtle);box-shadow:var(--shadow-card);transition:var(--transition)}
 
 /* ── Buttons ── */
 .btn{border:none;border-radius:var(--radius-sm);padding:8px 16px;font-size:14px;font-weight:500;cursor:pointer;transition:var(--transition);display:inline-flex;align-items:center;justify-content:center;gap:6px}
-.btn-danger{background:var(--color-danger);color:#fff}
-.btn-danger:hover{background:#DC2626}
-.btn-danger:disabled{background:#FCA5A5;cursor:not-allowed}
+.btn-danger{background:var(--color-accent);color:#fff;box-shadow:var(--shadow-glow)}
+.btn-danger:hover{background:var(--color-accent-hover);box-shadow:0 4px 12px rgba(129,140,248,.4);transform:scale(1.02)}
+.btn-danger:disabled{background:rgba(129,140,248,.3);cursor:not-allowed;box-shadow:none}
 .btn-primary{background:var(--color-info);color:#fff}
-.btn-primary:hover{background:#2563EB}
+.btn-primary:hover{background:#2563EB;transform:scale(1.02)}
 .btn-primary:disabled{opacity:.5;cursor:not-allowed}
-.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text-primary)}
-.btn-ghost:hover{background:var(--bg-primary)}
+.btn-ghost{background:transparent;border:1px solid var(--border-subtle);color:var(--text-secondary)}
+.btn-ghost:hover{background:var(--bg-card-hover);color:var(--text-primary)}
 .btn-block{width:100%}
 .btn-lg{padding:12px 20px;font-size:15px;border-radius:var(--radius-md)}
 
@@ -100,59 +105,59 @@ body{background:#94A3B8;min-height:100vh;display:flex;align-items:flex-start;jus
 .form-group{display:flex;flex-direction:column}
 .form-label{font-size:13px;font-weight:500;color:var(--text-primary);margin-bottom:4px}
 .form-input,.form-select,.form-textarea{
-  width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);
-  font-size:14px;color:var(--text-primary);background:#fff;outline:none;transition:var(--transition);
+  width:100%;padding:9px 12px;border:1px solid var(--border-subtle);border-radius:var(--radius-sm);
+  font-size:14px;color:var(--text-primary);background:var(--bg-input);outline:none;transition:var(--transition);
   font-family:inherit;
 }
-.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--color-info);box-shadow:0 0 0 3px rgba(59,130,246,.1)}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--color-accent);box-shadow:0 0 0 3px rgba(129,140,248,.15)}
 .form-input.error{border-color:var(--color-danger);animation:shake .3s ease}
 .form-textarea{resize:none;height:80px;line-height:1.5}
 .form-error-text{font-size:12px;color:var(--color-danger);margin-top:3px;display:none}
 .form-error-text.show{display:block}
 .input-with-suffix{display:flex;align-items:center;gap:6px}
-.input-with-suffix input{flex:1;padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;outline:none;transition:var(--transition)}
-.input-with-suffix input:focus{border-color:var(--color-info)}
+.input-with-suffix input{flex:1;padding:9px 12px;border:1px solid var(--border-subtle);border-radius:var(--radius-sm);font-size:14px;color:var(--text-primary);background:var(--bg-input);outline:none;transition:var(--transition)}
+.input-with-suffix input:focus{border-color:var(--color-accent)}
 .suffix{font-size:13px;color:var(--text-secondary);white-space:nowrap}
 .password-wrap{position:relative}
-.password-wrap input{width:100%;padding:9px 40px 9px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;outline:none;transition:var(--transition)}
-.password-wrap input:focus{border-color:var(--color-info)}
+.password-wrap input{width:100%;padding:9px 40px 9px 12px;border:1px solid var(--border-subtle);border-radius:var(--radius-sm);font-size:14px;color:var(--text-primary);background:var(--bg-input);outline:none;transition:var(--transition)}
+.password-wrap input:focus{border-color:var(--color-accent)}
 .toggle-pwd{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;padding:0}
 
 /* ── Tags ── */
 .tag-group{display:flex;flex-wrap:wrap;gap:6px}
 .tag{
   padding:5px 10px;border-radius:20px;font-size:12px;cursor:pointer;
-  background:var(--bg-primary);border:1px solid var(--border);color:var(--text-secondary);
+  background:rgba(30,41,59,.8);border:1px solid var(--border-subtle);color:var(--text-secondary);
   transition:var(--transition);user-select:none;
 }
-.tag:hover{border-color:var(--color-info);color:var(--color-info)}
-.tag.selected{background:var(--color-info);border-color:var(--color-info);color:#fff}
+.tag:hover{border-color:var(--color-accent);color:var(--color-accent)}
+.tag.selected{background:var(--color-accent);border-color:var(--color-accent);color:#fff}
 .tag-radio{
   padding:5px 14px;border-radius:20px;font-size:13px;cursor:pointer;
-  background:var(--bg-primary);border:1.5px solid var(--border);color:var(--text-secondary);
+  background:rgba(30,41,59,.8);border:1px solid var(--border-subtle);color:var(--text-secondary);
   transition:var(--transition);user-select:none;
 }
-.tag-radio.selected{background:var(--color-danger);border-color:var(--color-danger);color:#fff}
+.tag-radio.selected{background:var(--color-accent);border-color:var(--color-accent);color:#fff}
 
 /* ── Section / Page titles ── */
 .page-title{font-size:20px;font-weight:700;color:var(--text-primary)}
 .page-subtitle{font-size:13px;color:var(--text-secondary);margin-top:2px}
 .section-title{font-size:14px;font-weight:600;color:var(--text-primary);margin-bottom:6px}
-.step-indicator{font-size:11px;font-weight:600;color:var(--color-info);background:rgba(59,130,246,.1);padding:2px 8px;border-radius:20px;display:inline-block;margin-bottom:4px}
+.step-indicator{font-size:11px;font-weight:600;color:var(--color-accent);background:rgba(129,140,248,.1);padding:2px 8px;border-radius:20px;display:inline-block;margin-bottom:4px}
 
 /* ── Login Page ── */
 .brand-section{text-align:center;padding:16px 0 8px}
-.brand-logo{font-size:22px;font-weight:800;background:linear-gradient(135deg,var(--color-info),#6366F1);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.brand-logo{font-size:22px;font-weight:800;background:linear-gradient(135deg,var(--color-accent),var(--color-cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 .brand-subtitle{font-size:12px;color:var(--text-secondary);margin-top:2px}
 .trust-badge{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
-.trust-badge span{font-size:12px;color:var(--text-secondary);background:var(--bg-primary);padding:3px 10px;border-radius:20px}
+.trust-badge span{font-size:12px;color:var(--text-secondary);background:rgba(30,41,59,.8);padding:3px 10px;border-radius:20px}
 
 /* ── Analyzing Page ── */
-.analyzing-bg{background:linear-gradient(135deg,#EFF6FF,#F0F0FF);border-radius:var(--radius-lg);padding:20px;text-align:center;position:relative;overflow:hidden}
-.analyzing-bg::before{content:'';position:absolute;inset:0;background-image:radial-gradient(rgba(59,130,246,.06) 1px,transparent 1px);background-size:18px 18px}
+.analyzing-bg{background:linear-gradient(135deg,#0F172A,#1E293B);border-radius:var(--radius-lg);padding:20px;text-align:center;position:relative;overflow:hidden}
+.analyzing-bg::before{content:'';position:absolute;inset:0;background-image:radial-gradient(rgba(129,140,248,.06) 1px,transparent 1px);background-size:18px 18px}
 .analyzing-bg::after{
   content:'';position:absolute;inset:0;
-  background:linear-gradient(180deg,transparent 0%,rgba(59,130,246,.2) 50%,transparent 100%);
+  background:linear-gradient(180deg,transparent 0%,rgba(129,140,248,.15) 50%,transparent 100%);
   background-size:100% 40px;animation:scan 2s linear infinite;
 }
 @keyframes scan{0%{background-position:0 -40px}100%{background-position:0 200%}}
@@ -161,46 +166,47 @@ body{background:#94A3B8;min-height:100vh;display:flex;align-items:flex-start;jus
 .analyzing-title{font-size:18px;font-weight:700;color:var(--text-primary);position:relative;z-index:1}
 .analyzing-subtitle{font-size:13px;color:var(--text-secondary);margin-top:4px;position:relative;z-index:1}
 .engine-badges{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:8px;position:relative;z-index:1}
-.engine-badge{display:flex;align-items:center;gap:4px;font-size:11px;background:rgba(255,255,255,.8);padding:3px 10px;border-radius:20px;border:1px solid var(--border)}
+.engine-badge{display:flex;align-items:center;gap:4px;font-size:11px;background:rgba(30,41,59,.8);padding:3px 10px;border-radius:20px;border:1px solid var(--border-subtle)}
 .dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
 .dot.blue{background:#3B82F6;animation:blink 1s infinite}
-.dot.purple{background:#8B5CF6;animation:blink 1.2s infinite}
-.dot.cyan{background:#06B6D4;animation:blink 1.4s infinite}
+.dot.purple{background:var(--color-accent);animation:blink 1.2s infinite}
+.dot.cyan{background:var(--color-cyan);animation:blink 1.4s infinite}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
 .analyzing-steps{display:flex;flex-direction:column;gap:8px}
-.analyzing-step{display:flex;align-items:center;gap:10px;padding:10px 12px;background:#fff;border-radius:var(--radius-sm);border:1px solid var(--border)}
-.analyzing-step.active{border-color:var(--color-info)}
-.analyzing-step.done{background:#F0FDF4;border-color:var(--color-success)}
+.analyzing-step{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg-card);border-radius:var(--radius-sm);border:1px solid var(--border)}
+.analyzing-step.active{border-color:var(--color-accent)}
+.analyzing-step.done{background:rgba(34,197,94,.1);border-color:var(--color-success)}
 .step-icon{font-size:20px;flex-shrink:0}
 .step-info{flex:1;min-width:0}
 .step-label{font-size:13px;font-weight:500;color:var(--text-primary)}
-.step-progress-bar{height:4px;background:var(--border);border-radius:2px;margin-top:4px;overflow:hidden}
-.step-progress-bar .fill{height:100%;background:var(--color-info);border-radius:2px;transition:width .1s linear;width:0}
+.step-progress-bar{height:4px;background:var(--border-subtle);border-radius:2px;margin-top:4px;overflow:hidden}
+.step-progress-bar .fill{height:100%;background:var(--color-accent);border-radius:2px;transition:width .1s linear;width:0}
 .step-status{font-size:12px;color:var(--text-secondary);flex-shrink:0;min-width:48px;text-align:right}
 .analyzing-info{display:flex;flex-direction:column;gap:8px}
-.analyzing-info-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px}
+.analyzing-info-card{background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);padding:10px}
 .info-card-title{font-size:12px;font-weight:600;color:var(--text-primary);margin-bottom:4px}
 .info-card-text{font-size:12px;color:var(--text-secondary);line-height:1.5}
 
 /* ── Paywall ── */
-.blur-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;font-size:13px;color:transparent;text-shadow:0 0 8px rgba(0,0,0,.3);user-select:none;filter:blur(3px)}
+.blur-card{background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);padding:10px 12px;font-size:13px;color:transparent;text-shadow:0 0 8px rgba(0,0,0,.5);user-select:none;filter:blur(3px)}
 .insights-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.insight-item{text-align:center;padding:8px;background:var(--bg-primary);border-radius:var(--radius-sm)}
+.insight-item{text-align:center;padding:8px;background:rgba(30,41,59,.8);border-radius:var(--radius-sm)}
 .insight-item .label{font-size:11px;color:var(--text-secondary);margin-bottom:2px}
 .insight-item .value{font-size:15px;font-weight:700;color:var(--text-primary)}
 .insight-item .value.blurred{filter:blur(5px);user-select:none}
 .report-summary{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--text-secondary)}
-.data-source{font-size:11px;color:#94A3B8;text-align:center;line-height:1.5}
+.data-source{font-size:11px;color:var(--text-muted);text-align:center;line-height:1.5}
 
 /* ── Report ── */
 .tier-section{display:flex;flex-direction:column;gap:8px}
 .tier-header{font-size:14px;font-weight:700;padding:6px 10px;border-radius:var(--radius-sm);display:flex;align-items:center;gap:6px}
-.tier-header.rush{background:#FEF2F2;color:var(--color-danger)}
-.tier-header.safe{background:#EFF6FF;color:var(--color-info)}
-.tier-header.bottom{background:#F0FDF4;color:var(--color-success)}
+.tier-header.rush{background:rgba(239,68,68,.12);color:var(--color-danger)}
+.tier-header.safe{background:rgba(59,130,246,.12);color:var(--color-info)}
+.tier-header.bottom{background:rgba(34,197,94,.12);color:var(--color-success)}
 .tier-count{font-size:12px;font-weight:400;opacity:.7}
-.school-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden}
-.school-card-header{display:flex;align-items:center;gap:6px;padding:10px 12px;border-bottom:1px solid var(--bg-primary)}
+.school-card{background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);overflow:hidden;transition:var(--transition)}
+.school-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-glow),0 8px 32px rgba(0,0,0,.4)}
+.school-card-header{display:flex;align-items:center;gap:6px;padding:10px 12px;border-bottom:1px solid var(--border)}
 .school-name{flex:1;font-size:15px;font-weight:700;color:var(--text-primary)}
 .school-prob{font-size:16px;font-weight:800;flex-shrink:0}
 .school-prob.tier-rush{color:var(--color-danger)}
@@ -211,41 +217,66 @@ body{background:#94A3B8;min-height:100vh;display:flex;align-items:flex-start;jus
 .school-row .label{color:var(--text-secondary);white-space:nowrap;min-width:70px;flex-shrink:0}
 .school-row .value{color:var(--text-primary);line-height:1.4;flex:1}
 .school-match{color:var(--color-success);font-size:11px;font-weight:500}
-.school-ai-comment{background:#FFFBEB;border-top:1px solid #FDE68A;padding:8px 12px;font-size:12px;color:#92400E;line-height:1.5}
-.school-ai-comment .speaker{font-weight:700;color:#78350F}
+.school-ai-comment{background:rgba(15,23,42,.8);border-top:1px solid var(--border);padding:8px 12px;font-size:12px;color:var(--text-secondary);line-height:1.5}
+.school-ai-comment .speaker{font-weight:700;color:var(--color-accent)}
+.city-panel{margin-top:6px;padding:8px;background:rgba(15,23,42,.6);border-radius:var(--radius-sm);width:100%;display:none}
+.city-panel.open{display:block}
+.city-panel-row{font-size:11px;color:var(--text-secondary);line-height:1.5;margin-bottom:4px}
+.city-panel-row:last-child{margin-bottom:0}
+.city-toggle{display:flex;align-items:center;gap:4px;cursor:pointer;width:100%}
+.city-toggle:hover .city-toggle-icon{color:var(--color-accent)}
+.city-toggle-icon{font-size:10px;color:var(--text-muted);transition:transform .2s}
+.city-toggle-icon.open{transform:rotate(180deg)}
+.school-row-col{display:flex;flex-direction:column;align-items:flex-start;gap:2px;font-size:12px}
+.eco-badge{font-size:10px;color:var(--color-success);font-weight:600}
+.data-est{font-size:10px;color:var(--text-muted);margin-left:3px}
+.src-note{font-size:10px;color:var(--text-muted);display:block;margin-top:1px}
+.major-note-tag{font-size:10px;color:var(--text-muted);margin-left:4px;font-weight:400}
 .badge{padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700}
-.badge-985{background:#FEF3C7;color:#92400E}
-.badge-211{background:#EDE9FE;color:#5B21B6}
-.badge-double-first{background:#ECFEFF;color:#0E7490}
-.badge-public{background:#F1F5F9;color:var(--text-secondary)}
-.special-attention-section{border-left:3px solid var(--color-info);padding-left:10px}
-.special-attention-label{font-size:12px;font-weight:600;color:var(--color-info);margin-bottom:6px}
+.badge-985{background:rgba(245,158,11,.15);color:var(--color-985)}
+.badge-211{background:rgba(129,140,248,.15);color:var(--color-211)}
+.badge-double-first{background:rgba(6,182,212,.15);color:var(--color-double-first)}
+.badge-public{background:rgba(148,163,184,.1);color:var(--text-secondary)}
+.special-attention-section{border-left:3px solid var(--color-accent);padding-left:10px}
+.special-attention-label{font-size:12px;font-weight:600;color:var(--color-accent);margin-bottom:6px}
+
+/* ── PDF Cover Zone (off-screen render target) ── */
+#pdfCoverZone{position:fixed;top:-9999px;left:-9999px;visibility:hidden;width:375px;z-index:-1}
+
+/* ── Report Section Headers (板块一~五) ── */
+.board-header{display:flex;align-items:center;gap:8px;padding:6px 0;margin-bottom:8px;border-bottom:1px solid var(--border-subtle)}
+.board-num{width:22px;height:22px;border-radius:50%;background:var(--color-accent);color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.board-title{font-size:14px;font-weight:700;color:var(--text-primary)}
+.board-sub{font-size:11px;color:var(--text-muted);margin-left:auto}
+.advice-card{background:rgba(129,140,248,.05);border:1px solid rgba(129,140,248,.12);border-radius:var(--radius-sm);padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.advice-item{display:flex;gap:8px;font-size:12px;color:var(--text-secondary);line-height:1.6}
+.advice-num{color:var(--color-accent);font-weight:700;flex-shrink:0}
 
 /* ── Sample Banner ── */
-.sample-banner{background:#FEF9C3;border:1px solid #FDE047;color:#854D0E;font-size:12px;font-weight:600;padding:6px 12px;border-radius:var(--radius-sm);text-align:center}
+.sample-banner{background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.3);color:#FBBF24;font-size:12px;font-weight:600;padding:6px 12px;border-radius:var(--radius-sm);text-align:center}
 
 /* ── QA ── */
-.chat-area{background:var(--bg-primary);border-radius:var(--radius-sm);padding:10px;display:flex;flex-direction:column;gap:8px;max-height:240px;overflow-y:auto}
+.chat-area{background:rgba(15,23,42,.8);border-radius:var(--radius-sm);padding:10px;display:flex;flex-direction:column;gap:8px;max-height:240px;overflow-y:auto}
 .chat-bubble{padding:8px 12px;border-radius:10px;font-size:13px;line-height:1.5;max-width:90%}
-.chat-bubble.user{background:var(--color-info);color:#fff;align-self:flex-end;border-radius:10px 10px 2px 10px}
-.chat-bubble.ai{background:#fff;color:var(--text-primary);align-self:flex-start;border:1px solid var(--border);border-radius:10px 10px 10px 2px}
+.chat-bubble.user{background:var(--color-accent);color:#fff;align-self:flex-end;border-radius:10px 10px 2px 10px}
+.chat-bubble.ai{background:var(--bg-card-hover);color:var(--text-primary);align-self:flex-start;border:1px solid var(--border-subtle);border-radius:10px 10px 10px 2px}
 
 /* ── School Search ── */
 .search-wrap{position:relative}
-.search-dropdown{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1px solid var(--border);border-radius:var(--radius-sm);box-shadow:var(--shadow-md);z-index:100;max-height:200px;overflow-y:auto}
+.search-dropdown{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);box-shadow:var(--shadow-md);z-index:100;max-height:200px;overflow-y:auto}
 .search-dropdown.show{display:block}
 .search-dropdown-item{padding:8px 12px;cursor:pointer;font-size:13px;display:flex;justify-content:space-between;align-items:center}
-.search-dropdown-item:hover{background:var(--bg-primary)}
+.search-dropdown-item:hover{background:var(--bg-card-hover)}
 .search-dropdown-item .city{font-size:11px;color:var(--text-secondary)}
 .selected-schools{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-.selected-school-tag{background:var(--color-info);color:#fff;padding:4px 8px;border-radius:20px;font-size:12px;display:flex;align-items:center;gap:4px}
+.selected-school-tag{background:var(--color-accent);color:#fff;padding:4px 8px;border-radius:20px;font-size:12px;display:flex;align-items:center;gap:4px}
 .selected-school-tag .remove{cursor:pointer;opacity:.7}
 .selected-school-tag .remove:hover{opacity:1}
 
 /* ── Spinner ── */
 .spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-.spinner-dark{border-color:rgba(30,41,59,.2);border-top-color:var(--text-primary)}
+.spinner-dark{border-color:rgba(248,250,252,.2);border-top-color:var(--text-primary)}
 
 /* ── Flex helpers ── */
 .flex-row{display:flex;align-items:center;gap:8px}
@@ -254,42 +285,19 @@ body{background:#94A3B8;min-height:100vh;display:flex;align-items:flex-start;jus
 /* ── Shake animation ── */
 @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
 
-/* ── Admin Panel ── */
-.admin-wrapper{flex:1;background:#fff;border-radius:var(--radius-lg);padding:20px;box-shadow:var(--shadow-md);display:none;min-width:600px}
-.admin-header{font-size:18px;font-weight:700;color:var(--text-primary);margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border)}
-.admin-login{max-width:360px;margin:40px auto;text-align:center}
-.admin-login h3{font-size:18px;font-weight:700;margin-bottom:16px}
-.admin-nav{display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:0}
-.admin-nav-btn{background:none;border:none;padding:8px 16px;font-size:14px;cursor:pointer;color:var(--text-secondary);border-bottom:2px solid transparent;transition:var(--transition)}
-.admin-nav-btn.active{color:var(--color-info);border-bottom-color:var(--color-info);font-weight:600}
-.admin-table{width:100%;border-collapse:collapse;font-size:13px}
-.admin-table th,.admin-table td{padding:8px 10px;border:1px solid var(--border);text-align:left}
-.admin-table th{background:var(--bg-primary);font-weight:600}
-.status-active{color:var(--color-success);font-weight:600}
-.status-disabled{color:var(--color-danger);font-weight:600}
-.action-btns{display:flex;gap:4px}
-.action-btns button{font-size:11px;padding:2px 8px;border-radius:4px;border:1px solid var(--border);background:#fff;cursor:pointer}
-.action-btns button:hover{background:var(--bg-primary)}
-.admin-pagination{text-align:center;margin-top:12px;font-size:12px;color:var(--text-secondary);display:flex;align-items:center;justify-content:center;gap:8px}
-.admin-pagination button{border:1px solid var(--border);background:#fff;padding:4px 10px;border-radius:4px;cursor:pointer;font-size:12px}
-.admin-pagination button:disabled{opacity:.5;cursor:not-allowed}
+/* ── Skeleton Shimmer ── */
+@keyframes skeleton-shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+.skeleton{background:linear-gradient(90deg,#334155 0%,#475569 50%,#334155 100%);background-size:200% 100%;animation:skeleton-shimmer 1.5s ease infinite;border-radius:var(--radius-sm);min-height:14px;}
 
 /* ── Modal ── */
-.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;align-items:center;justify-content:center}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:300;align-items:center;justify-content:center}
 .modal-overlay.show{display:flex}
-.modal{background:#fff;border-radius:var(--radius-lg);padding:20px;width:320px;max-width:90vw;box-shadow:var(--shadow-md)}
-.modal h3{font-size:16px;font-weight:700;margin-bottom:12px}
+.modal{background:var(--bg-card);border-radius:var(--radius-lg);padding:20px;width:320px;max-width:90vw;box-shadow:var(--shadow-md);border:1px solid var(--border-subtle)}
+.modal h3{font-size:16px;font-weight:700;margin-bottom:12px;color:var(--text-primary)}
 .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
 .modal .form-group{margin-top:10px}
 
-/* ── Toggle Button ── */
-#btnToggleView{
-  position:fixed;bottom:24px;right:24px;
-  background:#1E293B;color:#fff;border:none;
-  padding:10px 16px;border-radius:24px;
-  font-size:13px;cursor:pointer;z-index:50;
-  box-shadow:0 4px 12px rgba(0,0,0,.3);
-}
+
 </style>
 </head>
 <body>
@@ -577,7 +585,7 @@ body{background:#94A3B8;min-height:100vh;display:flex;align-items:flex-start;jus
       </div>
       <div class="flex-row" style="gap:6px;margin-top:4px">
         <button class="btn btn-ghost" style="flex:1;font-size:12px" onclick="downloadPDF()">📥 下载PDF</button>
-        <button class="btn btn-ghost" style="flex:1;font-size:12px" onclick="nextStudent()">👤 下一位学生</button>
+        <button class="btn btn-ghost" style="flex:1;font-size:12px" onclick="nextStudent()">👤 测下一个</button>
         <button class="btn btn-primary" style="flex:1;font-size:12px" onclick="navigate('qa')">🤖 直播答疑</button>
       </div>
     </div>
@@ -688,112 +696,8 @@ body{background:#94A3B8;min-height:100vh;display:flex;align-items:flex-start;jus
   <div class="home-bar"></div>
 </div><!-- /phone-frame -->
 
-<!-- ====== ADMIN PANEL ====== -->
-<div class="admin-wrapper" id="adminPanel" style="display:none">
-  <div class="admin-header">⚙️ AI高考志愿规划师 · 管理后台</div>
-  <div id="adminLoginSection" style="display:none">
-    <div class="admin-login">
-      <h3>🔐 管理员登录</h3>
-      <div class="form-group"><label class="form-label">用户名</label><input class="form-input" id="adminUser" placeholder="admin" autocomplete="username"></div>
-      <div class="form-group" style="margin-top:10px"><label class="form-label">密码</label><input class="form-input" id="adminPass" type="password" placeholder="管理员密码" autocomplete="current-password"></div>
-      <div class="form-error-text" id="adminLoginErr" style="margin-top:6px"></div>
-      <button class="btn btn-primary btn-block" style="margin-top:14px" onclick="doAdminLogin()">登录管理后台</button>
-    </div>
-  </div>
-  <div id="adminMainSection" style="display:none">
-    <div class="admin-nav">
-      <button class="admin-nav-btn active" data-tab="streamers" onclick="switchAdminTab('streamers')">主播管理</button>
-      <button class="admin-nav-btn" data-tab="orders" onclick="switchAdminTab('orders')">订单查看</button>
-      <button class="admin-nav-btn" data-tab="config" onclick="switchAdminTab('config')">系统配置</button>
-      <button class="admin-nav-btn" style="margin-left:auto;color:var(--color-danger)" onclick="doAdminLogout()">退出</button>
-    </div>
-
-    <!-- Streamers tab -->
-    <div id="adminTab-streamers">
-      <button class="btn btn-primary" style="margin-bottom:12px;font-size:13px" onclick="showModal('createStreamer')">+ 新增主播</button>
-      <table class="admin-table" id="streamersTable">
-        <thead><tr><th>手机号</th><th>姓名</th><th>剩余次数</th><th>累计购买</th><th>已使用</th><th>状态</th><th>操作</th></tr></thead>
-        <tbody id="streamersTbody"><tr><td colspan="7" style="text-align:center;color:var(--text-secondary)">加载中…</td></tr></tbody>
-      </table>
-      <div class="admin-pagination">
-        <button id="prevStreamers" onclick="loadStreamers(-1)" disabled>上一页</button>
-        <span id="streamerPageInfo">1 / 1</span>
-        <button id="nextStreamers" onclick="loadStreamers(1)" disabled>下一页</button>
-      </div>
-    </div>
-
-    <!-- Orders tab -->
-    <div id="adminTab-orders" style="display:none">
-      <div class="flex-row" style="gap:8px;margin-bottom:12px;flex-wrap:wrap">
-        <input class="form-input" id="filterOrderDate" type="date" style="width:150px">
-        <button class="btn btn-primary" style="font-size:13px" onclick="loadOrders(0)">查询</button>
-      </div>
-      <table class="admin-table">
-        <thead><tr><th>订单号</th><th>主播</th><th>考生</th><th>省份</th><th>分数</th><th>时间</th><th>状态</th></tr></thead>
-        <tbody id="ordersTbody"><tr><td colspan="7" style="text-align:center;color:var(--text-secondary)">加载中…</td></tr></tbody>
-      </table>
-      <div class="admin-pagination">
-        <button id="prevOrders" onclick="loadOrders(-1)" disabled>上一页</button>
-        <span id="ordersPageInfo">1 / 1</span>
-        <button id="nextOrders" onclick="loadOrders(1)" disabled>下一页</button>
-      </div>
-    </div>
-
-    <!-- Config tab -->
-    <div id="adminTab-config" style="display:none">
-      <div class="card" style="margin-bottom:12px">
-        <div class="section-title">概率阈值配置</div>
-        <div class="form-group" style="margin-top:8px">
-          <label class="form-label">冲刺下限（默认 30%）</label>
-          <input class="form-input" id="cfgBoostMin" type="number" value="30" style="width:100px">
-        </div>
-        <div class="form-group" style="margin-top:8px">
-          <label class="form-label">稳妥下限（默认 60%）</label>
-          <input class="form-input" id="cfgSolidMin" type="number" value="60" style="width:100px">
-        </div>
-        <div class="form-group" style="margin-top:8px">
-          <label class="form-label">保底下限（默认 85%）</label>
-          <input class="form-input" id="cfgSafeMin" type="number" value="85" style="width:100px">
-        </div>
-        <button class="btn btn-primary" style="margin-top:12px;font-size:13px" onclick="saveConfig()">保存配置</button>
-      </div>
-    </div>
-  </div>
-</div>
 
 </div><!-- /prototype-wrapper -->
-
-<!-- ====== MODALS ====== -->
-<div class="modal-overlay" id="modal-recharge">
-  <div class="modal">
-    <h3>💰 充值</h3>
-    <div style="font-size:13px;color:var(--text-secondary);margin-bottom:4px" id="rechargeTarget"></div>
-    <div class="form-group"><label class="form-label">充值次数</label><input class="form-input" type="number" id="rechargeCount" value="10" min="1" oninput="calcRechargeAmt()"></div>
-    <div class="form-group"><label class="form-label">充值金额（元）</label><input class="form-input" type="number" id="rechargeAmount" value="299" oninput="calcRechargeCount()"></div>
-    <div class="form-group"><label class="form-label">备注（可选）</label><input class="form-input" id="rechargeRemark" placeholder="如：微信转账"></div>
-    <div class="form-error-text" id="rechargeErr" style="margin-top:6px"></div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeModal('recharge')">取消</button>
-      <button class="btn btn-primary" id="btnDoRecharge" onclick="doRecharge()">确认充值</button>
-    </div>
-  </div>
-</div>
-
-<div class="modal-overlay" id="modal-createStreamer">
-  <div class="modal">
-    <h3>➕ 新增主播</h3>
-    <div class="form-group"><label class="form-label">手机号</label><input class="form-input" id="newPhone" maxlength="11" placeholder="11位手机号"></div>
-    <div class="form-group"><label class="form-label">姓名/昵称</label><input class="form-input" id="newName" maxlength="64" placeholder="主播昵称"></div>
-    <div class="form-group"><label class="form-label">密码</label><input class="form-input" id="newPassword" type="password" placeholder="至少6位"></div>
-    <div class="form-error-text" id="createStreamerErr" style="margin-top:6px"></div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeModal('createStreamer')">取消</button>
-      <button class="btn btn-primary" id="btnDoCreate" onclick="doCreateStreamer()">创建</button>
-    </div>
-  </div>
-</div>
-
-<button id="btnToggleView" onclick="toggleAdminView()">📱 手机端 / 💻 管理后台</button>
 
 <script>
 // ══════════════════════════════════════════════════════════
@@ -810,12 +714,6 @@ const S = {
   obey: true,
   selectedSchools: [],
   schoolSearchTimer: null,
-  adminToken: null,
-  streamerPage: 1,
-  streamerTotal: 0,
-  ordersPage: 1,
-  ordersTotal: 0,
-  rechargeTargetId: null,
   analysisAbort: null,
 };
 
@@ -902,10 +800,9 @@ function updateNavBar() {
 // ══════════════════════════════════════════════════════════
 // API
 // ══════════════════════════════════════════════════════════
-async function api(method, path, body, adminMode = false) {
+async function api(method, path, body) {
   const headers = { 'Content-Type': 'application/json' };
-  const token = adminMode ? S.adminToken : S.token;
-  if (token) headers['Authorization'] = 'Bearer ' + token;
+  if (S.token) headers['Authorization'] = 'Bearer ' + S.token;
 
   const res = await fetch(path, {
     method,
@@ -913,7 +810,7 @@ async function api(method, path, body, adminMode = false) {
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
 
-  if (res.status === 401 && !adminMode) {
+  if (res.status === 401) {
     doLogout(false);
     throw new Error('登录已过期，请重新登录');
   }
@@ -1372,49 +1269,59 @@ async function doUnlock() {
 }
 
 // ══════════════════════════════════════════════════════════
-// Report Rendering
+// Report Rendering (T8.4: 5-section structure)
 // ══════════════════════════════════════════════════════════
 function renderReport() {
   if (!S.reportData) return;
   const data = S.reportData;
   const stu = S.student;
+  const pref = S.pref || {};
   const orderId = data._orderId || S.orderId || '—';
   const ts = data.tier_summary || {};
   const boostCount = ts.boost?.count ?? 0;
   const solidCount = ts.solid?.count ?? 0;
-  const safeCount = ts.safe?.count ?? 0;
+  const safeCount  = ts.safe?.count  ?? 0;
 
-  const rush = (data.schools || []).filter(s => s.tier === 0);
-  const safe = (data.schools || []).filter(s => s.tier === 1);
+  const rush   = (data.schools || []).filter(s => s.tier === 0);
+  const safe   = (data.schools || []).filter(s => s.tier === 1);
   const bottom = (data.schools || []).filter(s => s.tier === 2);
   const special = data.special_attention || [];
 
-  let html = `
+  // ── 板块一: 封面基础信息 ──
+  let html = `<div class="card">
+    <div class="board-header"><span class="board-num">一</span><span class="board-title">考生信息 &amp; 数据权威说明</span></div>
     <div style="text-align:center;margin-bottom:8px">
-      <div style="font-size:12px;color:var(--text-secondary)">${esc(orderId)} · 防伪</div>
+      <div style="font-size:11px;color:var(--text-secondary)">${esc(orderId)} · 防伪</div>
       <div class="flex-row" style="justify-content:center;flex-wrap:wrap;gap:6px;margin-top:4px">
         <span class="badge badge-211">📌 ${esc(stu.nickname||'')}</span>
         <span style="font-size:12px;color:var(--text-secondary)">${esc(stu.province||'')} · ${stu.score||0}分 · ${esc(stu.subjectStr||'')} · 位次${data.student_rank||'估算中'}</span>
       </div>
-    </div>`;
+    </div>
+    <div style="font-size:11px;color:var(--text-muted);line-height:1.6;text-align:center">
+      数据来源：教育部阳光高考 · 2026年一分一段 · 近6年2200万+录取记录<br>
+      AI引擎：Claude · DeepSeek V4 Pro · GPT-5.5 多模型交叉验证
+    </div>
+  </div>`;
 
-  // Tier distribution
-  html += `
-    <div class="card">
-      <div class="section-title">📊 冲/稳/保 分布</div>
-      <div class="flex-row" style="justify-content:space-around;text-align:center;margin-top:8px">
-        <div><div style="font-size:24px;font-weight:800;color:var(--color-danger)">${boostCount}</div><div style="font-size:11px;color:var(--text-secondary)">冲刺</div></div>
-        <div><div style="font-size:24px;font-weight:800;color:var(--color-info)">${solidCount}</div><div style="font-size:11px;color:var(--text-secondary)">稳妥</div></div>
-        <div><div style="font-size:24px;font-weight:800;color:var(--color-success)">${safeCount}</div><div style="font-size:11px;color:var(--text-secondary)">保底</div></div>
-      </div>
-      <div style="display:flex;gap:2px;height:8px;margin-top:8px">
-        <div style="flex:${boostCount||1};background:var(--color-danger);border-radius:4px 0 0 4px"></div>
-        <div style="flex:${solidCount||1};background:var(--color-info)"></div>
-        <div style="flex:${safeCount||1};background:var(--color-success);border-radius:0 4px 4px 0"></div>
-      </div>
-    </div>`;
+  // ── 板块二: 核心定位分析 ──
+  html += `<div class="card">
+    <div class="board-header"><span class="board-num">二</span><span class="board-title">核心定位分析</span></div>
+    <div class="flex-row" style="justify-content:space-around;text-align:center;margin-bottom:8px">
+      <div><div style="font-size:22px;font-weight:800;color:var(--color-danger)">${boostCount}</div><div style="font-size:11px;color:var(--text-secondary)">冲刺</div></div>
+      <div><div style="font-size:22px;font-weight:800;color:var(--color-info)">${solidCount}</div><div style="font-size:11px;color:var(--text-secondary)">稳妥</div></div>
+      <div><div style="font-size:22px;font-weight:800;color:var(--color-success)">${safeCount}</div><div style="font-size:11px;color:var(--text-secondary)">保底</div></div>
+    </div>
+    <div style="display:flex;gap:2px;height:6px;border-radius:4px;overflow:hidden">
+      <div style="flex:${boostCount||1};background:var(--color-danger)"></div>
+      <div style="flex:${solidCount||1};background:var(--color-info)"></div>
+      <div style="flex:${safeCount||1};background:var(--color-success)"></div>
+    </div>
+    ${stu.obey ? `<div style="font-size:11px;color:var(--color-success);margin-top:6px">✓ 已勾选服从调剂，录取概率提升8%-12%</div>` : `<div style="font-size:11px;color:var(--color-danger);margin-top:6px">✗ 未服从调剂，需确保分数充分覆盖投档线</div>`}
+  </div>`;
 
-  // Special attention
+  // ── 板块三: 分层院校明细 ──
+  html += `<div class="board-header" style="padding:4px 0 4px;margin-top:4px"><span class="board-num">三</span><span class="board-title">分层院校明细</span><span class="board-sub">共${rush.length+safe.length+bottom.length}所推荐</span></div>`;
+
   if (special.length > 0) {
     html += `<div class="card special-attention-section">
       <div class="special-attention-label">⭐ 意向院校分析</div>
@@ -1423,18 +1330,124 @@ function renderReport() {
       </div>
     </div>`;
   }
-
-  // Tier sections
-  if (rush.length) html += `<div class="tier-section"><div class="tier-header rush">🚀 冲刺 <span class="tier-count">（共${rush.length}所）</span></div><div style="display:flex;flex-direction:column;gap:10px">${rush.map(s=>renderSchoolCard(s,'rush')).join('')}</div></div>`;
-  if (safe.length) html += `<div class="tier-section"><div class="tier-header safe">🎯 稳妥 <span class="tier-count">（共${safe.length}所）</span></div><div style="display:flex;flex-direction:column;gap:10px">${safe.map(s=>renderSchoolCard(s,'safe')).join('')}</div></div>`;
+  if (rush.length)   html += `<div class="tier-section"><div class="tier-header rush">🚀 冲刺 <span class="tier-count">（共${rush.length}所）</span></div><div style="display:flex;flex-direction:column;gap:10px">${rush.map(s=>renderSchoolCard(s,'rush')).join('')}</div></div>`;
+  if (safe.length)   html += `<div class="tier-section"><div class="tier-header safe">🎯 稳妥 <span class="tier-count">（共${safe.length}所）</span></div><div style="display:flex;flex-direction:column;gap:10px">${safe.map(s=>renderSchoolCard(s,'safe')).join('')}</div></div>`;
   if (bottom.length) html += `<div class="tier-section"><div class="tier-header bottom">🟢 保底 <span class="tier-count">（共${bottom.length}所）</span></div><div style="display:flex;flex-direction:column;gap:10px">${bottom.map(s=>renderSchoolCard(s,'bottom')).join('')}</div></div>`;
-
   if (!rush.length && !safe.length && !bottom.length) {
     html += `<div class="card" style="text-align:center;color:var(--text-secondary);padding:24px">暂无推荐数据，请检查输入信息后重试</div>`;
   }
 
-  html += `<div class="data-source">数据来源：教育部官网 · 阳光高考 · 近6年2200万+录取记录</div>`;
+  // ── 板块四: AI个性化填报建议书 ──
+  html += `<div class="board-header" style="padding:4px 0 4px;margin-top:4px"><span class="board-num">四</span><span class="board-title">AI个性化填报建议书</span></div>`;
+  html += buildAdviceSection(stu, pref, data);
+
+  // ── 板块五: 免责声明 ──
+  html += `<div class="card" style="margin-top:4px;border:1px solid rgba(239,68,68,.15);background:rgba(239,68,68,.04)">
+    <div class="board-header"><span class="board-num" style="background:var(--color-danger)">五</span><span class="board-title">免责声明</span></div>
+    <div style="font-size:11px;color:var(--text-muted);line-height:1.8">
+      • 本报告由 AI 系统自动生成，仅供填报参考，不构成正式志愿填报建议<br>
+      • 数据规模：全国2000+所高校 · 34个省份 · 近6年2200万+录取记录<br>
+      • 最终填报请以当地省级教育考试院官方发布的招生计划和投档线为准<br>
+      • 报告编号唯一，<strong style="color:var(--color-danger)">严禁倒卖转售</strong>，违者追责
+    </div>
+  </div>`;
+
   document.getElementById('reportContent').innerHTML = html;
+}
+
+// ── 板块四 AI建议书 (client-side generated from student inputs) ──
+function buildAdviceSection(stu, pref, data) {
+  const score    = stu.score || 0;
+  const province = stu.province || '—';
+  const economy  = stu.economy || pref.economy || '一般';
+  const personality = (pref.personality || []).join('、') || '未填写';
+  const majors   = (pref.majors || []).join('、') || '综合类';
+  const rank     = data.student_rank || stu.rank || null;
+  const ts = data.tier_summary || {};
+  const boostC = ts.boost?.count ?? 0;
+  const solidC = ts.solid?.count ?? 0;
+  const safeC  = ts.safe?.count  ?? 0;
+
+  let level, levelDesc;
+  if (score >= 600) {
+    level = '高竞争力'; levelDesc = '达到优势段，可冲刺985/211重点高校，建议重点关注冲刺院校的录取分差走势。';
+  } else if (score >= 500) {
+    level = '中上竞争力'; levelDesc = '处于一本线以上，可稳妥选择211院校及优质一本高校，兼顾意向专业。';
+  } else if (score >= 400) {
+    level = '中段竞争力'; levelDesc = '建议以公办二本为主力，一本院校为冲刺，合理配置梯度防止滑档。';
+  } else {
+    level = '基础段'; levelDesc = '建议保底公办专科及二本院校，优先选择就业率高的专业方向。';
+  }
+
+  let econAdvice;
+  if (economy === '较为困难') {
+    econAdvice = '推荐优先选择学费≤5000元/年的公办院校。可申请国家助学金（2800-4000元/年）+ 生源地信用助学贷款（最高12000元/年），高就业率专业可较快回报家庭。';
+  } else if (economy === '宽裕') {
+    econAdvice = '经济条件良好，可适当放宽院校范围，重点关注院校综合实力、城市发展前景和专业竞争力。';
+  } else {
+    econAdvice = '建议以公办院校为主，合理规划经济预算，主动关注所选院校奖助学金政策。';
+  }
+
+  const obeyText = stu.obey
+    ? '已勾选服从调剂，可提升录取概率8%-12%。建议：冲刺院校可不服从（防冷门录取），稳妥/保底院校务必服从（防滑档）。'
+    : '未勾选服从调剂，录取风险略高。若投档线刚过，有约5%-10%退档风险。建议稳妥和保底院校改为服从调剂。';
+
+  return `<div class="card" style="margin-top:0">
+    <div class="section-title" style="margin-bottom:8px">📊 4.1 成绩定位</div>
+    <div style="font-size:12px;color:var(--text-secondary);line-height:1.7">
+      ${esc(province)}考生 ${score}分${rank ? ' / 位次约' + esc(String(rank)) + '名' : ''}，意向方向：${esc(majors)}。<br>
+      综合竞争力：<strong style="color:var(--color-accent)">${level}</strong>——${levelDesc}
+    </div>
+  </div>
+  <div class="card" style="margin-top:0">
+    <div class="section-title" style="margin-bottom:8px">📐 4.2 梯度策略</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;text-align:center;font-size:12px;margin-bottom:8px">
+      <div style="background:rgba(239,68,68,.1);border-radius:var(--radius-sm);padding:8px"><div style="color:var(--color-danger);font-weight:800;font-size:18px">${boostC}</div><div style="color:var(--text-secondary)">冲刺</div><div style="font-size:10px;color:var(--text-muted)">30%-60%</div></div>
+      <div style="background:rgba(59,130,246,.1);border-radius:var(--radius-sm);padding:8px"><div style="color:var(--color-info);font-weight:800;font-size:18px">${solidC}</div><div style="color:var(--text-secondary)">稳妥</div><div style="font-size:10px;color:var(--text-muted)">60%-85%</div></div>
+      <div style="background:rgba(34,197,94,.1);border-radius:var(--radius-sm);padding:8px"><div style="color:var(--color-success);font-weight:800;font-size:18px">${safeC}</div><div style="color:var(--text-secondary)">保底</div><div style="font-size:10px;color:var(--text-muted)">≥85%</div></div>
+    </div>
+    <div style="font-size:11px;color:var(--text-muted);line-height:1.6">梯度建议：冲刺不超过3所，稳妥5所，保底5-7所（最后一志愿必须有把握）。</div>
+  </div>
+  <div class="card" style="margin-top:0">
+    <div class="section-title" style="margin-bottom:6px">⚠️ 4.3 调剂风险提示</div>
+    <div style="font-size:12px;color:var(--text-secondary);line-height:1.7">${obeyText}</div>
+  </div>
+  <div class="card" style="margin-top:0">
+    <div class="section-title" style="margin-bottom:6px">💰 4.4 家庭经济适配</div>
+    <div style="font-size:12px;color:var(--text-secondary);line-height:1.7">
+      家庭经济：<strong style="color:var(--text-primary)">${esc(economy)}</strong>。${econAdvice}
+    </div>
+  </div>
+  <div class="card" style="margin-top:0">
+    <div class="section-title" style="margin-bottom:6px">🧠 4.5 性格匹配</div>
+    <div style="font-size:12px;color:var(--text-secondary);line-height:1.7">
+      性格标签：<strong style="color:var(--text-primary)">${esc(personality)}</strong>。
+      ${getPersonalityAdvice(pref.personality || [])}
+    </div>
+  </div>
+  <div class="card" style="margin-top:0">
+    <div class="section-title" style="margin-bottom:8px">📌 4.6 四大填报原则</div>
+    <div class="advice-card">
+      <div class="advice-item"><span class="advice-num">①</span><span><strong style="color:var(--text-primary)">冲刺为辅</strong>——1-3个高风险冲刺，不超过3个，防止全军覆没。</span></div>
+      <div class="advice-item"><span class="advice-num">②</span><span><strong style="color:var(--text-primary)">梯度合理</strong>——冲/稳/保比例建议3:5:7，确保有稳妥院校兜底。</span></div>
+      <div class="advice-item"><span class="advice-num">③</span><span><strong style="color:var(--text-primary)">保底兜底</strong>——最后一个志愿必须选有绝对把握的保底院校，防止落榜。</span></div>
+      <div class="advice-item"><span class="advice-num">④</span><span><strong style="color:var(--text-primary)">以官为准</strong>——AI推荐仅供参考，最终以官方招生计划和投档线为准。</span></div>
+    </div>
+  </div>`;
+}
+
+function getPersonalityAdvice(tags) {
+  if (!tags || tags.length === 0) return '性格信息未填写，建议结合个人兴趣与专业就业前景综合考量。';
+  const map = {
+    '外向活泼': '适合管理、传媒、销售、法学等互动性强的专业。',
+    '沉稳内敛': '适合理工科、医学、计算机、会计等专注钻研的方向。',
+    '动手实操': '适合工程技术、建筑、医护等实践性强的专业。',
+    '理论研究': '适合数学、物理、基础科学等研究型专业，建议考虑研究生深造。',
+    '创意思维': '适合设计、广告、建筑、新媒体等创意类专业。',
+    '稳定保障': '建议优先师范、医学、行政管理等稳定就业方向。',
+  };
+  const advice = tags.map(t => map[t]).filter(Boolean);
+  return advice.length ? advice.join(' ') : '建议结合意向专业深入了解各校培养方案再做决策。';
 }
 
 function renderSchoolCard(s, tierKey) {
@@ -1442,15 +1455,92 @@ function renderSchoolCard(s, tierKey) {
   const adm = s.admission_data || {};
   const probVal = s.rank_prob || s.weighted_prob || 0;
   const probClass = tierKey === 'rush' ? 'tier-rush' : tierKey === 'safe' ? 'tier-safe' : tierKey === 'bottom' ? 'tier-bottom' : 'tier-safe';
+  const isEstimated = s.data_quality === 'estimated';
+  const isPendingCrawl = s.data_quality === 'pending_crawl';
 
   const badgeHtml = (s.tags||[]).includes('985') ? '<span class="badge badge-985">985</span>' :
                     (s.tags||[]).includes('211') ? '<span class="badge badge-211">211</span>' :
                     (s.tags||[]).includes('双一流') ? '<span class="badge badge-double-first">双一流</span>' :
                     `<span style="font-size:10px;color:var(--text-secondary)">${(s.tags||['本科'])[0]}</span>`;
 
-  const trend = adm.trend_detail || dim.trend_detail || '暂无趋势数据';
-  const score = adm.latest_min_score ? `约${adm.latest_min_score}分` : '暂无数据';
+  const scoreText = adm.latest_min_score
+    ? `约${adm.latest_min_score}分${isEstimated ? '<span class="data-est">(估算)</span>' : ''}`
+    : '暂无数据';
   const note = s.note ? `<div style="font-size:11px;color:var(--color-danger);margin-top:4px">⚠ ${esc(s.note)}</div>` : '';
+
+  // Skeleton screen when data is still being crawled
+  if (isPendingCrawl) {
+    return `<div class="school-card">
+      <div class="school-card-header">
+        ${badgeHtml}
+        <span class="school-name">${esc(s.name)}</span>
+        ${tierKey !== 'special' ? `<span class="school-prob ${probClass}">${Math.round(probVal)}%</span>` : ''}
+      </div>
+      <div class="school-card-body">
+        <div class="school-row"><span class="label">📍 城市</span><span class="value">${esc(s.city||s.province||'')}</span></div>
+        <div class="skeleton" style="height:13px;margin:4px 0;width:80%"></div>
+        <div class="skeleton" style="height:13px;width:55%"></div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:6px">🔄 详细数据加载中…</div>
+      </div>
+    </div>`;
+  }
+
+  // Dim 7: Recommended major + major_note + major_level
+  let majorHtml = '';
+  if (dim.recommended_major) {
+    const noteTag = dim.major_note ? `<span class="major-note-tag">${esc(dim.major_note)}</span>` : '';
+    const levelRow = dim.major_level ? `<span class="src-note" style="color:var(--color-cyan)">${esc(dim.major_level)}</span>` : '';
+    majorHtml = `<div class="school-row"><span class="label">🎓 推荐专业</span><span class="value">${esc(dim.recommended_major)}${noteTag}${levelRow}</span></div>`;
+  }
+
+  // Dim 8: Tuition — tuition_per_year + eco badge + tuition_total + tuition_fit
+  let tuitionHtml = '';
+  if (dim.tuition_per_year) {
+    const rawNum = parseInt(String(dim.tuition_per_year).replace(/[^0-9]/g, '')) || 0;
+    const ecoBadge = rawNum > 0 && rawNum <= 5000 ? '<span class="eco-badge">💚 经济友好</span>' : '';
+    const totalRow = dim.tuition_total ? ` · ${esc(dim.tuition_total)}` : '';
+    const fitNote = dim.tuition_fit ? `<span class="src-note">${esc(dim.tuition_fit)}</span>` : '';
+    tuitionHtml = `<div class="school-row"><span class="label">💰 学费</span><span class="value">${esc(dim.tuition_per_year)}${ecoBadge}${totalRow}${fitNote}</span></div>`;
+  }
+
+  // Dim 11: Employment rate + source annotation
+  let employHtml = '';
+  if (dim.employment_rate) {
+    const srcNote = dim.employment_source ? `<span class="src-note">${esc(dim.employment_source)}</span>` : '';
+    employHtml = `<div class="school-row"><span class="label">💼 就业率</span><span class="value">${esc(dim.employment_rate)}${srcNote}</span></div>`;
+  }
+
+  // Dim 12: avg_salary as full string (already formatted by API)
+  const salaryHtml = dim.avg_salary
+    ? `<div class="school-row"><span class="label">💵 薪资</span><span class="value">${esc(dim.avg_salary)}</span></div>`
+    : '';
+
+  // Dim 15: City analysis — collapsible 5-sub-dimension panel
+  let cityHtml = '';
+  if (dim.city_analysis && typeof dim.city_analysis === 'object') {
+    const ca = dim.city_analysis;
+    const cid = 'c' + Math.random().toString(36).slice(2, 9);
+    const rows = [
+      ca.location    ? `<div class="city-panel-row">📍 ${esc(ca.location)}</div>` : '',
+      ca.advantage   ? `<div class="city-panel-row">✅ ${esc(ca.advantage)}</div>` : '',
+      ca.disadvantage? `<div class="city-panel-row">⚠️ ${esc(ca.disadvantage)}</div>` : '',
+      ca.job_market  ? `<div class="city-panel-row">💼 ${esc(ca.job_market)}</div>` : '',
+      ca.livability  ? `<div class="city-panel-row">🏠 ${esc(ca.livability)}</div>` : '',
+    ].filter(Boolean).join('');
+    cityHtml = `<div class="school-row-col">
+      <div class="city-toggle" onclick="toggleCityPanel('${cid}')">
+        <span class="label" style="min-width:unset">🏙️ 城市分析</span>
+        <span id="${cid}_ic" class="city-toggle-icon">▼</span>
+      </div>
+      <div id="${cid}" class="city-panel">${rows}</div>
+    </div>`;
+  } else if (dim.city_analysis) {
+    cityHtml = `<div class="school-row"><span class="label">🏙️ 城市</span><span class="value">${esc(String(dim.city_analysis))}</span></div>`;
+  }
+
+  const aiComment = dim.ai_review
+    ? `<div class="school-ai-comment"><span class="speaker">💡 点评：</span>${esc(dim.ai_review)}</div>`
+    : '';
 
   return `<div class="school-card">
     <div class="school-card-header">
@@ -1460,54 +1550,203 @@ function renderSchoolCard(s, tierKey) {
     </div>
     <div class="school-card-body">
       <div class="school-row"><span class="label">📍 城市</span><span class="value">${esc(s.city||s.province||'')}</span></div>
-      <div class="school-row"><span class="label">📊 近年线</span><span class="value">${esc(score)}</span></div>
-      ${adm.trend_detail ? `<div class="school-row"><span class="label">📈 趋势</span><span class="value">${esc(trend)}</span></div>` : ''}
-      ${dim.recommended_major ? `<div class="school-row"><span class="label">🎓 推荐专业</span><span class="value">${esc(dim.recommended_major)}</span></div>` : ''}
-      ${dim.tuition ? `<div class="school-row"><span class="label">💰 学费</span><span class="value">${esc(dim.tuition)} · ${esc(dim.tuition_total||'')} · ${esc(dim.tuition_fit||'')}</span></div>` : ''}
-      ${dim.employment_rate ? `<div class="school-row"><span class="label">💼 就业率</span><span class="value">${esc(dim.employment_rate)}</span></div>` : ''}
-      ${dim.avg_salary_start ? `<div class="school-row"><span class="label">💵 薪资</span><span class="value">应届${esc(dim.avg_salary_start)}，3年后${esc(dim.avg_salary_3yr||'')}</span></div>` : ''}
-      ${dim.city_analysis ? `<div class="school-row"><span class="label">🏙️ 城市</span><span class="value">${esc(dim.city_analysis)}</span></div>` : ''}
+      <div class="school-row"><span class="label">📊 近年线</span><span class="value">${scoreText}</span></div>
+      ${adm.trend_detail ? `<div class="school-row"><span class="label">📈 趋势</span><span class="value">${esc(adm.trend_detail)}</span></div>` : ''}
+      ${majorHtml}
+      ${tuitionHtml}
+      ${employHtml}
+      ${salaryHtml}
+      ${dim.core_positions ? `<div class="school-row"><span class="label">🔧 核心岗位</span><span class="value">${esc(dim.core_positions)}</span></div>` : ''}
+      ${cityHtml}
       ${note}
     </div>
-    ${dim.ai_review ? `<div class="school-ai-comment"><span class="speaker">💬 张雪峰点评：</span>${esc(dim.ai_review)}</div>` : ''}
+    ${aiComment}
   </div>`;
 }
 
+function toggleCityPanel(id) {
+  const panel = document.getElementById(id);
+  const icon  = document.getElementById(id + '_ic');
+  if (!panel) return;
+  const open = panel.classList.toggle('open');
+  if (icon) { icon.textContent = open ? '▲' : '▼'; icon.classList.toggle('open', open); }
+}
+
 // ══════════════════════════════════════════════════════════
-// PDF Generation
+// PDF Generation (T8.3: cover + 5 watermarks + 300DPI)
 // ══════════════════════════════════════════════════════════
 async function downloadPDF() {
-  const btn = document.querySelector('.btn-ghost');
+  const reportEl = document.getElementById('reportContent');
   if (!window.jspdf || !window.html2canvas) {
     showToast('PDF库加载中，请稍候重试', 'warning'); return;
   }
+  if (!reportEl || !reportEl.innerHTML.trim()) {
+    showToast('请先生成报告', 'warning'); return;
+  }
+
+  const stu = S.student || {};
+  const data = S.reportData || {};
+  const rawId = (data._orderId || S.orderId || '').replace(/[^A-Za-z0-9\-]/g, '');
+  const reportId = rawId && rawId !== '-'
+    ? rawId
+    : 'GK' + new Date().toISOString().replace(/[-T:.Z]/g,'').slice(2,14) + '-' + Math.random().toString(36).slice(2,6).toUpperCase();
+  const name = stu.nickname || '考生';
+  const ts = new Date().toISOString().slice(0, 10);
+
   showToast('PDF生成中，请稍候…', 'info');
+
   try {
-    const el = document.getElementById('reportContent');
-    const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: '#F5F7FA' });
     const { jsPDF } = window.jspdf;
+
+    // Watermark 5: QR code generated from canvas (safe data URL)
+    let qrDataUrl = null;
+    if (window.QRCode) {
+      const tmpDiv = document.createElement('div');
+      tmpDiv.style.cssText = 'position:fixed;top:-9999px;left:-9999px';
+      document.body.appendChild(tmpDiv);
+      new QRCode(tmpDiv, {
+        text: 'GK:' + reportId + '|' + (stu.province||'') + '|' + (stu.score||''),
+        width: 80, height: 80, colorDark: '#1A3359', colorLight: '#E6F0FF',
+        correctLevel: QRCode.CorrectLevel.H
+      });
+      await new Promise(r => setTimeout(r, 200));
+      const qrCanvas = tmpDiv.querySelector('canvas');
+      if (qrCanvas) qrDataUrl = qrCanvas.toDataURL('image/png');
+      document.body.removeChild(tmpDiv);
+    }
+
+    // Build cover (all user values sanitized via esc() before embedding)
+    const coverZone = document.getElementById('pdfCoverZone');
+    const coverHTML = buildCoverHTML(reportId, stu, data, ts, qrDataUrl);
+    coverZone.textContent = '';
+    const parser = new DOMParser();
+    const parsed = parser.parseFromString(coverHTML, 'text/html');
+    const coverNode = parsed.body.firstElementChild;
+    if (coverNode) coverZone.appendChild(coverNode);
+    coverZone.style.visibility = 'visible';
+    await new Promise(r => setTimeout(r, 100));
+
+    const coverCanvas = await html2canvas(coverZone, {
+      scale: 3, useCORS: true, backgroundColor: '#E6F0FF', logging: false
+    });
+    coverZone.style.visibility = 'hidden';
+    coverZone.textContent = '';
+
+    // Report content
+    const reportCanvas = await html2canvas(reportEl, {
+      scale: 3, useCORS: true, backgroundColor: '#0F172A', logging: false
+    });
+
+    // Assemble PDF
     const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-    const W = pdf.internal.pageSize.getWidth();
-    const H = pdf.internal.pageSize.getHeight();
-    const imgH = (canvas.height * W) / canvas.width;
+    const PW = pdf.internal.pageSize.getWidth();
+    const PH = pdf.internal.pageSize.getHeight();
 
-    pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, W, imgH);
+    // Page 1: cover
+    const coverH = (coverCanvas.height * PW) / coverCanvas.width;
+    pdf.addImage(coverCanvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, PW, Math.min(coverH, PH));
+    addDiagonalWatermarks(pdf, PW, PH, ts);
 
-    // 5 watermarks
-    pdf.setFontSize(18);
-    pdf.setTextColor(200, 200, 200);
-    pdf.setGState(new pdf.GState({ opacity: 0.15 }));
-    const wm = 'AI高考志愿规划师';
-    const positions = [[20,60],[80,40],[40,120],[100,100],[20,160]];
-    positions.forEach(([x,y]) => { pdf.text(wm, x, y, { angle: 30 }); });
+    // Report pages (slice long canvas across multiple pages)
+    const rData = reportCanvas.toDataURL('image/jpeg', 0.92);
+    const rImgH = (reportCanvas.height * PW) / reportCanvas.width;
+    const headerH = 10;
+    const contentH = PH - headerH;
+    let heightLeft = rImgH;
+    let yOffset = 0;
 
-    const name = S.student.nickname || '考生';
-    const date = new Date().toISOString().slice(0,10);
-    pdf.save(`志愿报告_${name}_${date}.pdf`);
+    while (heightLeft > 0) {
+      pdf.addPage();
+      // Watermark 1: report ID header
+      pdf.setFontSize(7);
+      pdf.setTextColor(80, 80, 100);
+      pdf.text(reportId, 10, 5);
+      // Watermark 2: red anti-counterfeit text
+      pdf.setTextColor(160, 30, 30);
+      pdf.text('严禁倒卖 · 本内容由高考志愿规划师提供', PW - 10, 5, { align: 'right' });
+      pdf.setDrawColor(180, 200, 230);
+      pdf.setLineWidth(0.2);
+      pdf.line(10, 7, PW - 10, 7);
+      pdf.addImage(rData, 'JPEG', 0, headerH - yOffset, PW, rImgH);
+      addDiagonalWatermarks(pdf, PW, PH, ts);
+      yOffset += contentH;
+      heightLeft -= contentH;
+    }
+
+    pdf.save('志愿报告_' + name + '_' + reportId + '.pdf');
     showToast('✓ PDF下载成功', 'success');
   } catch(e) {
     showToast('PDF生成失败：' + e.message, 'error');
+    console.error('PDF error:', e);
   }
+}
+
+// Watermark 3: 45-degree diagonal tiled text across full page (opacity ~9%)
+function addDiagonalWatermarks(pdf, PW, PH, ts) {
+  pdf.saveGraphicsState();
+  pdf.setGState(new pdf.GState({ opacity: 0.09 }));
+  pdf.setFontSize(10);
+  pdf.setTextColor(26, 51, 89);
+  const wm = '高考志愿规划师·严禁倒卖·' + ts;
+  for (let row = 0; row < 9; row++) {
+    for (let col = 0; col < 3; col++) {
+      pdf.text(wm, col * 85 - 15, row * 38 - 10, { angle: 45 });
+    }
+  }
+  pdf.restoreGraphicsState();
+}
+
+// Watermark 4: student info card — all user values sanitized via esc()
+function buildCoverHTML(reportId, stu, data, ts, qrDataUrl) {
+  const now = new Date();
+  const dt = now.getFullYear() + '年' + (now.getMonth()+1) + '月' + now.getDate() + '日 '
+    + String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+  const nickname = esc(stu.nickname || '—');
+  const province = esc(stu.province || '—');
+  const score    = Number(stu.score) || '—';
+  const rank     = esc(String(data.student_rank || stu.rank || '估算中'));
+  const subjStr  = esc(stu.subjectStr || stu.subject_str || '—');
+  const adjust   = stu.obey_assignment ? '服从调剂' : '不服从调剂';
+  const rid      = esc(reportId);
+  const qrPart   = qrDataUrl
+    ? '<img src="' + qrDataUrl + '" style="width:70px;height:70px;display:block;border-radius:4px">'
+    : '<div style="width:70px;height:70px;background:#BDD5F0;border-radius:4px"></div>';
+  return '<div style="background:#E6F0FF;width:375px;min-height:580px;padding:24px;'
+    + 'font-family:\'PingFang SC\',\'Microsoft YaHei\',system-ui,sans-serif;box-sizing:border-box">'
+    + '<div style="text-align:center;margin-bottom:16px">'
+    + '<div style="font-size:20px;font-weight:800;color:#1A3359">🎓 AI高考志愿规划师</div>'
+    + '<div style="font-size:11px;color:#4285CC;margin-top:3px">AI-Powered College Entrance Exam Planner · 2026</div>'
+    + '<div style="width:40px;height:2px;background:#4285CC;margin:8px auto 0"></div></div>'
+    + '<div style="text-align:center;margin-bottom:14px">'
+    + '<div style="font-size:16px;font-weight:700;color:#1A3359">志愿规划报告书</div>'
+    + '<div style="font-size:10px;color:#666;margin-top:3px">生成时间：' + dt + '</div></div>'
+    + '<div style="background:#fff;border-radius:8px;padding:12px;margin-bottom:10px;border:1px solid #BDD5F0">'
+    + '<div style="font-size:12px;font-weight:700;color:#1A3359;margin-bottom:8px;border-bottom:1px solid #E0EDFF;padding-bottom:6px">📖 考生信息</div>'
+    + '<table style="width:100%;border-collapse:collapse;font-size:11px;color:#333">'
+    + '<tr><td style="padding:3px 6px;width:50%;vertical-align:top"><span style="color:#666">报告编号</span><br><strong style="color:#1A3359;font-size:10px">' + rid + '</strong></td>'
+    + '<td style="padding:3px 6px;vertical-align:top"><span style="color:#666">生成时间</span><br><strong>' + dt + '</strong></td></tr>'
+    + '<tr><td style="padding:3px 6px;vertical-align:top"><span style="color:#666">考生昵称</span><br><strong>' + nickname + '</strong></td>'
+    + '<td style="padding:3px 6px;vertical-align:top"><span style="color:#666">省份 / 分数</span><br><strong>' + province + ' · ' + score + '分</strong></td></tr>'
+    + '<tr><td style="padding:3px 6px;vertical-align:top"><span style="color:#666">省内位次</span><br><strong>' + rank + '名</strong></td>'
+    + '<td style="padding:3px 6px;vertical-align:top"><span style="color:#666">选科 / 调剂</span><br><strong>' + subjStr + ' / ' + esc(adjust) + '</strong></td></tr>'
+    + '</table></div>'
+    + '<div style="background:#EBF3FF;border-radius:8px;padding:12px;margin-bottom:10px;border:1px solid #BDD5F0">'
+    + '<div style="font-size:12px;font-weight:700;color:#1A3359;margin-bottom:6px">📊 数据权威性保障</div>'
+    + '<div style="font-size:10px;color:#333;line-height:1.8">'
+    + '<div>• 数据来源：教育部阳光高考网 · 2026年一分一段表 · 近6年2200万+录取记录</div>'
+    + '<div>• AI推理引擎：Claude · DeepSeek V4 Pro · GPT-5.5 多模型交叉验证</div>'
+    + '<div>• 覆盖全国2000+所高校 · 34个省份 · 近3年平均录取分差测算</div>'
+    + '</div></div>'
+    + '<div style="background:#FFF1F1;border:1px solid #FFB3B3;border-radius:6px;padding:10px;margin-bottom:14px;text-align:center">'
+    + '<div style="font-size:11px;color:#CC0000;font-weight:700">⚠ 严禁倒卖 · 本内容由高考志愿规划师提供 · 违者追责</div>'
+    + '<div style="font-size:10px;color:#666;margin-top:3px">本报告仅供参考，最终填报请以官方志愿填报系统为准</div>'
+    + '</div>'
+    + '<div style="display:flex;justify-content:flex-end;align-items:flex-end;gap:8px">'
+    + '<div style="text-align:right;font-size:9px;color:#666;line-height:1.6">'
+    + '<div>扫码验证报告真伪</div>'
+    + '<div style="color:#4285CC">' + rid + '</div>'
+    + '</div>' + qrPart + '</div>'
+    + '</div>';
 }
 
 function nextStudent() {
@@ -1602,220 +1841,6 @@ function toggleLiveMode() {
 }
 
 // ══════════════════════════════════════════════════════════
-// Admin Panel
-// ══════════════════════════════════════════════════════════
-function toggleAdminView() {
-  const phone = document.getElementById('phoneFrame');
-  const admin = document.getElementById('adminPanel');
-  const showing = admin.style.display === 'block';
-  phone.style.display = showing ? '' : 'none';
-  admin.style.display = showing ? 'none' : 'block';
-  if (!showing) initAdminPanel();
-}
-
-function initAdminPanel() {
-  S.adminToken = localStorage.getItem('gk_admin_token');
-  if (S.adminToken) {
-    showAdminMain();
-  } else {
-    document.getElementById('adminLoginSection').style.display = '';
-    document.getElementById('adminMainSection').style.display = 'none';
-  }
-}
-
-async function doAdminLogin() {
-  const user = document.getElementById('adminUser').value.trim();
-  const pass = document.getElementById('adminPass').value;
-  const errEl = document.getElementById('adminLoginErr');
-  errEl.classList.remove('show');
-
-  try {
-    const data = await api('POST', '/admin/login', { username: user, password: pass });
-    S.adminToken = data.token;
-    localStorage.setItem('gk_admin_token', S.adminToken);
-    showAdminMain();
-  } catch(e) {
-    errEl.textContent = '⚠ ' + e.message;
-    errEl.classList.add('show');
-  }
-}
-
-function doAdminLogout() {
-  S.adminToken = null;
-  localStorage.removeItem('gk_admin_token');
-  document.getElementById('adminLoginSection').style.display = '';
-  document.getElementById('adminMainSection').style.display = 'none';
-}
-
-function showAdminMain() {
-  document.getElementById('adminLoginSection').style.display = 'none';
-  document.getElementById('adminMainSection').style.display = '';
-  loadStreamers(0);
-}
-
-function switchAdminTab(tab) {
-  document.querySelectorAll('.admin-nav-btn[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
-  ['streamers','orders','config'].forEach(t => {
-    document.getElementById('adminTab-' + t).style.display = t === tab ? '' : 'none';
-  });
-  if (tab === 'orders') loadOrders(0);
-  if (tab === 'config') loadConfig();
-}
-
-// ─── Streamers ───────────────────────────────────────────
-async function loadStreamers(delta) {
-  S.streamerPage = Math.max(1, S.streamerPage + delta);
-  const tbody = document.getElementById('streamersTbody');
-  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-secondary)">加载中…</td></tr>';
-  try {
-    const data = await api('GET', `/admin/streamers?page=${S.streamerPage}`, undefined, true);
-    S.streamerTotal = data.total;
-    const totalPages = Math.ceil(data.total / PAGE_SIZE) || 1;
-    document.getElementById('streamerPageInfo').textContent = `${S.streamerPage} / ${totalPages}`;
-    document.getElementById('prevStreamers').disabled = S.streamerPage <= 1;
-    document.getElementById('nextStreamers').disabled = S.streamerPage >= totalPages;
-
-    tbody.innerHTML = (data.streamers || []).map(s => `
-      <tr>
-        <td>${esc(s.phone)}</td>
-        <td>${esc(s.name)}</td>
-        <td><strong>${s.balance}</strong></td>
-        <td>${s.purchased_total}</td>
-        <td>${s.used_total}</td>
-        <td class="${s.status==='active'?'status-active':'status-disabled'}">● ${s.status==='active'?'启用':'禁用'}</td>
-        <td class="action-btns">
-          <button onclick="openRecharge(${s.id},'${esc(s.name)}')">充值</button>
-          <button onclick="toggleStatus(${s.id},'${s.status}')">${s.status==='active'?'禁用':'启用'}</button>
-        </td>
-      </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-secondary)">暂无数据</td></tr>';
-  } catch(e) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--color-danger)">${esc(e.message)}</td></tr>`;
-  }
-}
-
-async function toggleStatus(id, currentStatus) {
-  try {
-    await api('PATCH', `/admin/streamers/${id}/status`, undefined, true);
-    showToast(currentStatus==='active' ? '已禁用' : '已启用', 'success');
-    loadStreamers(0);
-  } catch(e) { showToast(e.message, 'error'); }
-}
-
-function openRecharge(id, name) {
-  S.rechargeTargetId = id;
-  document.getElementById('rechargeTarget').textContent = `主播：${name}`;
-  document.getElementById('rechargeCount').value = 10;
-  document.getElementById('rechargeAmount').value = 299;
-  document.getElementById('rechargeRemark').value = '';
-  document.getElementById('rechargeErr').classList.remove('show');
-  showModal('recharge');
-}
-
-async function doRecharge() {
-  const count = parseInt(document.getElementById('rechargeCount').value);
-  const amount = parseFloat(document.getElementById('rechargeAmount').value);
-  const remark = document.getElementById('rechargeRemark').value;
-  const errEl = document.getElementById('rechargeErr');
-
-  if (!count || count < 1) { errEl.textContent='请输入有效次数'; errEl.classList.add('show'); return; }
-
-  const btn = document.getElementById('btnDoRecharge');
-  btn.disabled = true;
-  try {
-    await api('POST', `/admin/streamers/${S.rechargeTargetId}/recharge`, { count, amount, remark }, true);
-    closeModal('recharge');
-    showToast(`充值成功 +${count} 次`, 'success');
-    loadStreamers(0);
-  } catch(e) { errEl.textContent = e.message; errEl.classList.add('show'); }
-  finally { btn.disabled = false; }
-}
-
-function calcRechargeAmt() {
-  const c = parseInt(document.getElementById('rechargeCount').value)||0;
-  document.getElementById('rechargeAmount').value = (c * 29.9).toFixed(0);
-}
-function calcRechargeCount() {
-  const a = parseFloat(document.getElementById('rechargeAmount').value)||0;
-  document.getElementById('rechargeCount').value = Math.round(a/29.9);
-}
-
-async function doCreateStreamer() {
-  const phone = document.getElementById('newPhone').value.trim();
-  const name = document.getElementById('newName').value.trim();
-  const password = document.getElementById('newPassword').value;
-  const errEl = document.getElementById('createStreamerErr');
-  errEl.classList.remove('show');
-
-  if (phone.length !== 11) { errEl.textContent='请输入11位手机号'; errEl.classList.add('show'); return; }
-  if (!name) { errEl.textContent='请输入姓名'; errEl.classList.add('show'); return; }
-  if (password.length < 6) { errEl.textContent='密码至少6位'; errEl.classList.add('show'); return; }
-
-  const btn = document.getElementById('btnDoCreate');
-  btn.disabled = true;
-  try {
-    await api('POST', '/admin/streamers', { phone, name, password }, true);
-    closeModal('createStreamer');
-    showToast(`主播 ${name} 创建成功`, 'success');
-    loadStreamers(0);
-  } catch(e) { errEl.textContent = e.message; errEl.classList.add('show'); }
-  finally { btn.disabled = false; }
-}
-
-// ─── Orders ──────────────────────────────────────────────
-async function loadOrders(delta) {
-  S.ordersPage = Math.max(1, S.ordersPage + delta);
-  const tbody = document.getElementById('ordersTbody');
-  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-secondary)">加载中…</td></tr>';
-  const date = document.getElementById('filterOrderDate').value;
-  const params = new URLSearchParams({ page: S.ordersPage });
-  if (date) { params.set('date_from', date); params.set('date_to', date + ' 23:59:59'); }
-  try {
-    const data = await api('GET', `/admin/orders?${params}`, undefined, true);
-    S.ordersTotal = data.total;
-    const totalPages = Math.ceil(data.total / PAGE_SIZE) || 1;
-    document.getElementById('ordersPageInfo').textContent = `${S.ordersPage} / ${totalPages}`;
-    document.getElementById('prevOrders').disabled = S.ordersPage <= 1;
-    document.getElementById('nextOrders').disabled = S.ordersPage >= totalPages;
-
-    tbody.innerHTML = (data.orders||[]).map(o => `
-      <tr>
-        <td style="font-size:11px">${esc(o.id)}</td>
-        <td>${esc(o.streamer_name)}</td>
-        <td>${esc(o.student_nickname)}</td>
-        <td>${esc(o.student_province)}</td>
-        <td>${o.student_score}</td>
-        <td style="font-size:11px">${esc(String(o.created_at).slice(0,16))}</td>
-        <td style="color:var(--color-success)">${esc(o.status)}</td>
-      </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-secondary)">暂无数据</td></tr>';
-  } catch(e) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--color-danger)">${esc(e.message)}</td></tr>`;
-  }
-}
-
-// ─── Config ──────────────────────────────────────────────
-async function loadConfig() {
-  try {
-    const data = await api('GET', '/admin/config', undefined, true);
-    const cfg = data.config || {};
-    if (cfg.boost_min) document.getElementById('cfgBoostMin').value = cfg.boost_min.value || 30;
-    if (cfg.solid_min) document.getElementById('cfgSolidMin').value = cfg.solid_min.value || 60;
-    if (cfg.safe_min) document.getElementById('cfgSafeMin').value = cfg.safe_min.value || 85;
-  } catch(e) {}
-}
-
-async function saveConfig() {
-  const body = {
-    boost_min: document.getElementById('cfgBoostMin').value,
-    solid_min: document.getElementById('cfgSolidMin').value,
-    safe_min: document.getElementById('cfgSafeMin').value,
-  };
-  try {
-    await api('PUT', '/admin/config', body, true);
-    showToast('配置已保存', 'success');
-  } catch(e) { showToast(e.message, 'error'); }
-}
-
-// ══════════════════════════════════════════════════════════
 // Modal helpers
 // ══════════════════════════════════════════════════════════
 function showModal(name) {
@@ -1838,5 +1863,9 @@ function esc(s) {
     .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 </script>
+
+<!-- PDF cover render target (off-screen) -->
+<div id="pdfCoverZone"></div>
+
 </body>
 </html>

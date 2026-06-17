@@ -4,7 +4,7 @@
 |---------|------|
 | 项目名称 | AI高考志愿规划师 · 直播辅助工具 |
 | 上级文档 | [Tasks.md](./Tasks.md) |
-| 更新日期 | 2026-06-17 (42/42任务完成：Phase 7 v4.0数据层升级收官) |
+| 更新日期 | 2026-06-17 (47/50任务完成：T8.2-T8.5全部完成，T9.1-T9.3待开始) |
 
 ---
 
@@ -28,7 +28,7 @@
 | **T2.3** 学校搜索API | ✅ 完成 | 2026-06-17 | 见下方详情 |
 | **T2.4** 推荐引擎核心（位次估算+四层候选池） | ✅ 完成 | 2026-06-17 | 见下方详情 |
 | **T2.5** 推荐引擎概率计算（rankProb+weightedProb） | ✅ 完成 | 2026-06-17 | 见下方详情 |
-| **T2.6** 推荐引擎16维度数据填充 | ✅ 完成 | 2026-06-17 | 见下方详情 |
+| **T2.6** 推荐引擎16维度数据填充 | ✅ 完成 | 2026-06-17 | 初始实现（估算值）；T7.4已升级为查真实数据表 |
 | **T2.7** 直播答疑API + LLM调用 | ✅ 完成 | 2026-06-17 | 见下方详情 |
 | **T2.8** 报告记录 + 防倒卖检测 | ✅ 完成 | 2026-06-17 | 见下方详情 |
 
@@ -99,6 +99,72 @@
 
 ---
 
+## Phase 8：v4.0 前端与体验升级 进度
+
+| 任务 | 状态 | 完成日期 | 备注 |
+|------|------|----------|------|
+| **T8.1** Bento Grid 暗色主题 CSS 系统 | ✅ 完成 | 2026-06-17 | 见下方详情 |
+| **T8.2** 16维度学校卡片渲染（新字段） | ✅ 完成 | 2026-06-17 | 见下方详情 |
+| **T8.3** PDF 5种水印 + 封面重设计 | ✅ 完成 | 2026-06-17 | 见下方详情 |
+| **T8.4** 报告5大板块结构调整 | ✅ 完成 | 2026-06-17 | 见下方详情 |
+| **T8.5** 管理后台暗色主题 + 密码管理前端 | ✅ 完成 | 2026-06-17 | 见下方详情 |
+
+---
+
+## Phase 9：v4.0 集成验证 进度
+
+| 任务 | 状态 | 完成日期 | 备注 |
+|------|------|----------|------|
+| **T9.1** v4.0 全流程回归测试 | ⏳ 待开始 | — | 依赖 Phase 7+8 全部完成 |
+| **T9.2** 数据差异化验证 | ⏳ 待开始 | — | 依赖 T9.1 |
+| **T9.3** 16维度缺数据降级展示验证 | ⏳ 待开始 | — | 依赖 T9.1 |
+
+---
+
+## T8.1 完成详情（2026-06-17）
+
+### 执行内容
+
+**文件**：`frontend/index.html` `<style>` 块全量更新
+
+**CSS变量系统（`:root`）**
+
+| 变量 | 旧值 | 新值 |
+|------|------|------|
+| `--bg-primary` | `#F5F7FA` | `#0F172A` (Slate 900) |
+| `--bg-card` | `#FFFFFF` | `#1E293B` (Slate 800) |
+| `--bg-card-hover` | _(新增)_ | `#334155` (Slate 700) |
+| `--bg-input` | _(新增)_ | `#1E293B` |
+| `--text-primary` | `#1E293B` | `#F1F5F9` (Slate 100) |
+| `--color-accent` | _(新增)_ | `#818CF8` (Indigo 400) |
+| `--color-accent-hover` | _(新增)_ | `#6366F1` (Indigo 500) |
+| `--color-cyan` | _(新增)_ | `#22D3EE` |
+| `--border` | `#E2E8F0` | `rgba(148,163,184,0.08)` |
+| `--border-subtle` | _(新增)_ | `rgba(148,163,184,0.15)` |
+| `--shadow-card` | _(新增)_ | `0 4px 24px rgba(0,0,0,.3)` |
+| `--shadow-glow` | _(新增)_ | `0 2px 8px rgba(129,140,248,.25)` |
+| `--radius-sm/md/lg` | `6/10/16px` | `8/12/20px` |
+| `--transition` | `all .18s ease` | `all .2s cubic-bezier(.4,0,.2,1)` |
+| `color-scheme` | _(新增)_ | `dark` |
+
+**全局组件更新**
+
+- `body` 背景：`#94A3B8` → `#080D1A`（外框深色舞台）
+- `.nav-bar`：`background:#fff` → `rgba(15,23,42,0.95)` + `backdrop-filter:blur(12px)`
+- `.btn-danger`（主CTA）：红色 → Indigo 紫 `var(--color-accent)` + glow 阴影 + hover scale(1.02)
+- `.school-card`：新增 `:hover` 上移2px + glow 阴影微交互
+- 所有 `input/select/textarea`：`background:#fff` → `var(--bg-input)` + 边框改为 `border-subtle`
+- `.tag/.tag-radio`：选中色从蓝/红 → Indigo accent
+- `.badge-985/211/双一流`：淡色背景 → 透明度15%彩色背景，文字改为对应高亮色
+- `.tier-header.rush/safe/bottom`：纯色背景 → 透明度12%彩色背景（不抢眼）
+
+**新增**
+
+- `@keyframes skeleton-shimmer` + `.skeleton` class（深色骨架屏动画）
+- `.modal-overlay` 遮罩透明度：`.5` → `.7`（暗色系更合适）
+
+---
+
 ## Bug修复记录
 
 ### BugFix-1：admin.py config API 列名错误（2026-06-17）
@@ -148,6 +214,123 @@
 - **问题**：`_call_llm()` 用 OpenAI chat completions 格式（`/v1/chat/completions`，`choices[0].message.content`），但 `api.pateway.ai` 对 Claude 模型使用 Anthropic 原生格式，返回 `"protocol_mismatch"`
 - **修复**：改为 Anthropic messages 格式（`/v1/messages`，system 字段独立，响应取 `content[0].text`），header 加 `anthropic-version: 2023-06-01`，超时从 10s 改为 30s
 - **影响范围**：`POST /api/qa/ask` LLM 调用路径
+
+---
+
+## T8.2 完成详情（2026-06-17）
+
+### 执行内容
+
+**文件**：`frontend/index.html`
+
+**`renderSchoolCard()` 全量重写**（修复16维度字段名错误）
+
+| 维度 | 旧字段/问题 | 新实现 |
+|------|-----------|--------|
+| 维度7 推荐专业 | 无 `major_note` 展示 | `recommended_major` + `major_note` 灰色小字标注 + `major_level` cyan色副行 |
+| 维度8 学费 | `dim.tuition` (不存在) | `dim.tuition_per_year` + 💚 经济友好标记(≤5000元) + `tuition_total` + `tuition_fit` 提示 |
+| 维度11 就业率 | 无数据来源注释 | `dim.employment_rate` + `employment_source` 小字注释 |
+| 维度12 薪资 | `dim.avg_salary_start`/`avg_salary_3yr` (不存在) | `dim.avg_salary`（API直接返回格式化字符串） |
+| 维度15 城市分析 | `dim.city_analysis` 当字符串输出 | 折叠面板展开5个子维度 (location/advantage/disadvantage/job_market/livability) |
+| AI点评 | "张雪峰点评" | "💡 点评：" |
+| data_quality | 未处理 | `pending_crawl` → 骨架屏；`estimated` → "(估算)" 标注 |
+
+**新增**：`toggleCityPanel(id)` 函数，CSS新增 `.city-panel`/`.city-toggle`/`.eco-badge` 等样式类
+
+---
+
+## T8.3 完成详情（2026-06-17）
+
+### 执行内容
+
+**文件**：`frontend/index.html`
+
+**`downloadPDF()` 完全重写**，新增 `buildCoverHTML()` + `addDiagonalWatermarks()`
+
+**5种水印实现**：
+| 水印 | 实现方式 |
+|------|---------|
+| ① 报告编号页眉 | 每页正文顶部 `pdf.text(reportId, ...)` |
+| ② 红色防伪声明 | 每页正文顶部右对齐红色文字 |
+| ③ 45°斜纹水印 | `addDiagonalWatermarks()` 9行×3列网格，opacity 0.09 |
+| ④ 考生信息卡片 | `buildCoverHTML()` 封面HTML，双栏6字段表格 |
+| ⑤ 二维码 | `qrcode.js` (CDN) 生成，canvas→dataURL→封面右下角 |
+
+**其他**：
+- 封面底色 `#E6F0FF`，scale:3 保证300DPI
+- 文件命名：`志愿报告_[网名]_[报告编号].pdf`
+- 多页分割：长报告内容按页高切割，header留10mm
+- 新增 `<script src="qrcode.js">` CDN引用
+- 新增 `#pdfCoverZone` 隐藏渲染区 (`position:fixed;top:-9999px;visibility:hidden`)
+
+---
+
+## T8.4 完成详情（2026-06-17）
+
+### 执行内容
+
+**文件**：`frontend/index.html`
+
+**`renderReport()` 重构为5大板块**：
+
+| 板块 | 内容 | 实现 |
+|------|------|------|
+| 板块一 | 报告编号+考生信息+数据权威说明 | 卡片，含 orderId 防伪、省/分/位次/选科、数据来源 |
+| 板块二 | 核心定位分析 | 冲/稳/保数量+色块进度条+调剂状态提示 |
+| 板块三 | 分层院校明细 | 意向院校特别关注区+冲刺/稳妥/保底三色tier列表 |
+| 板块四 | AI个性化填报建议书 | `buildAdviceSection()` 客户端生成6节（见下） |
+| 板块五 | 免责声明 | 红色警示卡片 |
+
+**板块四6节（客户端动态生成）**：
+- 4.1 成绩定位：基于分数的4档竞争力评级
+- 4.2 梯度策略：冲/稳/保数量可视化+建议
+- 4.3 调剂风险：基于 `stu.obey` 动态生成风险提示
+- 4.4 家庭经济适配：基于 `stu.economy` 生成助学/经济建议
+- 4.5 性格匹配：基于 `pref.personality` 标签生成专业匹配建议
+- 4.6 四大填报原则：固定内容 ①冲刺为辅 ②梯度合理 ③保底兜底 ④以官为准
+
+**新增**：`buildAdviceSection()` + `getPersonalityAdvice()` 函数，`.board-header/.board-num/.board-title/.advice-card/.advice-item` CSS类
+
+**按钮修复**：`下一位学生` → `测下一个`
+
+---
+
+## T8.5 完成详情（2026-06-17）
+
+### 执行内容
+
+**文件**：`frontend/admin.html`
+
+**暗色主题全面转换**：
+
+| CSS变量/规则 | 旧值（亮色） | 新值（暗色） |
+|-------------|-----------|-----------|
+| `--bg-primary` | `#F5F7FA` | `#0F172A` |
+| `--bg-card` | `#FFFFFF` | `#1E293B` |
+| `--text-primary` | `#1E293B` | `#F1F5F9` |
+| `--border` | `#E2E8F0` | `rgba(148,163,184,0.10)` |
+| `--color-accent` | _(无)_ | `#818CF8` |
+| `color-scheme` | _(无)_ | `dark` |
+| `.page-header` | `background:#1E293B` | `background:#0A0F1E + border-bottom` |
+| `th` | `background:var(--bg-primary)` | `background:rgba(15,23,42,.8)` |
+| `tr:hover td` | `background:#F8FAFC` | `background:rgba(148,163,184,.04)` |
+| `.modal` | `background:#fff` | `background:var(--bg-card)` |
+| `.tab-btn.active` | `color:var(--color-info)` | `color:var(--color-accent)` |
+| `.form-input` | `background:#fff` | `background:var(--bg-input);color:var(--text-primary)` |
+
+**密码管理功能**：
+
+1. **修改密码**（管理员/主播自助）：
+   - 入口：顶部导航栏新增"🔑 修改密码"按钮
+   - Modal `modal-changePassword`：当前密码+新密码+确认新密码（3字段）
+   - 调用 `POST /admin/change-password {old_password, new_password}`
+   - 校验：旧密码非空、新密码6-20位、两次输入一致
+
+2. **重置密码**（管理员重置主播）：
+   - 入口：主播列表每行操作列新增"重置密码"按钮
+   - Modal `modal-resetPassword`：确认提示+执行后展示新密码
+   - 调用 `POST /admin/streamers/{id}/reset-password`
+   - 成功后显示 `.reset-result` 区域（绿色背景，monospace字体，提示"此密码仅显示一次"）
 
 ---
 
@@ -543,6 +726,40 @@ T9  /auth/logout         ✅ 注销 + Redis 黑名单生效（401）
 
 ---
 
+## T7.1 完成详情（2026-06-17）
+
+### 执行内容
+
+**`scripts/migrate_v4_data_layer.sql`** — v4.0 数据层 DDL，包含以下表：
+
+| 表名 | 说明 | 关键索引/约束 |
+|------|------|------|
+| `admin_accounts` | 管理员账号（独立于主播体系） | `UNIQUE(username)` |
+| `school_majors` | 各校开设专业列表 | `UNIQUE uk_school_major(school_id, major_name)` |
+| `major_similarity` | 专业相似度映射 | `UNIQUE uk_pair(source_major, target_major)` |
+| `school_tuition` | 学费（校×专业，默认用 `__default__`） | `UNIQUE uk_school_major(school_id, major_name)` |
+| `school_employment` | 就业率数据 | `UNIQUE uk_school(school_id)` |
+| `school_salary` | 薪资区间（校×专业） | `UNIQUE uk_school_major(school_id, major_name)` |
+| `city_analysis` | 城市5维分析 | `UNIQUE(city_name)` |
+| `school_major_crawl_tasks` | 专业数据爬虫任务表 | `INDEX(status), INDEX(school_id)` |
+| `school_tuition_crawl_tasks` | 学费数据爬虫任务表 | `INDEX(status), INDEX(school_id)` |
+| `school_employment_crawl_tasks` | 就业数据爬虫任务表 | `INDEX(status), INDEX(school_id)` |
+| `school_salary_crawl_tasks` | 薪资数据爬虫任务表 | `INDEX(status), INDEX(school_id)` |
+| `school_city_crawl_tasks` | 城市分析爬虫任务表 | `INDEX(status), INDEX(city_name)` |
+
+**设计说明**：
+- `school_tuition` / `school_salary` 的 `major_name` 字段默认值 `__default__`（非 NULL），以支持 `UNIQUE KEY` 正确去重
+- 爬虫任务表统一结构：`school_id/school_name/school_code + status(pending/running/done/failed) + retry_count + error_msg`
+- `school_admission_crawl_tasks` 沿用 T1.3 已有表，未重建
+
+**生产部署命令**：
+```bash
+mysql -u root -p gaokao_ai < scripts/migrate_v4_data_layer.sql
+python scripts/seed_admin.py           # 初始化超管账号
+python scripts/seed_major_similarity.py  # 写入专业相似度映射
+python scripts/seed_hot_school_tuition.py  # 写入热门院校学费
+```
+
 ---
 
 ## T7.2 完成详情（2026-06-17）
@@ -651,3 +868,4 @@ T9  /auth/logout         ✅ 注销 + Redis 黑名单生效（401）
 | v2.1 | 2026-06-17 | T5.1完成：冒烟测试14/14全通过；修复 BugFix-3~8（列名/事务/LLM格式） |
 | v3.0 | 2026-06-17 | Phase 5+6全部完成：边界测试/性能测试/爬虫测试/Nginx加固/监控/备份/Redis降级/文档；TC-07分数截断修复；**35/35任务全部完成** |
 | v4.0 | 2026-06-17 | Phase 7全部完成：v4.0数据层升级；T7.1~T7.7；admin_accounts独立认证；6类爬虫网关；aggregate_16_dimensions()查真实数据；**42/42任务全部完成** |
+| v4.1 | 2026-06-17 | Phase 8完成：T8.1已完成；T8.2-T8.5全部完成：16维学校卡片/PDF重设计/5板块报告/管理后台暗色主题+密码管理；**47/50任务完成，T9.1-T9.3待开始** |
