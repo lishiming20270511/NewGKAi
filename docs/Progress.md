@@ -4,7 +4,7 @@
 |---------|------|
 | 项目名称 | AI高考志愿规划师 · 直播辅助工具 |
 | 上级文档 | [Tasks.md](./Tasks.md) |
-| 更新日期 | 2026-06-17 (T1.2) |
+| 更新日期 | 2026-06-17 (T1.4) |
 
 ---
 
@@ -14,8 +14,8 @@
 |------|------|----------|------|
 | **T1.1** 生产环境准备与Redis安装 | ✅ 完成 | 2026-06-17 | 见下方详情 |
 | **T1.2** 数据库Schema创建与索引优化 | ✅ 完成 | 2026-06-17 | 见下方详情 |
-| T1.3 爬虫数据网关 | ⏳ 待开始 | — | 前置：T1.2 |
-| T1.4 项目脚手架与FastAPI基础路由 | ⏳ 待开始 | — | 前置：T1.1 |
+| **T1.3** 爬虫数据网关 | ✅ 完成 | 2026-06-17 | 见下方详情 |
+| **T1.4** 项目脚手架与FastAPI基础路由 | ✅ 完成 | 2026-06-17 | 见下方详情 |
 
 ---
 
@@ -123,6 +123,85 @@ admission_history 批量录取:
 
 ---
 
+---
+
+## T1.3 完成详情（2026-06-17）
+
+### 执行内容
+
+#### `api/routers/crawler.py` — POST /internal/crawler/ingest
+- 认证：解析 Bearer token，用 `INTERNAL_JWT_SECRET` 验证（与主播 JWT 完全独立）
+- 无效 token → 401 Unauthorized
+- 接收最多 500 条 `AdmissionRecord`，Pydantic 前置校验：`min_score ≤ 800`, `min_rank > 0`
+- 写入 `crawler_staging`，带 `source_ip`（来自 `X-Real-IP` header）和 `crawled_at`
+- 单条写入失败→写 `crawler_error_log`，不影响其他条目，返回 `{ingested: N, rejected: M}`
+
+#### `scripts/check_staging.py` — 校验迁移 cron 脚本
+- `BATCH_SIZE=200` 分批处理 `crawler_staging.status='pending'`
+- 校验规则：school_id/province/year 非空；min_rank > 0；min_score ∈ [0, 800]；year ∈ [2000, 2030]
+- 通过 → `INSERT INTO admission_history … ON DUPLICATE KEY UPDATE`（基于 `uk_admission` 唯一索引去重）
+- 失败 → `INSERT INTO crawler_error_log`，status 改为 `rejected`
+- crontab：`*/5 * * * *` 运行，日志写 `/tmp/check_staging.log`
+
+**验证结果**：
+```bash
+# 模拟爬虫写入 2 条
+curl -X POST http://127.0.0.1:8000/internal/crawler/ingest \
+  -H "Authorization: Bearer <internal_jwt>" \
+  -d '{"records": [{"school_id":31,"province":"北京","year":2025,"category":"综合","min_score":686,"min_rank":419}, ...]}'
+# → {"ingested": 2, "rejected": 0} ✅
+
+# 无效 token
+# → {"detail": "Invalid internal token"} ✅
+```
+
+---
+
+## T1.4 完成详情（2026-06-17）
+
+### 执行内容
+
+#### 项目结构（新架构）
+```
+main.py              FastAPI 应用入口，包含 /health 端点
+api/
+  __init__.py
+  config.py          pydantic-settings 配置（读取 .env）
+  database.py        SQLAlchemy 2.0 async 引擎 + get_db()
+  redis_client.py    aioredis 客户端单例
+  routers/
+    auth.py          空路由（T2.1 实现）
+    schools.py       空路由（T2.3 实现）
+    recommendation.py 空路由（T2.4 实现）
+    qa.py            空路由（T2.7 实现）
+    report.py        空路由（T2.8 实现）
+    admin.py         空路由（T4.1 实现）
+    crawler.py       已实现（T1.3）
+  services/__init__.py
+  models/__init__.py
+scripts/
+  check_staging.py   已实现（T1.3）
+```
+
+#### 关键配置
+- `api/config.py`：pydantic-settings，自动读取 `.env`，`database_url` 使用 `quote_plus` 处理密码中的特殊字符
+- CORS：`allow_origins=["*"]`（开发阶段，T5.5 生产加固时收紧）
+- 全局异常处理：捕获未处理异常返回 `{"error":"服务器内部错误"}`
+
+#### systemd 服务更新
+- 文件：`/etc/systemd/system/gaokao-api.service`
+- 变更：`User=gaokao`（原 root），`ExecStart` 改为 `.venv/bin/uvicorn main:app --host 127.0.0.1 --port 8000 --workers 4`
+- `.venv` 用 Python 3.12.3 创建，安装 requirements.txt 所有依赖
+
+**验证结果**：
+```bash
+curl http://127.0.0.1:8000/health
+# → {"status":"ok","mysql":"ok","redis":"ok"} ✅
+systemctl status gaokao-api  # → active (running), 4 workers ✅
+```
+
+---
+
 ## Phase 2-6：待开始
 
 Phase 2 (核心后端) · Phase 3 (前端) · Phase 4 (管理与交易) · Phase 5 (集成部署) · Phase 6 (上线加固)
@@ -135,3 +214,5 @@ Phase 2 (核心后端) · Phase 3 (前端) · Phase 4 (管理与交易) · Phase
 |------|------|------|
 | v1.0 | 2026-06-17 | 初始创建，记录 T1.1 完成 |
 | v1.1 | 2026-06-17 | 记录 T1.2 完成：DDL迁移、crawler_staging/error_log创建、system_config初始化 |
+| v1.2 | 2026-06-17 | 记录 T1.3 完成：爬虫网关 /internal/crawler/ingest + check_staging.py cron脚本 |
+| v1.3 | 2026-06-17 | 记录 T1.4 完成：FastAPI脚手架、config/database/redis模块、/health端点、systemd服务迁移 |

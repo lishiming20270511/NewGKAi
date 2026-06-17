@@ -1,0 +1,82 @@
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from sqlalchemy import text
+
+from api.database import engine
+from api.redis_client import get_redis, close_redis
+from api.routers import auth, schools, recommendation, qa, report, admin, crawler
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    yield
+    await engine.dispose()
+    await close_redis()
+
+
+app = FastAPI(
+    title="AI高考志愿规划师",
+    version="2.0.0",
+    docs_url="/docs",
+    redoc_url=None,
+    lifespan=lifespan,
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    return JSONResponse(
+        status_code=500,
+        content={"error": "服务器内部错误，请稍后重试"},
+    )
+
+
+# ─── Routers ─────────────────────────────────────────────────────────────────
+
+app.include_router(auth.router)
+app.include_router(schools.router)
+app.include_router(recommendation.router)
+app.include_router(qa.router)
+app.include_router(report.router)
+app.include_router(admin.router)
+app.include_router(crawler.router)
+
+
+# ─── Health ──────────────────────────────────────────────────────────────────
+
+@app.get("/health", tags=["health"])
+async def health():
+    mysql_ok = False
+    redis_ok = False
+
+    try:
+        async with engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
+        mysql_ok = True
+    except Exception:
+        pass
+
+    try:
+        r = get_redis()
+        await r.ping()
+        redis_ok = True
+    except Exception:
+        pass
+
+    overall = "ok" if (mysql_ok and redis_ok) else "degraded"
+    return {
+        "status": overall,
+        "mysql": "ok" if mysql_ok else "error",
+        "redis": "ok" if redis_ok else "error",
+    }
