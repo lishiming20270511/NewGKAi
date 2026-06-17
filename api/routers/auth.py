@@ -149,6 +149,35 @@ async def streamer_profile(current_streamer: dict = Depends(get_current_streamer
     }
 
 
+
+
+class ChangePasswordRequest(BaseModel):
+    old_password: str = Field(..., min_length=6, max_length=64)
+    new_password: str = Field(..., min_length=6, max_length=64)
+
+
+@router.post("/change-password")
+async def change_streamer_password(
+    body: ChangePasswordRequest,
+    current_streamer: dict = Depends(get_current_streamer),
+    db: AsyncSession = Depends(get_db),
+):
+    row = await db.execute(
+        text("SELECT password_hash FROM streamer_accounts WHERE id = :id"),
+        {"id": current_streamer["id"]},
+    )
+    account = row.mappings().first()
+    if not account or not bcrypt.checkpw(body.old_password.encode(), account["password_hash"].encode()):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "旧密码错误")
+
+    new_hash = bcrypt.hashpw(body.new_password.encode(), bcrypt.gensalt(rounds=12)).decode()
+    await db.execute(
+        text("UPDATE streamer_accounts SET password_hash = :h, updated_at = NOW() WHERE id = :id"),
+        {"h": new_hash, "id": current_streamer["id"]},
+    )
+    await db.commit()
+    return {"success": True, "message": "密码修改成功"}
+
 @router.post("/deduct")
 async def deduct(
     body: DeductRequest,

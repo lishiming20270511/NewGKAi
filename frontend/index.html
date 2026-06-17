@@ -1493,14 +1493,15 @@ function renderSchoolCard(s, tierKey) {
     majorHtml = `<div class="school-row"><span class="label">🎓 推荐专业</span><span class="value">${esc(dim.recommended_major)}${noteTag}${levelRow}</span></div>`;
   }
 
-  // Dim 8: Tuition — tuition_per_year + eco badge + tuition_total + tuition_fit
+  // Dim 8: Tuition — API returns dim.tuition (not tuition_per_year)
   let tuitionHtml = '';
-  if (dim.tuition_per_year) {
-    const rawNum = parseInt(String(dim.tuition_per_year).replace(/[^0-9]/g, '')) || 0;
+  const tuitionVal = dim.tuition || dim.tuition_per_year;
+  if (tuitionVal) {
+    const rawNum = parseInt(String(tuitionVal).replace(/[^0-9]/g, '')) || 0;
     const ecoBadge = rawNum > 0 && rawNum <= 5000 ? '<span class="eco-badge">💚 经济友好</span>' : '';
     const totalRow = dim.tuition_total ? ` · ${esc(dim.tuition_total)}` : '';
     const fitNote = dim.tuition_fit ? `<span class="src-note">${esc(dim.tuition_fit)}</span>` : '';
-    tuitionHtml = `<div class="school-row"><span class="label">💰 学费</span><span class="value">${esc(dim.tuition_per_year)}${ecoBadge}${totalRow}${fitNote}</span></div>`;
+    tuitionHtml = `<div class="school-row"><span class="label">💰 学费</span><span class="value">${esc(tuitionVal)}${ecoBadge}${totalRow}${fitNote}</span></div>`;
   }
 
   // Dim 11: Employment rate + source annotation
@@ -1510,9 +1511,11 @@ function renderSchoolCard(s, tierKey) {
     employHtml = `<div class="school-row"><span class="label">💼 就业率</span><span class="value">${esc(dim.employment_rate)}${srcNote}</span></div>`;
   }
 
-  // Dim 12: avg_salary as full string (already formatted by API)
-  const salaryHtml = dim.avg_salary
-    ? `<div class="school-row"><span class="label">💵 薪资</span><span class="value">${esc(dim.avg_salary)}</span></div>`
+  // Dim 12: Salary — API returns avg_salary_start + avg_salary_3yr (or legacy avg_salary)
+  const salaryStart = dim.avg_salary_start || dim.avg_salary;
+  const salary3yr   = dim.avg_salary_3yr;
+  const salaryHtml  = salaryStart
+    ? `<div class="school-row"><span class="label">💵 薪资</span><span class="value">${esc(salaryStart)}${salary3yr ? ` → ${esc(salary3yr)}(3年)` : ''}</span></div>`
     : '';
 
   // Dim 15: City analysis — collapsible 5-sub-dimension panel
@@ -1520,20 +1523,23 @@ function renderSchoolCard(s, tierKey) {
   if (dim.city_analysis && typeof dim.city_analysis === 'object') {
     const ca = dim.city_analysis;
     const cid = 'c' + Math.random().toString(36).slice(2, 9);
-    const rows = [
-      ca.location    ? `<div class="city-panel-row">📍 ${esc(ca.location)}</div>` : '',
-      ca.advantage   ? `<div class="city-panel-row">✅ ${esc(ca.advantage)}</div>` : '',
-      ca.disadvantage? `<div class="city-panel-row">⚠️ ${esc(ca.disadvantage)}</div>` : '',
-      ca.job_market  ? `<div class="city-panel-row">💼 ${esc(ca.job_market)}</div>` : '',
-      ca.livability  ? `<div class="city-panel-row">🏠 ${esc(ca.livability)}</div>` : '',
+    // API may return {summary:...} or full {location,advantage,disadvantage,job_market,livability}
+    const rows = ca.summary ? `<div class="city-panel-row">${esc(ca.summary)}</div>` : [
+      ca.location     ? `<div class="city-panel-row">📍 ${esc(ca.location)}</div>` : '',
+      ca.advantage    ? `<div class="city-panel-row">✅ ${esc(ca.advantage)}</div>` : '',
+      ca.disadvantage ? `<div class="city-panel-row">⚠️ ${esc(ca.disadvantage)}</div>` : '',
+      ca.job_market   ? `<div class="city-panel-row">💼 ${esc(ca.job_market)}</div>` : '',
+      ca.livability   ? `<div class="city-panel-row">🏠 ${esc(ca.livability)}</div>` : '',
     ].filter(Boolean).join('');
-    cityHtml = `<div class="school-row-col">
-      <div class="city-toggle" onclick="toggleCityPanel('${cid}')">
-        <span class="label" style="min-width:unset">🏙️ 城市分析</span>
-        <span id="${cid}_ic" class="city-toggle-icon">▼</span>
-      </div>
-      <div id="${cid}" class="city-panel">${rows}</div>
-    </div>`;
+    if (rows) {
+      cityHtml = `<div class="school-row-col">
+        <div class="city-toggle" onclick="toggleCityPanel('${cid}')">
+          <span class="label" style="min-width:unset">🏙️ 城市分析</span>
+          <span id="${cid}_ic" class="city-toggle-icon">▼</span>
+        </div>
+        <div id="${cid}" class="city-panel">${rows}</div>
+      </div>`;
+    }
   } else if (dim.city_analysis) {
     cityHtml = `<div class="school-row"><span class="label">🏙️ 城市</span><span class="value">${esc(String(dim.city_analysis))}</span></div>`;
   }

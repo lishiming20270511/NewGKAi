@@ -161,8 +161,8 @@ async def create_streamer(
     pw_hash = bcrypt.hashpw(body.password.encode(), bcrypt.gensalt(rounds=12)).decode()
     await db.execute(
         text("""
-            INSERT INTO streamer_accounts (phone, password_hash, name, balance)
-            VALUES (:phone, :pw, :name, 0)
+            INSERT INTO streamer_accounts (phone, password_hash, name, balance, purchased_total, used_total, status, created_at, updated_at)
+            VALUES (:phone, :pw, :name, 0, 0, 0, 'active', NOW(), NOW())
         """),
         {"phone": body.phone, "pw": pw_hash, "name": body.name},
     )
@@ -264,39 +264,39 @@ async def recharge_streamer(
     admin=Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ):
-    async with db.begin():
-        row = await db.execute(
-            text("SELECT id, balance, purchased_total FROM streamer_accounts WHERE id = :id FOR UPDATE"),
-            {"id": streamer_id},
-        )
-        streamer = row.mappings().first()
-        if not streamer:
-            raise HTTPException(status.HTTP_404_NOT_FOUND, "主播不存在")
+    row = await db.execute(
+        text("SELECT id, balance, purchased_total FROM streamer_accounts WHERE id = :id FOR UPDATE"),
+        {"id": streamer_id},
+    )
+    streamer = row.mappings().first()
+    if not streamer:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "主播不存在")
 
-        await db.execute(
-            text("""
-                UPDATE streamer_accounts
-                SET balance = balance + :cnt,
-                    purchased_total = purchased_total + :cnt
-                WHERE id = :id
-            """),
-            {"cnt": body.count, "id": streamer_id},
-        )
-        await db.execute(
-            text("""
-                INSERT INTO streamer_recharge_logs
-                    (streamer_id, amount, count, operator, remark)
-                VALUES (:sid, :amt, :cnt, :op, :rmk)
-            """),
-            {
-                "sid": streamer_id,
-                "amt": body.amount,
-                "cnt": body.count,
-                "op": admin.get("sub", "admin"),
-                "rmk": body.remark,
-            },
-        )
+    await db.execute(
+        text("""
+            UPDATE streamer_accounts
+            SET balance = balance + :cnt,
+                purchased_total = purchased_total + :cnt
+            WHERE id = :id
+        """),
+        {"cnt": body.count, "id": streamer_id},
+    )
+    await db.execute(
+        text("""
+            INSERT INTO streamer_recharge_logs
+                (streamer_id, reset_amount, reset_count, operator, remark, created_at)
+            VALUES (:sid, :amt, :cnt, :op, :rmk, NOW())
+        """),
+        {
+            "sid": streamer_id,
+            "amt": body.amount,
+            "cnt": body.count,
+            "op": admin.get("sub", "admin"),
+            "rmk": body.remark,
+        },
+    )
 
+    await db.commit()
     new_balance = streamer["balance"] + body.count
     new_purchased = streamer["purchased_total"] + body.count
     return {

@@ -63,6 +63,10 @@ _FRONTEND = os.path.join(os.path.dirname(__file__), "frontend")
 async def serve_index():
     return FileResponse(os.path.join(_FRONTEND, "index.html"))
 
+@app.get("/admin.html", include_in_schema=False)
+async def serve_admin():
+    return FileResponse(os.path.join(_FRONTEND, "admin.html"))
+
 if os.path.isdir(_FRONTEND):
     app.mount("/static", StaticFiles(directory=_FRONTEND), name="static")
 
