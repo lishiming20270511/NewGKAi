@@ -4,7 +4,7 @@
 |---------|------|
 | 项目名称 | AI高考志愿规划师 · 直播辅助工具 |
 | 上级文档 | [Tasks.md](./Tasks.md) |
-| 更新日期 | 2026-06-17 (T1.4) |
+| 更新日期 | 2026-06-17 (T2.1 + T2.3) |
 
 ---
 
@@ -202,9 +202,66 @@ systemctl status gaokao-api  # → active (running), 4 workers ✅
 
 ---
 
-## Phase 2-6：待开始
+## Phase 2：核心后端 进度
 
-Phase 2 (核心后端) · Phase 3 (前端) · Phase 4 (管理与交易) · Phase 5 (集成部署) · Phase 6 (上线加固)
+| 任务 | 状态 | 完成日期 | 备注 |
+|------|------|----------|------|
+| **T2.1** 认证系统（JWT + Redis黑名单） | ✅ 完成 | 2026-06-17 | 见下方详情 |
+| **T2.2** 扣费系统（幂等+原子事务） | ⏳ 待开始 | — | 依赖 T2.1 ✅ |
+| **T2.3** 学校搜索API | ✅ 完成 | 2026-06-17 | 见下方详情 |
+| **T2.4** 推荐引擎核心 | ⏳ 待开始 | — | 依赖 T2.3 ✅ |
+
+---
+
+## T2.1 完成详情（2026-06-17）
+
+### 执行内容
+
+#### `api/deps.py` — JWT 认证依赖
+- `get_current_streamer()`：解析 Bearer Token，Redis 黑名单检查（jti），查库验证账号状态
+- `get_current_admin()`：Admin Token 解析，检查 `role=="admin"` 声明
+- Redis 不可用时降级（跳过黑名单检查，不拒绝请求）
+- **关键修复**：`python-jose` 要求 `sub` 为字符串 → 编码时 `str(streamer_id)`，解码时 `int(payload["sub"])`
+
+#### `api/routers/auth.py` — POST /auth/login, GET /auth/streamer/profile
+- `POST /auth/login`：bcrypt 验证，返回 `{token, streamer{id,name,phone(脱敏),balance}}`
+- `POST /auth/logout/token`：解码 JWT → 取 jti + exp → Redis `SETEX jwt:blacklist:{jti} TTL 1`（幂等，始终成功）
+- `GET /auth/streamer/profile`：返回主播信息（含 purchased_total / used_total）
+
+**验证结果**：
+```bash
+POST /auth/login → 200 {"token":"eyJ...","streamer":{"id":4,"phone":"138****8000",...}} ✅
+GET /auth/streamer/profile (带 Bearer Token) → 200 {"streamer":{...}} ✅
+GET /auth/streamer/profile (无 Token) → 401 ✅
+```
+
+---
+
+## T2.3 完成详情（2026-06-17）
+
+### 执行内容
+
+#### `api/routers/schools.py` — GET /api/schools/search, GET /api/schools/{school_id}
+- **搜索**：MySQL FULLTEXT `MATCH(name) AGAINST(:q* IN BOOLEAN MODE)`，无结果自动回退 LIKE `%q%`
+- **缓存**：Redis key `school:search:{q}:{limit}` TTL 3600s
+- **城市提取**：`_extract_city()` 正则从校名前缀提取城市（覆盖 30+ 主要城市）
+- **标签生成**：`_build_tags()` 将 `is_985/is_211/is_double_first` 转为 `["985","211","双一流"]`
+- **学校详情**：返回基本信息 + `admission_provinces`（该学校有录取数据的省份列表）
+
+**验证结果**：
+```bash
+GET /api/schools/search?q=郑州&limit=5
+→ [郑州大学(211,双一流), 郑州升达经贸管理学院, ...] ✅
+
+GET /api/schools/100
+→ {name:"四川农业大学", tags:["211","双一流"], admission_provinces:[30省...]} ✅
+```
+
+---
+
+## Phase 3-6：待开始
+
+Phase 3 (前端) · Phase 4 (管理与交易) · Phase 5 (集成部署) · Phase 6 (上线加固)
 
 详见 [Tasks.md](./Tasks.md)。
 
@@ -216,3 +273,5 @@ Phase 2 (核心后端) · Phase 3 (前端) · Phase 4 (管理与交易) · Phase
 | v1.1 | 2026-06-17 | 记录 T1.2 完成：DDL迁移、crawler_staging/error_log创建、system_config初始化 |
 | v1.2 | 2026-06-17 | 记录 T1.3 完成：爬虫网关 /internal/crawler/ingest + check_staging.py cron脚本 |
 | v1.3 | 2026-06-17 | 记录 T1.4 完成：FastAPI脚手架、config/database/redis模块、/health端点、systemd服务迁移 |
+| v1.4 | 2026-06-17 | 记录 T2.1 完成：JWT认证、bcrypt登录、Redis黑名单注销、主播profile接口 |
+| v1.5 | 2026-06-17 | 记录 T2.3 完成：学校搜索（FULLTEXT+LIKE回退+Redis缓存）、学校详情 |
