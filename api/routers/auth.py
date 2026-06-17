@@ -90,7 +90,7 @@ async def login(body: LoginRequest, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "账号或密码错误")
 
     if streamer["status"] == "disabled":
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "账号已被禁用，请联系管理员")
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "账号或密码错误")
 
     token, _ = _make_token(streamer["id"])
     return LoginResponse(

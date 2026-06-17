@@ -51,7 +51,6 @@ CITY_TO_PROVINCE: dict[str, str] = {
     "宜昌": "湖北", "荆州": "湖北",
     "绵阳": "四川", "南充": "四川",
     "咸阳": "陕西", "宝鸡": "陕西",
-    "洛阳": "河南",
 }
 
 # 城市 → 邻省映射（用于 L3）
@@ -1024,6 +1023,7 @@ async def generate_recommendation(req: RecommendRequest, db: AsyncSession) -> di
         "province": req.province,
         "score": req.score,
         "subject": req.subject_category,
+        "rank": req.rank,
         "city_pref": sorted(req.city_preference),
         "intended": sorted(req.intended_schools),
         "major": sorted(req.major_preference),

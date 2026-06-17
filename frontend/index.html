@@ -1442,10 +1442,12 @@ function getPersonalityAdvice(tags) {
   const map = {
     '外向活泼': '适合管理、传媒、销售、法学等互动性强的专业。',
     '沉稳内敛': '适合理工科、医学、计算机、会计等专注钻研的方向。',
-    '动手实操': '适合工程技术、建筑、医护等实践性强的专业。',
-    '理论研究': '适合数学、物理、基础科学等研究型专业，建议考虑研究生深造。',
-    '创意思维': '适合设计、广告、建筑、新媒体等创意类专业。',
-    '稳定保障': '建议优先师范、医学、行政管理等稳定就业方向。',
+    '钻研学术': '适合数学、物理、化学、生物等基础学科及研究生深造路径。',
+    '领导管理': '适合工商管理、公共管理、金融学、法学等组织型专业。',
+    '艺术创作': '适合设计、广告、建筑、数字媒体等创意类专业。',
+    '社交沟通': '适合新闻传播、市场营销、人力资源、外语等交际型专业。',
+    '动手实践': '适合工程技术、建筑、医护、机械制造等实践性强的专业。',
+    '逻辑分析': '适合计算机科学、数学、物理、统计学、金融工程等数理密集方向。',
   };
   const advice = tags.map(t => map[t]).filter(Boolean);
   return advice.length ? advice.join(' ') : '建议结合意向专业深入了解各校培养方案再做决策。';
@@ -1715,7 +1717,7 @@ function buildCoverHTML(reportId, stu, data, ts, qrDataUrl) {
   const score    = Number(stu.score) || '—';
   const rank     = esc(String(data.student_rank || stu.rank || '估算中'));
   const subjStr  = esc(stu.subjectStr || stu.subject_str || '—');
-  const adjust   = stu.obey_assignment ? '服从调剂' : '不服从调剂';
+  const adjust   = stu.obey ? '服从调剂' : '不服从调剂';
   const rid      = esc(reportId);
   const qrPart   = qrDataUrl
     ? '<img src="' + qrDataUrl + '" style="width:70px;height:70px;display:block;border-radius:4px">'
