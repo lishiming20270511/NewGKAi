@@ -1239,7 +1239,9 @@ async function doUnlock() {
   btn.innerHTML = '<span class="spinner"></span> 解锁中…';
 
   if (!S.idempotencyKey) {
-    S.idempotencyKey = Date.now() + '-' + Math.random().toString(36).slice(2,8);
+    S.idempotencyKey = (typeof crypto !== 'undefined' && crypto.randomUUID)
+      ? crypto.randomUUID()
+      : Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,8) + '-' + Math.random().toString(36).slice(2,6);
   }
 
   try {
@@ -1253,7 +1255,21 @@ async function doUnlock() {
     });
 
     S.orderId = result.order_id || S.orderId;
-    S.streamer.balance = result.balance ?? (bal - 1);
+
+    // Use server-returned balance (authoritative); only fall back to local if truly absent
+    if (typeof result.balance === 'number' && result.balance >= 0) {
+      S.streamer.balance = result.balance;
+    } else if (!result.already_processed) {
+      // Deduction happened but server didn't return balance — refresh from profile
+      try {
+        const profile = await api('GET', '/auth/streamer/profile');
+        S.streamer.balance = profile.streamer.balance;
+      } catch (_) {
+        // Last resort: local decrement (may be off by 1, but better than stale 0)
+        S.streamer.balance = Math.max(0, bal - 1);
+      }
+    }
+    // already_processed: balance was NOT deducted this time, keep existing value
     localStorage.setItem('gk_streamer', JSON.stringify(S.streamer));
     sessionStorage.setItem('gk_order', S.orderId || '');
     updateNavBar();

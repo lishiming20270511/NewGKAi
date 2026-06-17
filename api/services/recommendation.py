@@ -546,12 +546,19 @@ def _employment_score(school: SchoolRecord) -> float:
 
 
 def _city_pref_score(school: SchoolRecord, city_preference: list[str]) -> float:
-    """Returns 0-10 (percentage)."""
+    """Returns 0-10 (percentage). Uses normalized exact match after stripping city suffixes."""
     if not city_preference:
         return 5.0
-    city = school.city or school.province
-    if any(city in cp or cp in city for cp in city_preference):
-        return 10.0
+
+    # Normalize: strip "市" suffix from both sides for comparison
+    city_raw = school.city or school.province
+    city_norm = city_raw.rstrip("市")
+
+    for cp in city_preference:
+        cp_norm = cp.rstrip("市")
+        if city_norm == cp_norm:
+            return 10.0
+
     if school.is_intended_city:
         return 8.0
     return 3.0
@@ -1525,16 +1532,51 @@ def _build_admission_summary(history: list[dict]) -> dict:
 def _estimate_from_peers(
     school: SchoolRecord, peers: list[SchoolRecord], score: int
 ) -> float:
-    """Estimate rank_prob from peers with similar tier/985/211 status."""
+    """Estimate rank_prob from peers. Falls back through increasingly broad criteria."""
+    # Level 1: Exact same 985/211/double-first tier
     tier_peers = [
         p.rank_prob for p in peers
         if p.rank_prob is not None
         and p.is_985 == school.is_985
         and p.is_211 == school.is_211
+        and p.is_double_first == school.is_double_first
     ]
     if tier_peers:
         return round(sum(tier_peers) / len(tier_peers), 1)
-    return 50.0  # Conservative default
+
+    # Level 2: Same 985/211 status (ignore double-first)
+    broad_peers = [
+        p.rank_prob for p in peers
+        if p.rank_prob is not None
+        and p.is_985 == school.is_985
+        and p.is_211 == school.is_211
+    ]
+    if broad_peers:
+        return round(sum(broad_peers) / len(broad_peers), 1)
+
+    # Level 3: Any peers with valid rank_prob
+    all_peers = [p.rank_prob for p in peers if p.rank_prob is not None]
+    if all_peers:
+        avg = sum(all_peers) / len(all_peers)
+        # Adjust by school prestige: 985 → +10%, 211 → +5%, double-first → +3%
+        if school.is_985:
+            avg = min(99.0, avg + 10.0)
+        elif school.is_211:
+            avg = min(99.0, avg + 5.0)
+        elif school.is_double_first:
+            avg = min(99.0, avg + 3.0)
+        return round(avg, 1)
+
+    # Level 4: Score-based heuristic (higher score → lower probability for any school)
+    # At very low scores (<300), most schools are reachable; at 600+, fewer
+    if score >= 600:
+        return 20.0
+    elif score >= 450:
+        return 40.0
+    elif score >= 300:
+        return 55.0
+    else:
+        return 70.0
 
 
 def _school_to_dict(s: SchoolRecord) -> dict:
