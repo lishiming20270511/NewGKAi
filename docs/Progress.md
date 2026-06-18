@@ -1237,3 +1237,4 @@ curl http://127.0.0.1:8000/health
 | **v5.4** | **2026-06-18** | **第三轮Bug修复：薪资差异化（学校ID扰动+专科分层，解决所有学校薪资完全相同问题）+ PDF QR码try-catch保护（限20字符+L纠错+异常不阻断下载）+ Redis缓存key加v2前缀（旧缓存自动失效避免假阳性回归）** |
 | **v5.4.2** | **2026-06-18** | **爬虫模块修复：①发现根因SSH隧道连接旧服务器114.55.65.71→切换至121.41.69.234 + 密钥授权 + DB密码同步；②mysql-tunnel.service/systemd配置更新；③sp-1专业级URL测试(404)恢复lq-1；④CDN批量补2025数据(gaokao.cn API变更，改用降级方案)；⑤chsi学校编码映射(crawl_school_list)待后续运行** |
 | **v5.5** | **2026-06-18** | **PDF致命Bug修复：①P0 SyntaxError修复（_placeholder_extractTextBlocks未关闭导致downloadPDF/addDiagonalWatermarks/esc等所有后续函数被嵌套包裹，整个script块解析失败）②页码修复（对比/建议/免责页从"第null页"改为正确序号+总页数格式）** |
+| **v5.6** | **2026-06-18** | **PDF方案A重设计 + 城市Bug修复：①PDF完整替换为方案A（全HTML渲染→html2canvas截图，深蓝金色封面/内页页眉/学校18维度卡片/对比表/AI建议书/免责页，与pdf_preview.html视觉一致）②城市提取Bug修复：军校名称不含城市前缀，新增军校关键词→城市映射表（空军工程大学→西安、海军工程大学→武汉等8所军校），避免回退到省份名称** |

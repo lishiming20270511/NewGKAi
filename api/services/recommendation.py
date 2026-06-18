@@ -193,8 +193,30 @@ async def estimate_rank(
 # PHASE 1: 候选池四层填充
 # ──────────────────────────────────────────────────────────────────────────────
 
+_MILITARY_SCHOOL_CITY = {
+    "空军工程大学": "西安",
+    "空军军医大学": "西安",
+    "武警工程大学": "西安",
+    "海军工程大学": "武汉",
+    "陆军工程大学": "南京",
+    "国防科技大学": "长沙",
+    "信息工程大学": "郑州",
+    "海军航空大学": "烟台",
+    "陆军军医大学": "重庆",
+    "海军医学大学": "上海",
+    "空军航空大学": "长春",
+    "陆军特种作战学院": "广州",
+    "联合勤务学院": "北京",
+    "国防大学": "北京",
+}
+
+
 def _extract_city(name: str) -> str:
     import re
+    # Military schools: city not in school name, use lookup table
+    for keyword, city in _MILITARY_SCHOOL_CITY.items():
+        if keyword in name:
+            return city
     # Single unified regex — all city names merged into one anchored pattern
     _CITY_RE = re.compile(
         r"^(北京|上海|天津|重庆"
