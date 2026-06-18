@@ -1766,6 +1766,7 @@ async function renderPageToCanvas(html) {
   zone.innerHTML = html;
   zone.style.visibility = 'visible';
   await new Promise(r => setTimeout(r, 150));
+  console.log('[PDF] zone dims:', zone.offsetWidth, 'x', zone.offsetHeight, '(scroll:', zone.scrollWidth, 'x', zone.scrollHeight, ')');
   const canvas = await html2canvas(zone, {
     scale: 3,
     useCORS: true,
@@ -2465,6 +2466,7 @@ async function downloadPDF() {
     for (let i = 0; i < allPages.length; i++) {
       showToast(`PDF生成中 ${i+1}/${totalPages} 页…`, 'info');
       const canvas = await renderPageToCanvas(allPages[i]);
+      console.log(`[PDF] page ${i+1}: canvas ${canvas.width}x${canvas.height}`);
       const imgData = canvas.toDataURL('image/jpeg', 0.92);
       const imgH    = (canvas.height * PW) / canvas.width;
 
@@ -2474,7 +2476,16 @@ async function downloadPDF() {
       addDiagonalWatermarks(pdf, PW, PH, ts, reportId);
     }
 
-    pdf.save(`志愿报告_${name}_${reportId}.pdf`);
+    const blob = pdf.output('blob');
+    console.log('[PDF] blob size:', blob.size, 'bytes, pages:', totalPages);
+    const blobUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = `志愿报告_${name}_${reportId}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 30000);
     showToast(`✓ PDF下载成功，共 ${totalPages} 页`, 'success');
   } catch(e) {
     showToast('PDF生成失败：' + e.message, 'error');
