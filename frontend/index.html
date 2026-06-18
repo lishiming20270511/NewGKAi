@@ -1608,6 +1608,9 @@ function toggleCityPanel(id) {
 // 视觉标准：docs/pdf_preview.html
 // ══════════════════════════════════════════════════════════
 
+// PDF generation state (set by downloadPDF before building pages)
+let _PDF_TS = '';
+
 const PDF_STYLES = `
 * { margin:0; padding:0; box-sizing:border-box; }
 body { font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",sans-serif; }
@@ -1888,11 +1891,30 @@ function buildCoverPage(stu, reportId, qrDataUrl, ts) {
 </body></html>`;
 }
 
+function _buildWmHtml() {
+  if (!_PDF_TS) return '';
+  const txt = 'AI高考志愿规划师　' + _PDF_TS;
+  const spans = [];
+  for (let r = 0; r < 5; r++) {
+    for (let c = 0; c < 4; c++) {
+      spans.push(
+        '<span style="position:absolute;left:' + (c * 185 - 60) + 'px;top:' + (r * 185 + 30) + 'px;' +
+        'transform:rotate(-30deg);transform-origin:0 0;' +
+        'font-size:10px;font-family:PingFang SC,Microsoft YaHei,Noto Sans SC,sans-serif;' +
+        'color:rgba(0,0,0,0.07);white-space:nowrap;letter-spacing:0.5px;user-select:none;">' +
+        txt + '</span>'
+      );
+    }
+  }
+  return '<div style="position:absolute;top:0;left:0;width:100%;height:100%;overflow:hidden;pointer-events:none;z-index:0;">' + spans.join('') + '</div>';
+}
+
 function buildInnerPage(content, pageNum, reportId) {
-  const rid = esc(reportId);
+  const rid    = esc(reportId);
+  const wmHtml = _buildWmHtml();
   return `<html><head><meta charset="UTF-8"><style>${PDF_STYLES}</style></head><body>
-<div class="page inner-page" style="width:595px;min-height:842px;">
-  <div class="diag-wm"></div>
+<div class="page inner-page" style="width:595px;min-height:842px;position:relative;">
+  ${wmHtml}
   <div class="inner-header">
     <div class="logo-wrap">
       <div class="logo-icon">🎓</div>
@@ -2407,6 +2429,7 @@ async function downloadPDF() {
   const now    = new Date();
   const ts     = now.getFullYear() + '年' + (now.getMonth()+1) + '月' + now.getDate() + '日 '
                + String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+  _PDF_TS      = ts;
   const name   = esc(stu.nickname || '考生');
 
   let qrDataUrl = null;
@@ -2472,8 +2495,6 @@ async function downloadPDF() {
 
       if (i > 0) pdf.addPage();
       pdf.addImage(imgData, 'JPEG', 0, 0, PW, Math.min(imgH, PH));
-
-      addDiagonalWatermarks(pdf, PW, PH, ts, reportId);
     }
 
     const blob = pdf.output('blob');
