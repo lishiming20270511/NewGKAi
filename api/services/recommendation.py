@@ -466,6 +466,7 @@ def calc_rank_prob(
     student_rank: int, history: list[dict],
     is_985: bool = False, is_211: bool = False, is_double_first: bool = False,
     school_type: str = "",
+    student_score: int | None = None,
 ) -> Optional[float]:
     """Calculate admission probability based on rank comparison + school tier adjustment.
 
@@ -521,7 +522,73 @@ def calc_rank_prob(
 
     prob = max(1.0, min(99.0, prob * tier_mult))
 
-    return prob
+    # ── Score-Tier Alignment Check ──
+    # Blends the data-driven probability with a "tier prior" to prevent
+    # bad admission data from producing nonsensical results.
+    # E.g., a 985 school should never show 80%+ for a 500-score student.
+    if student_score is not None:
+        prior = _tier_score_prior(student_score, is_985, is_211, is_double_first, school_type)
+        if prior is not None:
+            # Blend: 65% data-driven, 35% tier prior
+            # Good data dominates; prior only corrects severe outliers
+            prob = prob * 0.65 + prior * 0.35
+
+    return max(1.0, min(99.0, prob))
+
+
+def _tier_score_prior(
+    score: int, is_985: bool, is_211: bool, is_double_first: bool, school_type: str
+) -> Optional[float]:
+    """Estimate a reasonable probability prior based solely on score and school tier.
+
+    This acts as a sanity check: even if admission_history data is missing
+    or corrupted, the prior ensures that 985 schools never show anomalously
+    high probabilities for mid-range scores, and 专科 schools never show
+    anomalously low probabilities.
+
+    Returns None if the tier doesn't need a prior constraint.
+    """
+    # Normalize score to 750 scale (上海 max is 660)
+    # For simplicity, treat all scores as /750; 上海's 660 will be slightly off
+    # but the prior is intentionally loose
+
+    if is_985:
+        # 985 schools: extremely competitive
+        if score >= 660: return 85.0
+        elif score >= 630: return 70.0
+        elif score >= 600: return 50.0
+        elif score >= 570: return 30.0
+        elif score >= 540: return 18.0
+        elif score >= 510: return 10.0
+        else: return 4.0
+    elif is_211 or is_double_first:
+        # 211/双一流: competitive
+        if score >= 640: return 90.0
+        elif score >= 610: return 75.0
+        elif score >= 580: return 55.0
+        elif score >= 550: return 35.0
+        elif score >= 520: return 20.0
+        elif score >= 490: return 10.0
+        else: return 5.0
+    else:
+        stype = (school_type or "").lower()
+        if "专科" in stype or "职业" in stype:
+            # 专科/职业: easy admission
+            if score >= 550: return 95.0
+            elif score >= 500: return 88.0
+            elif score >= 450: return 78.0
+            elif score >= 400: return 65.0
+            elif score >= 350: return 50.0
+            else: return 35.0
+        elif "民办" in stype or "独立" in stype:
+            # 民办/独立学院: easier
+            if score >= 550: return 90.0
+            elif score >= 500: return 80.0
+            elif score >= 450: return 65.0
+            else: return 50.0
+
+    # 公办本科: no strong prior needed
+    return None
 
 
 def _major_match_score(major_preference: list[str], school: SchoolRecord) -> float:
@@ -1551,7 +1618,7 @@ async def generate_recommendation(req: RecommendRequest, db: AsyncSession) -> di
         if rank:
             rp = calc_rank_prob(rank, history,
                 is_985=s.is_985, is_211=s.is_211, is_double_first=s.is_double_first,
-                school_type=s.school_type)
+                school_type=s.school_type, student_score=req.score)
             s.rank_prob = rp if rp is not None else 0.0
             s.weighted_prob = calc_weighted_prob(req, s.rank_prob, s) if s.rank_prob else 0.0
         else:
@@ -1567,7 +1634,7 @@ async def generate_recommendation(req: RecommendRequest, db: AsyncSession) -> di
         if rank:
             rp = calc_rank_prob(rank, history,
                 is_985=s.is_985, is_211=s.is_211, is_double_first=s.is_double_first,
-                school_type=s.school_type)
+                school_type=s.school_type, student_score=req.score)
             if rp is None:
                 # No data — estimate from peer schools in same tier
                 rp = _estimate_from_peers(s, scored, req.score)
@@ -1695,29 +1762,44 @@ def _estimate_from_peers(
             avg = min(99.0, avg + 8.0)   # 民办 — easier
         return round(avg, 1)
 
-    # Level 4: Score-based heuristic with tier adjustment
-    # Base probability by score bracket
-    if score >= 600:
-        base = 20.0
-    elif score >= 450:
-        base = 40.0
-    elif score >= 300:
-        base = 55.0
+    # Level 4: Score-based heuristic with tier prior blending
+    # Use _tier_score_prior for consistency with calc_rank_prob
+    prior = _tier_score_prior(score, school.is_985, school.is_211, school.is_double_first, school.school_type)
+    if prior is not None:
+        # Score-based base + tier prior blend
+        if score >= 600:
+            base = 20.0
+        elif score >= 450:
+            base = 40.0
+        elif score >= 300:
+            base = 55.0
+        else:
+            base = 70.0
+        # Blend with prior: 50% heuristic + 50% tier prior
+        base = base * 0.5 + prior * 0.5
     else:
-        base = 70.0
+        # No prior (公办本科): pure score heuristic
+        if score >= 600:
+            base = 20.0
+        elif score >= 450:
+            base = 40.0
+        elif score >= 300:
+            base = 55.0
+        else:
+            base = 70.0
     
-    # Apply tier adjustment
+    # Apply tier adjustment as additional safety
     stype = (school.school_type or "").lower()
     if school.is_985:
-        base = max(1.0, base * 0.70)    # 985 — much harder
+        base = max(1.0, base * 0.85)    # 985 — harder
     elif school.is_211:
-        base = max(1.0, base * 0.78)    # 211 — harder
+        base = max(1.0, base * 0.90)    # 211 — harder
     elif school.is_double_first:
-        base = max(1.0, base * 0.85)    # 双一流 — slightly harder
+        base = max(1.0, base * 0.93)    # 双一流 — slightly harder
     elif "专科" in stype or "职业" in stype:
-        base = min(99.0, base * 1.30)   # 专科 — much easier
+        base = min(99.0, base * 1.15)   # 专科 — easier
     elif "民办" in stype or "独立" in stype:
-        base = min(99.0, base * 1.15)   # 民办 — easier
+        base = min(99.0, base * 1.08)   # 民办 — easier
     return round(base, 1)
 
 
