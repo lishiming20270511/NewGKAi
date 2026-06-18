@@ -985,7 +985,7 @@ async def aggregate_16_dimensions(
     dims["trend_5yr"] = "数据收集中"
 
     # ── 维度15: 城市分析（city_analysis 表）─────────────────────────────────
-    city = school.city or school.province
+    city = school.city or _extract_city(school.name) or school.province
     r15 = await db.execute(
         text("""
             SELECT location, advantage, development, main_business, city_level
@@ -1304,7 +1304,7 @@ async def batch_aggregate_dimensions(
         dims["trend_5yr"] = "数据收集中"
 
         # Dim 15: city analysis
-        city = school.city or school.province
+        city = school.city or _extract_city(school.name) or school.province
         ca = ca_map.get(city)
         if ca:
             city_level = ca.get("city_level") or "二线"
