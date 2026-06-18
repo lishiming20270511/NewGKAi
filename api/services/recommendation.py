@@ -650,8 +650,10 @@ def sort_and_slice(schools: list[SchoolRecord], personality: list[str]) -> list[
         intended_city_flag = 0 if s.is_intended_city else 1
         rank_prob_neg = -(s.rank_prob or 0)
         personality_neg = -_personality_score(s, personality)
+        # National ranking tiebreaker: 985(0) > 211(1) > 双一流(2) > 其他(3)
+        ranking = 0 if s.is_985 else (1 if s.is_211 else (2 if s.is_double_first else 3))
         weighted_neg = -(s.weighted_prob or 0)
-        return (tier, intended_city_flag, rank_prob_neg, personality_neg, weighted_neg)
+        return (tier, intended_city_flag, rank_prob_neg, personality_neg, ranking, weighted_neg)
 
     schools_sorted = sorted(schools, key=sort_key)
 
@@ -716,20 +718,49 @@ def sort_and_slice(schools: list[SchoolRecord], personality: list[str]) -> list[
 # PHASE 2d / T2.6: 16维度数据聚合
 # ──────────────────────────────────────────────────────────────────────────────
 
-# Fallback city descriptions (used when city_analysis table has no data)
-_CITY_ANALYSIS_FALLBACK: dict[str, str] = {
-    "北京": "北京(超一线)，政治/科技/文化中心，就业最广，起薪高，消费高，留存率≥70%",
-    "上海": "上海(超一线)，金融/贸易/互联网中心，外资机会多，起薪高，消费极高",
-    "广州": "广州(一线)，商贸/制造业/互联网，外贸机会多，气候宜人，生活成本中高",
-    "深圳": "深圳(一线)，科技/互联网/金融，创业氛围浓，高薪，生活成本高",
-    "成都": "成都(新一线)，科技/电子/游戏/文创，宜居，生活成本适中，留存率高",
-    "武汉": "武汉(新一线)，光电/汽车/互联网，理工科需求旺，起薪适中",
-    "西安": "西安(新一线)，航空航天/军工/软件，高校密集，就业竞争激烈但成本低",
-    "南京": "南京(新一线)，电子信息/软件/化工，国企机会多，江苏经济强",
-    "杭州": "杭州(新一线)，互联网/电商/金融科技，阿里系生态，薪资水平高",
-    "郑州": "郑州(新一线)，物流/电商/食品/交通枢纽，发展快速，生活成本低",
-    "长沙": "长沙(新一线)，传媒/娱乐/工程机械，生活气息浓，幸福感高，起薪适中",
-    "重庆": "重庆(直辖市)，制造业/汽车/化工，西部经济中心，生活成本低",
+# Fallback city descriptions — 5-dimension structure matching city_analysis table schema
+_CITY_ANALYSIS_FALLBACK: dict[str, dict] = {
+    "北京": {"location":"政治/科技/文化中心，超一线城市","advantage":"就业面最广，央企/外企/互联网总部云集，起薪全国领先","disadvantage":"生活成本极高，房价居高，落户难，竞争激烈","job_market":"IT/互联网、金融、文化传媒、政府/事业单位","livability":"超一线城市，消费极高，宜居指数良好","city_level":"一线"},
+    "上海": {"location":"国际金融中心，长三角核心，外向型经济高度发达","advantage":"薪资水平全国第一梯队，金融/外资/制造业机会丰富","disadvantage":"消费水平极高，房价居高，落户难，内卷严重","job_market":"金融/证券/保险、外资企业、先进制造、生物医药","livability":"一线城市，生活成本较高，宜居指数良好","city_level":"一线"},
+    "广州": {"location":"华南经济中心，珠三角核心，外贸枢纽","advantage":"商贸/制造业/互联网发达，外贸机会多，气候宜人","disadvantage":"生活成本中高，房价上涨快，城中村改造影响居住","job_market":"商贸/外贸、电子商务、汽车制造、快消品","livability":"一线城市，生活成本中高，宜居指数良好","city_level":"一线"},
+    "深圳": {"location":"科技创新之都，粤港澳大湾区核心","advantage":"科技/互联网/金融发达，创业氛围浓，高薪","disadvantage":"生活成本高，房价全国最贵，教育资源相对稀缺","job_market":"IT/通信/电子、金融科技、智能制造、无人机","livability":"一线城市，消费高，宜居指数良好","city_level":"一线"},
+    "成都": {"location":"西南经济中心，成渝双城经济圈核心","advantage":"科技/电子/游戏/文创产业发达，城市宜居","disadvantage":"地处西部，远离沿海产业链，部分行业薪资偏低","job_market":"IT/软件、游戏/文创、航空航天、生物医药","livability":"新一线城市，生活成本适中，宜居指数高","city_level":"新一线"},
+    "武汉": {"location":"华中经济中心，长江中游核心城市","advantage":"光电/汽车/互联网产业集中，理工科需求旺","disadvantage":"夏季炎热，城市基建频繁，部分行业薪资竞争力不足","job_market":"光电子/通信、汽车制造、集成电路、生物医药","livability":"新一线城市，生活成本适中，宜居指数良好","city_level":"新一线"},
+    "西安": {"location":"西北经济中心，丝绸之路起点","advantage":"航空航天/军工/软件产业密集，高校云集人才多","disadvantage":"就业竞争激烈，薪资水平偏低于东部，空气质量一般","job_market":"航空航天、军工、软件开发、文化旅游","livability":"新一线城市，生活成本较低，宜居指数稳定","city_level":"新一线"},
+    "南京": {"location":"东部重要中心城市，长三角北翼核心","advantage":"电子信息/软件/化工发达，国企机会多，江苏经济强","disadvantage":"房价高，落户有一定门槛，产业结构偏传统","job_market":"电子信息、软件外包、化工/新材料、汽车","livability":"新一线城市，生活成本中高，宜居指数良好","city_level":"新一线"},
+    "杭州": {"location":"长三角南翼核心，数字经济第一城","advantage":"互联网/电商/金融科技高度发达，阿里系生态","disadvantage":"房价极高，交通拥堵，生活节奏快","job_market":"互联网/电商、金融科技、人工智能、文化创意","livability":"新一线城市，消费较高，宜居指数良好","city_level":"新一线"},
+    "郑州": {"location":"中原经济中心，全国重要交通枢纽","advantage":"物流/电商/食品产业发达，发展快速，生活成本低","disadvantage":"产业结构偏传统，高端产业占比偏低，空气质量有改善空间","job_market":"物流/电商、食品加工、装备制造、电子信息","livability":"新一线城市，生活成本低，宜居指数稳定","city_level":"新一线"},
+    "长沙": {"location":"长江中游重要中心城市，长株潭城市群核心","advantage":"传媒/娱乐/工程机械发达，生活气息浓，幸福感高","disadvantage":"薪资水平一般，高端产业占比有待提升","job_market":"传媒/娱乐、工程机械、新材料、电子信息","livability":"新一线城市，生活成本适中，宜居指数高","city_level":"新一线"},
+    "重庆": {"location":"西部直辖市，成渝双城经济圈核心","advantage":"制造业/汽车/化工基础雄厚，西部经济中心","disadvantage":"山地地形交通不便，夏季酷热，产业结构偏传统","job_market":"汽车/摩托车、电子信息、装备制造、化工","livability":"新一线城市，生活成本较低，宜居指数良好","city_level":"新一线"},
+    "天津": {"location":"北方经济中心之一，京津冀协同发展核心","advantage":"港口经济/航空航天/装备制造发达，教育资源好","disadvantage":"经济增速放缓，青年人口外流，薪资竞争力不足","job_market":"航空航天、装备制造、港口物流、石油化工","livability":"新一线城市，生活成本适中，宜居指数稳定","city_level":"新一线"},
+    "苏州": {"location":"长三角核心城市，上海大都市圈重要成员","advantage":"制造业/外资企业密集，经济发达，环境优美","disadvantage":"房价高，生活成本中高，产业结构偏制造业","job_market":"电子信息、装备制造、生物医药、纳米技术","livability":"新一线城市，生活成本中高，宜居指数良好","city_level":"新一线"},
+    "合肥": {"location":"长三角城市群副中心，综合性国家科学中心","advantage":"集成电路/人工智能/量子科技快速发展，科教资源丰富","disadvantage":"薪资水平偏低于长三角平均水平，城市知名度待提升","job_market":"集成电路、人工智能、新能源汽车、量子科技","livability":"新一线城市，生活成本适中，宜居指数良好","city_level":"新一线"},
+    "青岛": {"location":"山东半岛蓝色经济区核心，重要港口城市","advantage":"海洋经济/家电制造/港口贸易发达，环境优美","disadvantage":"薪资水平一般，产业结构偏传统，冬季湿度大","job_market":"家电/电子、海洋工程、港口物流、旅游","livability":"新一线城市，生活成本适中，宜居指数良好","city_level":"新一线"},
+    "济南": {"location":"山东省会，环渤海地区南翼中心城市","advantage":"IT/机械/化工基础好，教育资源集中","disadvantage":"薪资竞争力不足，高端产业占比偏低","job_market":"IT服务、机械制造、化工、生物医药","livability":"新一线城市，生活成本适中，宜居指数稳定","city_level":"新一线"},
+    "沈阳": {"location":"东北经济中心，辽中南城市群核心","advantage":"装备制造/航空航天基础雄厚，生活成本低","disadvantage":"经济增速放缓，人口流失，薪资水平偏低","job_market":"装备制造、航空航天、汽车、军工","livability":"新一线城市，生活成本低，宜居指数稳定","city_level":"新一线"},
+    "大连": {"location":"东北亚国际航运中心，辽宁沿海经济带核心","advantage":"港口经济/软件外包/造船业发达，环境优美","disadvantage":"经济增速放缓，高端产业不足","job_market":"软件外包、港口物流、造船、旅游","livability":"新一线城市，生活成本适中，宜居指数良好","city_level":"新一线"},
+    "厦门": {"location":"东南沿海重要中心城市，海峡西岸经济区核心","advantage":"旅游/会展/电子信息发达，环境优美气候宜人","disadvantage":"房价极高，城市规模偏小，产业结构单一","job_market":"旅游/会展、电子信息、金融、航运","livability":"新一线城市，消费较高，宜居指数高","city_level":"新一线"},
+    "福州": {"location":"福建省会，海峡西岸经济区核心","advantage":"电子信息/纺织/食品加工发达，侨乡经济活跃","disadvantage":"城市知名度偏低，薪资竞争力一般","job_market":"电子信息、纺织服装、食品加工、物流","livability":"新一线城市，生活成本适中，宜居指数良好","city_level":"新一线"},
+    "哈尔滨": {"location":"东北北部中心城市，哈长城市群核心","advantage":"装备制造/食品加工基础好，高校资源丰富","disadvantage":"冬季严寒，经济增速放缓，人才外流严重","job_market":"装备制造、食品加工、医药、军工","livability":"新一线城市，生活成本低，冬季宜居指数偏低","city_level":"新一线"},
+    "昆明": {"location":"云南省会，面向南亚东南亚辐射中心","advantage":"旅游/烟草/生物医药发达，气候四季如春","disadvantage":"地处西南边陲，远离东部产业带，薪资偏低","job_market":"旅游/会展、生物医药、烟草、现代农业","livability":"新一线城市，生活成本低，宜居指数高","city_level":"新一线"},
+    "南昌": {"location":"江西省会，长江中游城市群重要成员","advantage":"航空制造/LED/VR产业发展迅速，生活成本低","disadvantage":"薪资水平偏低，城市知名度不足","job_market":"航空制造、LED/光电、VR/电子信息、中医药","livability":"新一线城市，生活成本低，宜居指数稳定","city_level":"新一线"},
+    "贵阳": {"location":"贵州省会，西南大数据产业集聚区","advantage":"大数据/云计算产业快速发展，生态旅游丰富","disadvantage":"地处西南山区，交通不便，薪资偏低","job_market":"大数据/云计算、旅游、中医药、现代农业","livability":"新一线城市，生活成本低，宜居指数良好","city_level":"新一线"},
+    "太原": {"location":"山西省会，中部地区重要中心城市","advantage":"能源/装备制造基础好，生活成本低","disadvantage":"产业结构偏重工业，环境质量待改善，薪资偏低","job_market":"能源/煤炭、装备制造、新材料、文化旅游","livability":"新一线城市，生活成本低，宜居指数稳定","city_level":"新一线"},
+    "石家庄": {"location":"河北省会，京津冀协同发展重要节点","advantage":"医药/纺织/化工基础好，靠近京津优势","disadvantage":"产业结构偏传统，薪资偏低，空气质量待改善","job_market":"医药/化工、纺织、装备制造、物流","livability":"新一线城市，生活成本低，宜居指数稳定","city_level":"新一线"},
+    "兰州": {"location":"甘肃省会，西北地区重要工业基地","advantage":"石化/装备制造/有色冶金基础好，生活成本低","disadvantage":"地处西北内陆，经济欠发达，人才外流","job_market":"石油化工、装备制造、新材料、现代农业","livability":"新一线城市，生活成本低，宜居指数偏低","city_level":"新一线"},
+    "银川": {"location":"宁夏首府，西北地区东部重要中心城市","advantage":"能源化工/现代农业发达，生活成本低","disadvantage":"经济体量小，产业结构单一，薪资偏低","job_market":"能源化工、现代农业、旅游、新材料","livability":"新一线城市，生活成本低，宜居指数稳定","city_level":"新一线"},
+    "西宁": {"location":"青海省会，青藏高原东北部中心城市","advantage":"清洁能源/高原特色农业发达，生态环境好","disadvantage":"经济体量小，高海拔，交通不便，薪资偏低","job_market":"清洁能源、高原农业、旅游、中藏药","livability":"新一线城市，生活成本低，高海拔影响宜居性","city_level":"新一线"},
+    "乌鲁木齐": {"location":"新疆首府，丝绸之路经济带核心区","advantage":"能源/商贸物流发达，民族特色产业丰富","disadvantage":"地处西北边疆，远离内地市场，冬季严寒","job_market":"能源/石化、商贸物流、旅游、现代农业","livability":"新一线城市，生活成本适中，冬季宜居指数偏低","city_level":"新一线"},
+    "南宁": {"location":"广西首府，面向东盟开放合作前沿","advantage":"面向东盟区位优势，生态环境好，气候宜人","disadvantage":"经济体量偏小，薪资偏低，产业基础薄弱","job_market":"商贸/物流、旅游、现代农业、电子信息","livability":"新一线城市，生活成本低，宜居指数良好","city_level":"新一线"},
+    "呼和浩特": {"location":"内蒙古首府，呼包鄂城市群核心","advantage":"乳业/能源/大数据产业发达，生活成本低","disadvantage":"经济体量偏小，冬季严寒，高端产业不足","job_market":"乳业/食品、能源/化工、大数据、旅游","livability":"新一线城市，生活成本低，冬季宜居指数偏低","city_level":"新一线"},
+    "拉萨": {"location":"西藏首府，高原圣地","advantage":"旅游/藏药/特色农业独特，生态环境纯净","disadvantage":"高海拔缺氧，经济体量极小，产业单一，交通不便","job_market":"旅游、藏药、特色农业、文化创意","livability":"高海拔城市，生活成本中高，宜居指数特殊","city_level":"三线"},
+    "洛阳": {"location":"河南省副中心城市，历史文化名城","advantage":"装备制造/新材料/旅游产业发达，文化底蕴深厚","disadvantage":"薪资水平偏低，高端产业占比不足","job_market":"装备制造、新材料、旅游、石油化工","livability":"三线城市，生活成本低，宜居指数稳定","city_level":"三线"},
+    "开封": {"location":"河南省东部城市，历史文化名城","advantage":"旅游/文化创意产业特色鲜明，生活成本低","disadvantage":"经济体量偏小，薪资偏低，产业基础薄弱","job_market":"旅游/文化、现代农业、食品加工、纺织","livability":"三线城市，生活成本低，宜居指数稳定","city_level":"三线"},
+    "新乡": {"location":"河南省北部城市，中原城市群重要成员","advantage":"装备制造/生物医药/现代农业发达，交通便利","disadvantage":"经济体量偏小，薪资偏低","job_market":"装备制造、生物医药、现代农业、纺织","livability":"三线城市，生活成本低，宜居指数稳定","city_level":"三线"},
+    "南阳": {"location":"河南省西南部城市，豫鄂陕交界区域中心","advantage":"装备制造/中医药/现代农业发达，人口大市","disadvantage":"经济体量偏小，薪资偏低，高端产业不足","job_market":"装备制造、中医药、现代农业、纺织","livability":"三线城市，生活成本低，宜居指数稳定","city_level":"三线"},
+    "信阳": {"location":"河南省南部城市，鄂豫皖交界区域","advantage":"现代农业/食品加工/旅游发达，生态环境好","disadvantage":"经济体量偏小，产业基础薄弱","job_market":"现代农业、食品加工、旅游、建材","livability":"三线城市，生活成本低，宜居指数良好","city_level":"三线"},
+    "安阳": {"location":"河南省北部城市，京津冀协同发展辐射区","advantage":"钢铁/装备制造/文化旅游基础好","disadvantage":"产业结构偏重工业，薪资偏低","job_market":"钢铁/冶金、装备制造、文化旅游、纺织","livability":"三线城市，生活成本低，宜居指数稳定","city_level":"三线"},
+    "焦作": {"location":"河南省西北部城市，中原城市群成员","advantage":"能源/化工/旅游产业发达，太极拳发源地","disadvantage":"资源型城市转型中，薪资偏低","job_market":"能源/化工、装备制造、旅游、新材料","livability":"三线城市，生活成本低，宜居指数稳定","city_level":"三线"},
 }
 
 
@@ -975,8 +1006,18 @@ async def aggregate_16_dimensions(
         }
         dims["city_data_quality"] = "real"
     else:
-        fallback = _CITY_ANALYSIS_FALLBACK.get(city, f"{city}，城市发展稳定，就业机会适中")
-        dims["city_analysis"] = {"summary": fallback}
+        fallback = _CITY_ANALYSIS_FALLBACK.get(city)
+        if fallback:
+            dims["city_analysis"] = fallback
+        else:
+            dims["city_analysis"] = {
+                "location": f"{city}市",
+                "advantage": f"{city}教育资源集中，生活成本较低",
+                "disadvantage": "经济体量偏小，高端产业不足",
+                "job_market": "教育、医疗、公共服务、本地特色产业",
+                "livability": f"生活成本较低，宜居指数稳定",
+                "city_level": "三线",
+            }
         dims["city_data_quality"] = "estimated"
 
     # ── 维度16: AI点评 (异步生成，MVP先返回null) ──────────────────────────────
@@ -1277,8 +1318,18 @@ async def batch_aggregate_dimensions(
             }
             dims["city_data_quality"] = "real"
         else:
-            fallback = _CITY_ANALYSIS_FALLBACK.get(city, f"{city}，城市发展稳定，就业机会适中")
-            dims["city_analysis"] = {"summary": fallback}
+            fallback = _CITY_ANALYSIS_FALLBACK.get(city)
+            if fallback:
+                dims["city_analysis"] = fallback
+            else:
+                dims["city_analysis"] = {
+                    "location": f"{city}市",
+                    "advantage": f"{city}教育资源集中，生活成本较低",
+                    "disadvantage": "经济体量偏小，高端产业不足",
+                    "job_market": "教育、医疗、公共服务、本地特色产业",
+                    "livability": f"生活成本较低，宜居指数稳定",
+                    "city_level": "三线",
+                }
             dims["city_data_quality"] = "estimated"
 
         # Dim 16: AI点评
