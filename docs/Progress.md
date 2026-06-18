@@ -4,7 +4,7 @@
 |---------|------|
 | 项目名称 | AI高考志愿规划师 · 直播辅助工具 |
 | 上级文档 | [Tasks.md](./Tasks.md) |
-| 更新日期 | 2026-06-18 (54/54任务完成 + 代码审查17项修复 + v5.2~v5.4三轮Bug修复) |
+| 更新日期 | 2026-06-18 (v5.4 Bug修复: 算法层级权重+PDF白底文字渲染+水印中文化+免责声明) |
 
 ---
 
@@ -927,6 +927,41 @@ curl http://127.0.0.1:8000/health
 | 主播充值 `POST /admin/streamers/{id}/recharge` | ✅ 500→200（BF-10+BF-11修复后） |
 | 主播密码修改 `POST /auth/change-password` | ✅ 404→200（BF-12修复后） |
 | 学校卡片渲染（学费/薪资/城市） | ✅ 数据正常展示（BF-13修复后） |
+
+---
+
+### BugFix v5.4（2026-06-18）：用户反馈5项Bug修复
+
+**Bug #1 (P0): PDF水印内容不准确**
+- **用户要求**: 水印改为「AI高考志愿规划师+时间（如 2026年6月18日10:15）」
+- **修复**: `addDiagonalWatermarks()` — 水印文字从"GaoKao.AI Anti-Copy"改为"AI高考志愿规划师 2026年6月18日10:15 [报告编号]"
+- **影响范围**: `frontend/index.html` → `addDiagonalWatermarks()` + `buildCoverHTML()`
+
+**Bug #2 (P0): PDF正文背景应为纯白底+浅黑水印**
+- **修复**: 封面背景 `#E6F0FF` → `#FFFFFF`；斜纹水印颜色从深蓝 `#1A3359` → 浅黑 `#505050`；透明度从9% → 7%
+- **影响范围**: `frontend/index.html` → `downloadPDF()`, `addDiagonalWatermarks()`, `buildCoverHTML()`
+
+**Bug #3 (P0): PDF横白线 + 模糊问题 — 正文用文字渲染替代图片**
+- **根因**: 旧版用 `html2canvas` 将整个报告DOM渲染为JPEG大图→按页高切分→跨页边界产生白线；JPEG压缩导致文字模糊
+- **修复**: 重写 `downloadPDF()` — 正文用 `extractTextBlocks()` 提取文本→`pdf.text()` 直接文字渲染；学校卡片用独立 `html2canvas`(PNG+白底)逐张渲染；不再使用整页图片切分
+- **新增**: `extractTextBlocks()` 函数 — 递归遍历报告DOM提取文本块(section-title/text/school-card)
+- **影响范围**: `frontend/index.html` → `downloadPDF()` 全量重写 + 新增 `extractTextBlocks()`
+
+**Bug #4 (P0): 致命算法问题 — 不同层次学校概率相近**
+- **用户案例**: 555分考生，深圳大学36% vs 四川文化传媒职业学院31%
+- **根因**: `calc_rank_prob()` 仅基于位次比较，完全未考虑学校层级(985/211/专科)。当两校录取数据均有瑕疵时，概率无法拉开
+- **修复**:
+  - `calc_rank_prob()`: 新增学校层级乘数 — 985×0.82 / 211/双一流×0.88 / 专科×1.18 / 民办×1.10
+  - `_estimate_from_peers()` Level 3: 修正方向 — 好学校降概率(985-15%/211-10%)，差学校升概率(专科+15%/民办+8%)
+  - `_estimate_from_peers()` Level 4: 新增tier乘数 — 985×0.70 / 211×0.78 / 双一流×0.85 / 专科×1.30 / 民办×1.15
+- **影响范围**: `api/services/recommendation.py` → `calc_rank_prob()` + `_estimate_from_peers()` + 两处调用点
+
+**Bug #5 (P1): 免责声明内容调整**
+- **修复**: 按用户要求更新为3条精简结构：
+  1. 免责声明：本报告仅供填报参考，不构成正式志愿填报建议
+  2. 数据分析来源：全国2000+所高校 · 34个省份 · 近6年2200万+录取记录
+  3. 报告真伪识别：报告编号唯一，严禁倒卖转售，违者追责
+- **影响范围**: `frontend/index.html` → `renderReport()` 板块五
 
 ---
 
