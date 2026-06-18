@@ -1633,18 +1633,23 @@ async function downloadPDF() {
     // Watermark 5: QR code generated from canvas (safe data URL)
     let qrDataUrl = null;
     if (window.QRCode) {
-      const tmpDiv = document.createElement('div');
-      tmpDiv.style.cssText = 'position:fixed;top:-9999px;left:-9999px';
-      document.body.appendChild(tmpDiv);
-      new QRCode(tmpDiv, {
-        text: reportId,
-        width: 80, height: 80, colorDark: '#1A3359', colorLight: '#E6F0FF',
-        correctLevel: QRCode.CorrectLevel.M
-      });
-      await new Promise(r => setTimeout(r, 200));
-      const qrCanvas = tmpDiv.querySelector('canvas');
-      if (qrCanvas) qrDataUrl = qrCanvas.toDataURL('image/png');
-      document.body.removeChild(tmpDiv);
+      try {
+        const tmpDiv = document.createElement('div');
+        tmpDiv.style.cssText = 'position:fixed;top:-9999px;left:-9999px';
+        document.body.appendChild(tmpDiv);
+        new QRCode(tmpDiv, {
+          text: reportId.substring(0, 20),
+          width: 80, height: 80, colorDark: '#1A3359', colorLight: '#E6F0FF',
+          correctLevel: QRCode.CorrectLevel.L
+        });
+        await new Promise(r => setTimeout(r, 200));
+        const qrCanvas = tmpDiv.querySelector('canvas');
+        if (qrCanvas) qrDataUrl = qrCanvas.toDataURL('image/png');
+        document.body.removeChild(tmpDiv);
+      } catch(qrErr) {
+        console.warn('QR code generation failed, continuing without QR:', qrErr.message);
+        document.body.removeChild(tmpDiv);
+      }
     }
 
     // Build cover (all user values sanitized via esc() before embedding)
