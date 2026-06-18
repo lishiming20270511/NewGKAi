@@ -1484,7 +1484,7 @@ async def generate_recommendation(req: RecommendRequest, db: AsyncSession) -> di
         "personality": sorted(req.personality),
         "economic": req.economic_level,
     }, sort_keys=True, ensure_ascii=False)
-    cache_key = f"recommend:result:{hashlib.md5(cache_payload.encode()).hexdigest()}"
+    cache_key = f"recommend:v2:{hashlib.md5(cache_payload.encode()).hexdigest()}"
 
     try:
         r = get_redis()
