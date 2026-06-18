@@ -65,7 +65,10 @@ _FRONTEND = os.path.join(os.path.dirname(__file__), "frontend")
 
 @app.get("/", include_in_schema=False)
 async def serve_index():
-    return FileResponse(os.path.join(_FRONTEND, "index.html"))
+    return FileResponse(
+        os.path.join(_FRONTEND, "index.html"),
+        headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"}
+    )
 
 @app.get("/admin", include_in_schema=False)
 @app.get("/admin/", include_in_schema=False)
