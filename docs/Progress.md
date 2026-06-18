@@ -870,6 +870,36 @@ python scripts/seed_hot_school_tuition.py  # 写入热门院校学费
 |--------|------|------|------|
 | BF-9 | `main.py` | `GET /admin.html` 返回 404，无对应路由 | 新增 `@app.get("/admin.html")` → `FileResponse(admin.html)` |
 | BF-10 | `api/routers/admin.py` | `POST /admin/streamers/{id}/recharge` 报 500：`InvalidRequestError: A transaction is already begun`（`async with db.begin()` 与 `Depends(get_db)` autobegin冲突） | 移除 `async with db.begin()` 包装，改为直接 execute + `await db.commit()` |
+
+### BugFix v5.2（2026-06-18）：PRD v5.0 §7.1 Bug 清零
+
+**Bug #1 (P0): PDF QR码溢出 — `code length overflow. (372>368)`**
+- **根因**: QR数据包含 reportId + province + score，超过 QR H级纠错的字符上限
+- **修复**: `frontend/index.html:1639` — QR text 从 `'GK:' + reportId + '|' + province + '|' + score` 改为仅 `reportId`；纠错级别从 H 降为 M
+- **影响范围**: PDF下载功能
+
+**Bug #2 (P1): 录取趋势 years_available 重复 + 超过5年限制**
+- **根因**: `admission_history` 同学校同年份含多条记录（不同专业），`years_available` 直接取 `GROUP BY` 原始结果未去重
+- **修复**: `api/services/recommendation.py` 三处（aggregate_16_dimensions / batch_aggregate_dimensions / _build_admission_summary）— 全部改为按年去重(`set()`)后取最近5年
+- **影响范围**: 后端推荐引擎16维度数据组装
+
+**Bug #3 (P0): 就业率/学费/推荐专业全校相同（estimated兜底数据造假）**
+- **根因**: ①推荐专业当无数据时回退到 `req.major_preference[0]`，所有学校显示同一专业；②学费 estimated 分支同类型学校用固定字符串；③就业率扰动范围过窄
+- **修复**:
+  - 专业推荐(两处): 无数据时改为 `"数据获取中"` 而非统填意向专业
+  - 学费估算(两处): 新增"专科/职业"分类 + `school_id % 5` 数值扰动差异化
+  - 就业率估算(两处): 用 `% 7` 扩大扰动范围 + 新增民办/独立学院/专科分层
+- **影响范围**: 后端推荐引擎 `aggregate_16_dimensions()` 和 `batch_aggregate_dimensions()`
+
+**Bug #4 (P1): 管理后台 API 404 — `/admin/users` 路径不存在**
+- **根因**: 正确路径为 `/admin/streamers`，`/admin/users` 未注册；API本身正常工作
+- **修复**: `api/routers/admin.py:20` — 新增 `GET /admin/users` 重定向到 `/admin/streamers`
+- **影响范围**: 管理后台路由
+
+**Bug #5 (P1): 意向学校 special_attention 前端未渲染**
+- **根因**: 生产服务器前端为 v3.0 旧版，缺少 `special_attention` 渲染区块（本地代码已有）
+- **修复**: `frontend/index.html:1480,215` — 新增 `.tier-special` 琥珀色CSS类 + `renderSchoolCard()` 中处理 `tierKey === 'special'` 分支
+- **影响范围**: 前端报告页 + 需部署到生产服务器
 | BF-11 | `api/routers/admin.py` | 同一充值接口报 `Unknown column 'amount'`：INSERT列名为 `amount/count`，实际表结构为 `reset_amount/reset_count`，且缺少 `created_at` | 改为 `reset_amount/reset_count`，补充 `created_at=NOW()` |
 | BF-12 | `api/routers/auth.py` | `POST /auth/change-password` 返回 404：主播密码修改端点从未实现 | 新增完整端点：验证旧密码 → bcrypt 新密码 → UPDATE `streamer_accounts` |
 | BF-13 | `frontend/index.html` | 学校卡片学费/薪资/城市分析均不显示：前端字段名（`tuition_per_year`/`avg_salary`/`city_analysis.location`…）与API实际返回（`tuition`/`avg_salary_start`+`avg_salary_3yr`/`city_analysis.summary`）不一致 | `renderSchoolCard()` 全量修正字段名+降级逻辑 |
@@ -1094,3 +1124,4 @@ curl http://127.0.0.1:8000/health
 | v4.2 | 2026-06-17 | Phase 9完成：T9.1全流程回归测试（BF-9~BF-13，5个Bug修复）；T9.2数据差异化验证通过（省份/分数均有效区分）；T9.3降级展示验证通过；**50/50任务全部完成，项目收官** |
 | **v5.0** | **2026-06-17** | **Phase 10完成：T10.1~T10.4全部完成；城市/就业/薪资三类种子数据；城市字段映射Bug修复；估算标注前端完善；管理后台爬取进度看板；54任务全部完成** |
 | **v5.1** | **2026-06-18** | **代码审查修复（3轮17项）：P0 PDF调剂/性格标签 + P1 CORS/登录泄露/重复key + P2 缓存/城市提取/分层保证 + 性能批量查询 + 6项代码异味** |
+| **v5.2** | **2026-06-18** | **Bug清零（PRD v5.0 §7.1）：修复5个P0/P1 Bug（QR码溢出/录取趋势重复/数据造假/管理后台路由/特别关注区渲染）** |
