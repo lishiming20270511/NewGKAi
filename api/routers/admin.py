@@ -17,7 +17,15 @@ from ..database import get_db
 from ..deps import get_current_admin
 from ..redis_client import get_redis
 
-router = APIRouter(prefix="/admin", tags=["admin"])
+router = APIRouter(prefix='/admin', tags=['admin'])
+
+# Alias: /admin/users -> /admin/streamers for backward compatibility
+from fastapi.responses import RedirectResponse
+
+
+@router.get('/users')
+async def _users_alias():
+    return RedirectResponse(url='/admin/streamers')
 
 _PAGE_SIZE = 20
 
