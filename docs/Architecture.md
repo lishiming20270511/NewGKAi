@@ -3,10 +3,10 @@
 | 文档信息 | 内容 |
 |---------|------|
 | 产品名称 | AI高考志愿规划师 · 直播辅助工具 |
-| 架构版本 | v2.0（对齐 PRD v4.0：6类爬虫/16维度/5张新表/密码管理/IP直连HTTP） |
+| 架构版本 | v2.1（对齐 PRD v5.2：18维度/dim17报考风险/dim18招生规模/calcRankProb算法升级为6档离散概率） |
 | 作者 | 系统架构师 |
 | 创建日期 | 2026-06-17 |
-| 上级文档 | [PRD.md](./PRD.md) v4.0 · [UI_Spec.md](./UI_Spec.md) v4.0 |
+| 上级文档 | [PRD_v5.md](./PRD_v5.md) v5.2 · [UI_Spec.md](./UI_Spec.md) v5.3 |
 
 ---
 
@@ -64,7 +64,7 @@
 
 ```
 ┌──────────────────────────────────────────────────┐
-│  ★ 算法负责计算（基于 MySQL 真实录取数据 + 16维度） │
+│  ★ 算法负责计算（基于 MySQL 真实录取数据 + 18维度） │
 │  ★ 规则引擎负责约束（过滤 + 分层 + 性格决胜）      │
 │  ★ LLM 负责解释（不参与决策）                     │
 │  ★ 推荐引擎在服务端执行，前端只负责渲染            │
@@ -101,7 +101,7 @@
 | **SchoolSearch** | 意向院校模糊搜索（防抖300ms） | ~2700所学校需快速检索 | ✅ |
 | **RecommendAPI** | 调用 `POST /api/recommendation/generate` | 后端基于 MySQL 真实数据计算 | ✅ |
 | **PaywallManager** | 付款墙渲染 + 乐观扣费 + 幂等重试 + 回滚 | 核心变现点，原子扣费保证 | ✅ |
-| **ReportRenderer** | 5大板块报告渲染，16维度学校卡片 | 用户最终价值输出 | ✅ |
+| **ReportRenderer** | 5大板块报告渲染，18维度学校卡片 | 用户最终价值输出 | ✅ |
 | **PDFGenerator** | html2canvas(scale:3) + jsPDF + 5种水印 | 主播下载发送给考生 | ✅ |
 | **QAModule** | 直播答疑（10预设问题 + LLM回答） | P1 | ✅ |
 | **LiveMode** | 全屏 + 无导航 + 大字 | 直播投屏需求 | ✅ |
@@ -115,9 +115,9 @@
 | **Auth** | `/auth/` | 登录验证、JWT签发、Token刷新、注销（JWT黑名单） | 用户身份认证入口 |
 | **Streamer** | `/auth/streamer/` | 主播信息查询、剩余次数查询 | 前端需实时显示次数 |
 | **Deduction** ★ | `/auth/deduct` | 原子扣费（`SELECT FOR UPDATE` + 幂等键 + Redis锁降级） | **核心交易**——保证不超扣不重复扣 |
-| **Recommendation** ★ | `/api/recommendation/` | 位次估算→特别关注区(独立)→四层填充(城市→本省→周边→全国)→概率计算(双推荐率)→Tier分层→性格tiebreaker→16维度数据组装→数据缺口检测 | **系统核心价值** |
+| **Recommendation** ★ | `/api/recommendation/` | 位次估算→特别关注区(独立)→四层填充(城市→本省→周边→全国)→概率计算(双推荐率)→Tier分层→性格tiebreaker→18维度数据组装→数据缺口检测 | **系统核心价值** |
 | **School API** | `/api/schools/` | 学校搜索（?q=郑州）、学校详情 | 意向院校搜索框 |
-| **Crawler Trigger** | `/api/recommendation/` (内嵌) | 检测16维度数据覆盖缺口，自动生成6类爬虫任务 | 真实数据必有缺失，需持续补全 |
+| **Crawler Trigger** | `/api/recommendation/` (内嵌) | 检测18维度数据覆盖缺口，自动生成6类爬虫任务 | 真实数据必有缺失，需持续补全 |
 | **Crawler Gateway** ★ | `/internal/crawler/` (内部JWT) | 爬虫数据入口：写入 `crawler_staging` → 校验 → MERGE INTO 目标表 | **ARR R2修复**——爬虫不直连MySQL |
 | **Report** | `/api/report/` | 报告生成记录、防倒卖检测（相似度告警） | 订单追溯+风控 |
 | **QA** | `/api/qa/` | 直播答疑（调用 LLM，返回口语化回答） | 主播直播时回答观众 |
@@ -176,9 +176,9 @@
  │                   │                     │                │ ③ 四层填充       │
  │                   │                     │                │ ④ 概率计算       │
  │                   │                     │                │ ⑤ Tier分层+性格  │
- │                   │                     │                │ ⑥ 16维度数据组装 │
+ │                   │                     │                │ ⑥ 18维度数据组装 │
  │                   │                     │                │ ⑦ 数据缺口检测    │
- │                   │◄── {schools:[15所+16维], special_attention}──┤         │
+ │                   │◄── {schools:[15所+18维], special_attention}──┤         │
  │                   │ 跳转 #paywall         │                │                  │
  │                   │                     │                │                  │
  │  看付款墙→解锁     │                     │                │                  │
@@ -229,10 +229,15 @@
 │ PHASE 2: 概率计算（基于 admission_history 真实数据）              │
 │                                                                 │
 │ 2a. 批量查询 admission_history（Redis L1缓存，TTL 1h）           │
-│ 2b. 成绩排名推荐率 (rankProb) — tier分层以此为准                  │
-│     IF student_rank <= school_rank: prob = 85 + gap_ratio*14    │
-│     ELSE: prob = 85 * (school_rank/student_rank)               │
-│     多年度趋势修正：取最近3年min_rank中位数，紧缩趋势×0.95        │
+│ 2b. 成绩排名推荐率 (rankProb) — tier分层以此为准（PRD v5.2算法）  │
+│     Step1: 加权最低位次                                           │
+│       3年数据齐全: 2025×0.5 + 2024×0.3 + 2023×0.2               │
+│       仅2年(2025+2024): 2025×0.65 + 2024×0.35                   │
+│       仅1年(2025): 100%权重; 无数据: rankProb=null               │
+│     Step2: 位次差值 = 加权最低位次 − 学生省内位次                  │
+│     Step3: 6档离散概率映射                                        │
+│       差值>5000→95%  差值2000~5000→80%  差值0~2000→65%           │
+│       差值−2000~0→45%  差值−5000~−2000→25%  差值<−5000→8%        │
 │ 2c. 加权综合推荐率 (weightedProb) — 六维度加权                    │
 │     = rankProb×0.35 + major_match×0.20 + employment×0.15       │
 │       + city_pref×0.10 + personality×0.10 + economic_fit×0.10  │
@@ -252,14 +257,16 @@
                        │
                        ▼
 ┌────────────────────────────────────────────────────────────────┐
-│ PHASE 4: 16维度数据组装                                          │
+│ PHASE 4: 18维度数据组装                                          │
 │                                                                 │
-│ 每所学校组装16个信息维度:                                        │
+│ 每所学校组装18个信息维度:                                        │
 │   ①学校标签 ②录取概率 ③城市 ④近年分数线                          │
 │   ⑤位次匹配 ⑥分数线趋势 ⑦推荐专业(相似度映射)                     │
 │   ⑧学费(年费+4年总费+家庭承受力) ⑨录取趋势 ⑩专业地位             │
 │   ⑪就业率(标注来源+年份) ⑫平均薪资 ⑬主要岗位                     │
 │   ⑭5年趋势 ⑮城市分析(5子维度) ⑯AI点评                           │
+│   ⑰报考风险分析(risk_diff/risk_level/adjustment_advice)         │
+│   ⑱招生规模趋势(enrollment_trend: plan_count/actual_count逐年)  │
 │                                                                 │
 │ 数据来源优先级:                                                   │
 │   维度4/6/9: admission_history                                   │
@@ -680,7 +687,7 @@ CREATE TABLE school_city_crawl_tasks (
 | POST | `/auth/logout` | JWT | 注销（加入黑名单） | ✅ |
 | GET | `/auth/streamer/profile` | JWT | 查询主播信息+剩余次数 | ✅ |
 | POST | `/auth/streamer/deduct` | JWT | 扣费（原子事务+幂等） | ✅ |
-| **POST** | **`/api/recommendation/generate`** ★ | JWT | **核心推荐（返回15所+16维度+特别关注区）** | ✅ |
+| **POST** | **`/api/recommendation/generate`** ★ | JWT | **核心推荐（返回15所+18维度+特别关注区）** | ✅ |
 | GET | `/api/schools/search?q=郑州&limit=8` | JWT | 学校名称模糊搜索 | ✅ |
 | GET | `/api/schools/{id}` | JWT | 学校详情 | ✅ |
 | POST | `/api/qa/ask` | JWT | 直播答疑（调用LLM） | ✅ |
@@ -700,7 +707,7 @@ CREATE TABLE school_city_crawl_tasks (
 
 ### 5.2 核心接口详情
 
-#### `POST /api/recommendation/generate` ★ — 核心推荐（v4.0 16维度）
+#### `POST /api/recommendation/generate` ★ — 核心推荐（v5.2 18维度）
 
 ```
 Headers: Authorization: Bearer ***
@@ -787,7 +794,12 @@ Response 200:
           "main_business": "支柱：物流/电商/食品加工/装备制造。名企：富士康/宇通客车/思念食品/蜜雪冰城",
           "career_impact": "应届起薪5000-7500元/月，消费水平较低，工资留存率高。留本地性价比优"
         },
-        "ai_review": null               // AI点评异步生成，先null
+        "ai_review": null,              // AI点评异步生成，先null
+        // ★ v5.2新增维度（后端暂无数据时返回null，前端不渲染空框）
+        "risk_diff": null,              // dim17: 分差值（正=高于录取线，负=低于）
+        "risk_level": null,             // dim17: 滑档风险等级（低/中/高）
+        "adjustment_advice": null,      // dim17: 调剂建议（建议服从/谨慎考虑/不建议）
+        "enrollment_trend": null        // dim18: [{year,plan_count,actual_count,trend}]
       }
     }
     // ... 共15所
@@ -869,7 +881,7 @@ async def change_password(
 
 | 调用场景 | 触发时机 | Prompt 类型 | 模型推荐 |
 |----------|----------|-------------|----------|
-| **AI点评**（16维第16项） | 报告解锁时异步逐校调用 | 基于学校+专业+16维数据，生成50-100字口语化点评，不使用"张雪峰"品牌名 | DeepSeek V3 |
+| **AI点评**（18维第⑯项） | 报告解锁时异步逐校调用 | 基于学校+专业+18维数据，生成50-100字口语化点评，不使用"张雪峰"品牌名 | DeepSeek V3 |
 | **直播答疑** | 主播在qa.html发送问题 | 10个预设问题模板 + 自由输入，生成200字内口语化直白回答 | DeepSeek V3 |
 
 **异步生成策略**：报告解锁后，前端先渲染15维数据 + 骨架屏占位，后端 Celery 异步队列生成 AI 点评，完成后前端轮询/WebSocket 增量填充。
@@ -944,7 +956,7 @@ async def change_password(
 
 ### 8.1 MVP 目标
 
-**目标**：主播完成：登录→录入(STEP1)→偏好(STEP2)→分析中→付款墙→解锁→完整报告(16维度)→PDF下载→测下一个。
+**目标**：主播完成：登录→录入(STEP1)→偏好(STEP2)→分析中→付款墙→解锁→完整报告(18维度)→PDF下载→测下一个。
 
 ### 8.2 MVP 功能矩阵
 
@@ -955,7 +967,7 @@ P0 (必须):
   ✅ ③ 意向偏好 (4区域输入: 专业/城市/院校搜索/性格)
   ✅ ④ 分析中 (Bento Grid暗色科技风过渡动画 ~1.5s)
   ✅ ⑤ 付款墙 (加密遮蔽 + 剩余次数 + 一键解锁)
-  ✅ ⑥ 完整报告 (5大板块, 15校×16维度)
+  ✅ ⑥ 完整报告 (5大板块, 15校×18维度)
   ✅ ⑦ 报告样板 (静态硬编码演示)
   ✅ ⑧ PDF下载 (html2canvas+jsPDF+5种水印)
   ✅ 管理后台 — 主播CRUD + 充值 + 密码管理(v4.0)
@@ -1178,6 +1190,9 @@ mysqldump gaokao_ai | gzip | ossutil cp - oss://bucket/backup/gaokao_ai_$(date +
 | **★ 专业相似度映射** | 学校无考生意向专业时，通过 `major_similarity` 推荐最相近专业并标注"相近专业" |
 | **★ 城市5维分析** | 同城前4维度可缓存复用，第5维度（就业影响）按学校微调 |
 | **★ 学费混合策略** | 热门院校全量预爬，冷门院校首次被推荐时异步爬取 |
+| **★ dim17报考风险** | `risk_diff`/`risk_level`/`adjustment_advice`；后端无数据时返回null，前端不渲染空框 |
+| **★ dim18招生规模** | `enrollment_trend:[{year,plan_count,actual_count,trend}]`；连续≥2年缩减标注"⚠️ 竞争加剧"；无数据时null不渲染 |
+| **★ calcRankProb** | 6档离散概率(8/25/45/65/80/95%)，基于加权最低位次−学生位次差值映射；无录取数据→null→前端显"暂无录取数据" |
 | **幂等键** | 扣费使用 `crypto.randomUUID()`，同一键重试不重复扣费 |
 | **爬虫数据网关** | 爬虫不直连MySQL，必须经 `/internal/crawler/ingest` → staging → 校验 → MERGE |
 | **sed/${} 陷阱** | 生产部署禁止用 sed，必用 Python str.replace() |
@@ -1193,3 +1208,4 @@ mysqldump gaokao_ai | gzip | ossutil cp - oss://bucket/backup/gaokao_ai_$(date +
 | v1.2 | 2026-06-16 | ★ 对齐 PRD v3.1：特别关注区+四层填充+性格经济匹配 |
 | v1.3 | 2026-06-17 | ★ ARR硬化的8项修复（幂等/爬虫网关/Redis降级/缓存key/DDL/systemd/监控） |
 | **v2.0** | **2026-06-17** | **★ 对齐 PRD v4.0：①16维度学校卡片（新增5张数据表：school_majors/major_similarity/school_tuition/school_employment/school_salary/city_analysis）；②6类爬虫任务表（admission/major/tuition/employment/salary/city）；③管理后台密码管理+admin_accounts独立表；④IP直连HTTP配置（去除SSL/HTTPS）；⑤Bento Grid暗色主题适配；⑥PSF 5种水印；⑦报告5大板块结构；⑧数据真实性治理（差异化呈现+数据来源标注）** |
+| **v2.1** | **2026-06-18** | **★ 对齐 PRD v5.2：①18维度（新增dim17报考风险分析`risk_diff/risk_level/adjustment_advice`、dim18招生规模趋势`enrollment_trend`）；②calcRankProb算法升级为加权最低位次→位次差值→6档离散概率(8/25/45/65/80/95%)，含1/2/3年数据降级处理；③Phase 4数据组装列表更新至⑱；④API接口注释更新为18维度；⑤约束速查表新增dim17/dim18/calcRankProb条目；⑥上级文档更新为PRD v5.2/UI_Spec v5.3** |
