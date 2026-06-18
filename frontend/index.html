@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>AI高考志愿规划师 · v5.2</title>
+<title>AI高考志愿规划师 · v5.4</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -1367,10 +1367,9 @@ function renderReport() {
   html += `<div class="card" style="margin-top:4px;border:1px solid rgba(239,68,68,.15);background:rgba(239,68,68,.04)">
     <div class="board-header"><span class="board-num" style="background:var(--color-danger)">五</span><span class="board-title">免责声明</span></div>
     <div style="font-size:11px;color:var(--text-muted);line-height:1.8">
-      • 本报告由 AI 系统自动生成，仅供填报参考，不构成正式志愿填报建议<br>
-      • 数据规模：全国2000+所高校 · 34个省份 · 近6年2200万+录取记录<br>
-      • 最终填报请以当地省级教育考试院官方发布的招生计划和投档线为准<br>
-      • 报告编号唯一，<strong style="color:var(--color-danger)">严禁倒卖转售</strong>，违者追责
+      1、免责声明：本报告仅供填报参考，不构成正式志愿填报建议<br>
+      2、数据分析来源：全国2000+所高校 · 34个省份 · 近6年2200万+录取记录<br>
+      3、报告真伪识别：报告编号唯一，严禁倒卖转售，违者追责
     </div>
   </div>`;
 
@@ -1607,6 +1606,52 @@ function toggleCityPanel(id) {
 // ══════════════════════════════════════════════════════════
 // PDF Generation (T8.3: cover + 5 watermarks + 300DPI)
 // ══════════════════════════════════════════════════════════
+
+// Extract text blocks from report DOM for PDF text rendering
+function extractTextBlocks(reportEl) {
+  const blocks = [];
+  function walk(node, depth) {
+    if (!node || node.nodeType !== 1) return;
+    // Skip hidden elements and the QR/button area
+    if (node.style && (node.style.display === 'none' || node.style.visibility === 'hidden')) return;
+    if (node.closest && (node.closest('.btn-row') || node.closest('button'))) return;
+
+    const tag = node.tagName ? node.tagName.toLowerCase() : '';
+    const cls = node.className || '';
+    const text = (node.textContent || '').trim();
+    
+    if (cls.includes('board-header') || cls.includes('section-title') || tag === 'h3' || tag === 'h4') {
+      if (text) blocks.push({ type: 'section-title', text: text });
+      return;
+    }
+    if (cls.includes('school-card') || cls.includes('card') && node.querySelector && node.querySelector('.school-name')) {
+      blocks.push({ type: 'school-card', element: node, text: '' });
+      return;
+    }
+    if (tag === 'div' || tag === 'p' || tag === 'li') {
+      // Check if this is a text container (has direct text but no school cards inside)
+      let hasDirectText = false;
+      let childText = '';
+      for (const child of node.childNodes) {
+        if (child.nodeType === 3) { // Text node
+          const ct = child.textContent.trim();
+          if (ct) { hasDirectText = true; childText += ct + ' '; }
+        }
+      }
+      if (hasDirectText && childText.trim()) {
+        blocks.push({ type: 'text', text: childText.trim() });
+      }
+    }
+    // Recurse into children
+    if (node.children) {
+      for (const child of node.children) {
+        walk(child, depth + 1);
+      }
+    }
+  }
+  walk(reportEl, 0);
+  return blocks;
+}
 async function downloadPDF() {
   const reportEl = document.getElementById('reportContent');
   if (!window.jspdf || !window.html2canvas) {
@@ -1618,19 +1663,22 @@ async function downloadPDF() {
 
   const stu = S.student || {};
   const data = S.reportData || {};
-  const rawId = (data._orderId || S.orderId || '').replace(/[^A-Za-z0-9\-]/g, '');
+  const rawId = (data._orderId || S.orderId || '').replace(/[^A-Za-z0-9\\-]/g, '');
   const reportId = rawId && rawId !== '-'
     ? rawId
     : 'GK' + new Date().toISOString().replace(/[-T:.Z]/g,'').slice(2,14) + '-' + Math.random().toString(36).slice(2,6).toUpperCase();
   const name = stu.nickname || '考生';
-  const ts = new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  const tsDate = now.getFullYear() + '年' + (now.getMonth()+1) + '月' + now.getDate() + '日';
+  const tsTime = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+  const tsFull = tsDate + tsTime;
 
   showToast('PDF生成中，请稍候…', 'info');
 
   try {
     const { jsPDF } = window.jspdf;
 
-    // Watermark 5: QR code generated from canvas (safe data URL)
+    // Watermark 5: QR code
     let qrDataUrl = null;
     if (window.QRCode) {
       try {
@@ -1639,7 +1687,7 @@ async function downloadPDF() {
         document.body.appendChild(tmpDiv);
         new QRCode(tmpDiv, {
           text: reportId.substring(0, 20),
-          width: 80, height: 80, colorDark: '#1A3359', colorLight: '#E6F0FF',
+          width: 80, height: 80, colorDark: '#1A3359', colorLight: '#FFFFFF',
           correctLevel: QRCode.CorrectLevel.L
         });
         await new Promise(r => setTimeout(r, 200));
@@ -1647,14 +1695,14 @@ async function downloadPDF() {
         if (qrCanvas) qrDataUrl = qrCanvas.toDataURL('image/png');
         document.body.removeChild(tmpDiv);
       } catch(qrErr) {
-        console.warn('QR code generation failed, continuing without QR:', qrErr.message);
-        document.body.removeChild(tmpDiv);
+        console.warn('QR code generation failed:', qrErr.message);
+        try { document.body.removeChild(tmpDiv); } catch(e) {}
       }
     }
 
-    // Build cover (all user values sanitized via esc() before embedding)
+    // Build cover
     const coverZone = document.getElementById('pdfCoverZone');
-    const coverHTML = buildCoverHTML(reportId, stu, data, ts, qrDataUrl);
+    const coverHTML = buildCoverHTML(reportId, stu, data, tsFull, qrDataUrl);
     coverZone.textContent = '';
     const parser = new DOMParser();
     const parsed = parser.parseFromString(coverHTML, 'text/html');
@@ -1664,50 +1712,128 @@ async function downloadPDF() {
     await new Promise(r => setTimeout(r, 100));
 
     const coverCanvas = await html2canvas(coverZone, {
-      scale: 3, useCORS: true, backgroundColor: '#E6F0FF', logging: false
+      scale: 3, useCORS: true, backgroundColor: '#FFFFFF', logging: false
     });
     coverZone.style.visibility = 'hidden';
     coverZone.textContent = '';
 
-    // Report content
-    const reportCanvas = await html2canvas(reportEl, {
-      scale: 3, useCORS: true, backgroundColor: '#0F172A', logging: false
-    });
-
-    // Assemble PDF
+    // ── PDF正文：纯白底 + 直接文字渲染（不用html2canvas图片）──
     const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
     const PW = pdf.internal.pageSize.getWidth();
     const PH = pdf.internal.pageSize.getHeight();
+    const MARGIN = 12;
+    const CW = PW - MARGIN * 2;  // content width
 
-    // Page 1: cover
+    // Page 1: cover (image)
     const coverH = (coverCanvas.height * PW) / coverCanvas.width;
-    pdf.addImage(coverCanvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, PW, Math.min(coverH, PH));
-    addDiagonalWatermarks(pdf, PW, PH, ts);
+    pdf.addImage(coverCanvas.toDataURL('image/png'), 'PNG', 0, 0, PW, Math.min(coverH, PH));
+    addDiagonalWatermarks(pdf, PW, PH, tsFull, reportId);
 
-    // Report pages (slice long canvas across multiple pages)
-    const rData = reportCanvas.toDataURL('image/jpeg', 0.92);
-    const rImgH = (reportCanvas.height * PW) / reportCanvas.width;
-    const headerH = 10;
-    const contentH = PH - headerH;
-    let heightLeft = rImgH;
-    let yOffset = 0;
-
-    while (heightLeft > 0) {
-      pdf.addPage();
-      // Watermark 1: report ID header
+    // ── Page 2+: 报告正文纯文字渲染 ──
+    // Flatten report DOM into text blocks
+    const blocks = extractTextBlocks(reportEl);
+    let currentPage = 1;
+    let y = MARGIN;
+    
+    // Add report page header
+    function addPageHeader(pdf, pageNum) {
       pdf.setFontSize(7);
-      pdf.setTextColor(80, 80, 100);
-      pdf.text(reportId, 10, 5);
-      // Watermark 2: red anti-counterfeit text
-      pdf.setTextColor(160, 30, 30);
-      pdf.text('Protected - GaoKao.AI Planner', PW - 10, 5, { align: 'right' });
-      pdf.setDrawColor(180, 200, 230);
+      pdf.setTextColor(130, 130, 150);
+      pdf.text(reportId, MARGIN, 6);
+      pdf.setTextColor(180, 30, 30);
+      pdf.text('防伪 · 严禁倒卖', PW - MARGIN, 6, { align: 'right' });
+      pdf.setDrawColor(200, 200, 210);
       pdf.setLineWidth(0.2);
-      pdf.line(10, 7, PW - 10, 7);
-      pdf.addImage(rData, 'JPEG', 0, headerH - yOffset, PW, rImgH);
-      addDiagonalWatermarks(pdf, PW, PH, ts);
-      yOffset += contentH;
-      heightLeft -= contentH;
+      pdf.line(MARGIN, 8, PW - MARGIN, 8);
+    }
+
+    // Start with page 2 (page 1 is cover)
+    pdf.addPage();
+    addPageHeader(pdf, 2);
+    y = 14;
+
+    // Report title
+    pdf.setFontSize(16);
+    pdf.setTextColor(26, 51, 89);
+    pdf.text('志愿规划报告', PW / 2, y, { align: 'center' });
+    y += 6;
+    pdf.setFontSize(9);
+    pdf.setTextColor(100, 100, 120);
+    pdf.text('AI高考志愿规划师 · ' + tsFull + ' · 报告编号：' + reportId, PW / 2, y, { align: 'center' });
+    y += 10;
+
+    // Render each text block
+    pdf.setFontSize(10);
+    for (const block of blocks) {
+      if (block.type === 'section-title') {
+        if (y > PH - 25) { pdf.addPage(); addPageHeader(pdf, ++currentPage); y = 14; }
+        pdf.setFontSize(13);
+        pdf.setTextColor(26, 51, 89);
+        pdf.setFont(undefined, 'bold');
+        pdf.text(block.text, MARGIN, y);
+        pdf.setFont(undefined, 'normal');
+        y += 7;
+      } else if (block.type === 'text') {
+        pdf.setFontSize(9);
+        pdf.setTextColor(50, 50, 70);
+        const lines = pdf.splitTextToSize(block.text, CW);
+        for (const line of lines) {
+          if (y > PH - 15) { pdf.addPage(); addPageHeader(pdf, ++currentPage); y = 14; }
+          pdf.text(line, MARGIN, y);
+          y += 4.5;
+        }
+        y += 2;
+      } else if (block.type === 'school-card') {
+        // Render school card: use html2canvas on a cloned white-bg card element
+        if (y > PH - 50) { pdf.addPage(); addPageHeader(pdf, ++currentPage); y = 14; }
+        
+        const cardClone = block.element.cloneNode(true);
+        cardClone.style.width = '375px';
+        cardClone.style.background = '#FFFFFF';
+        cardClone.style.color = '#333';
+        cardClone.style.borderRadius = '8px';
+        cardClone.style.padding = '10px';
+        cardClone.style.border = '1px solid #E0E0E0';
+        cardClone.style.boxSizing = 'border-box';
+        // Fix text colors for white background
+        cardClone.querySelectorAll('*').forEach(el => {
+          const cs = window.getComputedStyle(el);
+          if (cs.color === 'rgb(241, 245, 249)' || cs.color === 'rgb(148, 163, 184)') {
+            el.style.color = '#333';
+          }
+        });
+        
+        document.body.appendChild(cardClone);
+        cardClone.style.position = 'fixed';
+        cardClone.style.top = '-9999px';
+        cardClone.style.left = '-9999px';
+        cardClone.style.visibility = 'visible';
+        cardClone.style.background = '#FFFFFF';
+        cardClone.style.display = 'block';
+        
+        await new Promise(r => setTimeout(r, 50));
+        
+        try {
+          const cardCanvas = await html2canvas(cardClone, {
+            scale: 2, useCORS: true, backgroundColor: '#FFFFFF', logging: false
+          });
+          const cardH = (cardCanvas.width > 0)
+            ? (cardCanvas.height * CW) / cardCanvas.width
+            : 30;
+          if (y + cardH > PH - 10) { pdf.addPage(); addPageHeader(pdf, ++currentPage); y = 14; }
+          pdf.addImage(cardCanvas.toDataURL('image/png'), 'PNG', MARGIN, y, CW, cardH);
+          y += cardH + 4;
+        } catch(e) {
+          console.warn('Card render failed:', e);
+        }
+        document.body.removeChild(cardClone);
+      }
+    }
+
+    // Add watermarks to all report pages (pages 2+)
+    for (let p = 2; p <= pdf.internal.getNumberOfPages(); p++) {
+      pdf.setPage(p);
+      addDiagonalWatermarks(pdf, PW, PH, tsFull, reportId);
     }
 
     pdf.save('志愿报告_' + name + '_' + reportId + '.pdf');
@@ -1718,13 +1844,13 @@ async function downloadPDF() {
   }
 }
 
-// Watermark 3: 45-degree diagonal tiled text across full page (opacity ~9%)
-function addDiagonalWatermarks(pdf, PW, PH, ts) {
+// Watermark 3: 45-degree diagonal tiled text across full page (opacity ~7%, light black)
+function addDiagonalWatermarks(pdf, PW, PH, ts, reportId) {
   pdf.saveGraphicsState();
-  pdf.setGState(new pdf.GState({ opacity: 0.09 }));
-  pdf.setFontSize(10);
-  pdf.setTextColor(26, 51, 89);
-  const wm = 'GaoKao.AI Anti-Copy ' + ts;
+  pdf.setGState(new pdf.GState({ opacity: 0.07 }));
+  pdf.setFontSize(11);
+  pdf.setTextColor(80, 80, 80);  // 浅黑色
+  const wm = 'AI高考志愿规划师 ' + ts + ' ' + reportId.substring(0, 14);
   for (let row = 0; row < 9; row++) {
     for (let col = 0; col < 3; col++) {
       pdf.text(wm, col * 85 - 15, row * 38 - 10, { angle: 45 });
@@ -1734,10 +1860,7 @@ function addDiagonalWatermarks(pdf, PW, PH, ts) {
 }
 
 // Watermark 4: student info card — all user values sanitized via esc()
-function buildCoverHTML(reportId, stu, data, ts, qrDataUrl) {
-  const now = new Date();
-  const dt = now.getFullYear() + '年' + (now.getMonth()+1) + '月' + now.getDate() + '日 '
-    + String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+function buildCoverHTML(reportId, stu, data, tsFull, qrDataUrl) {
   const nickname = esc(stu.nickname || '—');
   const province = esc(stu.province || '—');
   const score    = Number(stu.score) || '—';
@@ -1747,8 +1870,8 @@ function buildCoverHTML(reportId, stu, data, ts, qrDataUrl) {
   const rid      = esc(reportId);
   const qrPart   = qrDataUrl
     ? '<img src="' + qrDataUrl + '" style="width:70px;height:70px;display:block;border-radius:4px">'
-    : '<div style="width:70px;height:70px;background:#BDD5F0;border-radius:4px"></div>';
-  return '<div style="background:#E6F0FF;width:375px;min-height:580px;padding:24px;'
+    : '<div style="width:70px;height:70px;background:#D0D8E8;border-radius:4px"></div>';
+  return '<div style="background:#FFFFFF;width:375px;min-height:560px;padding:24px;'
     + 'font-family:\'PingFang SC\',\'Microsoft YaHei\',system-ui,sans-serif;box-sizing:border-box">'
     + '<div style="text-align:center;margin-bottom:16px">'
     + '<div style="font-size:20px;font-weight:800;color:#1A3359">🎓 AI高考志愿规划师</div>'
@@ -1756,12 +1879,12 @@ function buildCoverHTML(reportId, stu, data, ts, qrDataUrl) {
     + '<div style="width:40px;height:2px;background:#4285CC;margin:8px auto 0"></div></div>'
     + '<div style="text-align:center;margin-bottom:14px">'
     + '<div style="font-size:16px;font-weight:700;color:#1A3359">志愿规划报告书</div>'
-    + '<div style="font-size:10px;color:#666;margin-top:3px">生成时间：' + dt + '</div></div>'
-    + '<div style="background:#fff;border-radius:8px;padding:12px;margin-bottom:10px;border:1px solid #BDD5F0">'
-    + '<div style="font-size:12px;font-weight:700;color:#1A3359;margin-bottom:8px;border-bottom:1px solid #E0EDFF;padding-bottom:6px">📖 考生信息</div>'
+    + '<div style="font-size:10px;color:#666;margin-top:3px">生成时间：' + tsFull + '</div></div>'
+    + '<div style="background:#FAFBFC;border-radius:8px;padding:12px;margin-bottom:10px;border:1px solid #D0D8E8">'
+    + '<div style="font-size:12px;font-weight:700;color:#1A3359;margin-bottom:8px;border-bottom:1px solid #E0E8F0;padding-bottom:6px">📖 考生信息</div>'
     + '<table style="width:100%;border-collapse:collapse;font-size:11px;color:#333">'
     + '<tr><td style="padding:3px 6px;width:50%;vertical-align:top"><span style="color:#666">报告编号</span><br><strong style="color:#1A3359;font-size:10px">' + rid + '</strong></td>'
-    + '<td style="padding:3px 6px;vertical-align:top"><span style="color:#666">生成时间</span><br><strong>' + dt + '</strong></td></tr>'
+    + '<td style="padding:3px 6px;vertical-align:top"><span style="color:#666">生成时间</span><br><strong>' + tsFull + '</strong></td></tr>'
     + '<tr><td style="padding:3px 6px;vertical-align:top"><span style="color:#666">考生昵称</span><br><strong>' + nickname + '</strong></td>'
     + '<td style="padding:3px 6px;vertical-align:top"><span style="color:#666">省份 / 分数</span><br><strong>' + province + ' · ' + score + '分</strong></td></tr>'
     + '<tr><td style="padding:3px 6px;vertical-align:top"><span style="color:#666">省内位次</span><br><strong>' + rank + '名</strong></td>'

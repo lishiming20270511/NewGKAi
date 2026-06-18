@@ -462,7 +462,21 @@ async def batch_query_admission(
 # PHASE 2b-2c: 概率计算
 # ──────────────────────────────────────────────────────────────────────────────
 
-def calc_rank_prob(student_rank: int, history: list[dict]) -> Optional[float]:
+def calc_rank_prob(
+    student_rank: int, history: list[dict],
+    is_985: bool = False, is_211: bool = False, is_double_first: bool = False,
+    school_type: str = "",
+) -> Optional[float]:
+    """Calculate admission probability based on rank comparison + school tier adjustment.
+
+    School tier multipliers ensure that schools of vastly different prestige levels
+    produce properly separated probabilities even when admission data is imperfect.
+    - 985 schools: 0.82x (harder to get in — extremely competitive)
+    - 211 / 双一流: 0.88x (harder)
+    - 公办本科: 1.00x (neutral)
+    - 民办/独立学院: 1.10x (easier)
+    - 专科/职业: 1.18x (much easier)
+    """
     if not history or student_rank is None:
         return None
 
@@ -490,7 +504,24 @@ def calc_rank_prob(student_rank: int, history: list[dict]) -> Optional[float]:
         if latest and oldest and latest < oldest:
             prob *= 0.95  # Tightening trend → -5%
 
-    return max(1.0, min(99.0, prob))
+    # ── School Tier Adjustment ──
+    # Ensures schools of different prestige levels produce meaningfully
+    # different probabilities even when admission data is noisy or missing.
+    stype = (school_type or "").lower()
+    if is_985:
+        tier_mult = 0.82   # 985 — extremely competitive, harder to get in
+    elif is_211 or is_double_first:
+        tier_mult = 0.88   # 211/双一流 — competitive
+    elif "专科" in stype or "职业" in stype:
+        tier_mult = 1.18   # 专科/职业 — much easier admission bar
+    elif "民办" in stype or "独立" in stype:
+        tier_mult = 1.10   # 民办/独立学院 — easier
+    else:
+        tier_mult = 1.00   # 公办本科 — neutral
+
+    prob = max(1.0, min(99.0, prob * tier_mult))
+
+    return prob
 
 
 def _major_match_score(major_preference: list[str], school: SchoolRecord) -> float:
@@ -1518,7 +1549,9 @@ async def generate_recommendation(req: RecommendRequest, db: AsyncSession) -> di
     for s in special_attention:
         history = admission_map.get(s.school_id, [])
         if rank:
-            rp = calc_rank_prob(rank, history)
+            rp = calc_rank_prob(rank, history,
+                is_985=s.is_985, is_211=s.is_211, is_double_first=s.is_double_first,
+                school_type=s.school_type)
             s.rank_prob = rp if rp is not None else 0.0
             s.weighted_prob = calc_weighted_prob(req, s.rank_prob, s) if s.rank_prob else 0.0
         else:
@@ -1532,7 +1565,9 @@ async def generate_recommendation(req: RecommendRequest, db: AsyncSession) -> di
     for s in candidates:
         history = admission_map.get(s.school_id, [])
         if rank:
-            rp = calc_rank_prob(rank, history)
+            rp = calc_rank_prob(rank, history,
+                is_985=s.is_985, is_211=s.is_211, is_double_first=s.is_double_first,
+                school_type=s.school_type)
             if rp is None:
                 # No data — estimate from peer schools in same tier
                 rp = _estimate_from_peers(s, scored, req.score)
@@ -1646,25 +1681,44 @@ def _estimate_from_peers(
     all_peers = [p.rank_prob for p in peers if p.rank_prob is not None]
     if all_peers:
         avg = sum(all_peers) / len(all_peers)
-        # Adjust by school prestige: 985 → +10%, 211 → +5%, double-first → +3%
+        # Adjust by school prestige (inverse to calc_rank_prob: harder schools get penalty, easier get bonus)
+        stype = (school.school_type or "").lower()
         if school.is_985:
-            avg = min(99.0, avg + 10.0)
+            avg = max(1.0, avg - 15.0)   # 985 — much harder
         elif school.is_211:
-            avg = min(99.0, avg + 5.0)
+            avg = max(1.0, avg - 10.0)   # 211 — harder
         elif school.is_double_first:
-            avg = min(99.0, avg + 3.0)
+            avg = max(1.0, avg - 7.0)    # 双一流 — slightly harder
+        elif "专科" in stype or "职业" in stype:
+            avg = min(99.0, avg + 15.0)  # 专科 — much easier
+        elif "民办" in stype or "独立" in stype:
+            avg = min(99.0, avg + 8.0)   # 民办 — easier
         return round(avg, 1)
 
-    # Level 4: Score-based heuristic (higher score → lower probability for any school)
-    # At very low scores (<300), most schools are reachable; at 600+, fewer
+    # Level 4: Score-based heuristic with tier adjustment
+    # Base probability by score bracket
     if score >= 600:
-        return 20.0
+        base = 20.0
     elif score >= 450:
-        return 40.0
+        base = 40.0
     elif score >= 300:
-        return 55.0
+        base = 55.0
     else:
-        return 70.0
+        base = 70.0
+    
+    # Apply tier adjustment
+    stype = (school.school_type or "").lower()
+    if school.is_985:
+        base = max(1.0, base * 0.70)    # 985 — much harder
+    elif school.is_211:
+        base = max(1.0, base * 0.78)    # 211 — harder
+    elif school.is_double_first:
+        base = max(1.0, base * 0.85)    # 双一流 — slightly harder
+    elif "专科" in stype or "职业" in stype:
+        base = min(99.0, base * 1.30)   # 专科 — much easier
+    elif "民办" in stype or "独立" in stype:
+        base = min(99.0, base * 1.15)   # 民办 — easier
+    return round(base, 1)
 
 
 def _school_to_dict(s: SchoolRecord) -> dict:
