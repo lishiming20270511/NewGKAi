@@ -355,20 +355,25 @@ body {
 .badge-211 { background: var(--color-211); }
 .badge-double-first { background: var(--color-double-first); }
 
-/* ============ Trust Badge ============ */
-.trust-badge {
-  display: flex;
-  gap: 12px;
-  justify-content: center;
-  font-size: 12px;
-  color: var(--text-secondary);
-}
-.trust-badge span { display: flex; align-items: center; gap: 2px; }
-
-/* ============ Brand ============ */
-.brand-section { text-align: center; padding: 8px 0; }
-.brand-logo { font-size: 22px; font-weight: 800; color: var(--text-primary); }
+/* ============ Brand / Hero Copy ============ */
+.brand-section { text-align: center; padding: 8px 0 4px; }
+.brand-logo { font-size: 20px; font-weight: 800; color: var(--text-primary); }
 .brand-subtitle { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+.hero-copy {
+  padding: 4px 0;
+}
+.hero-copy-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 4px;
+  border-bottom: 1px solid #F1F5F9;
+}
+.hero-copy-item:last-child { border-bottom: none; }
+.hc-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+.hc-text { flex: 1; }
+.hc-head { font-size: 13px; font-weight: 600; color: var(--text-primary); line-height: 1.4; }
+.hc-body { font-size: 12px; color: var(--text-secondary); line-height: 1.5; margin-top: 1px; }
 
 /* ============ Blur Card (Paywall) ============ */
 .blur-card {
@@ -941,7 +946,48 @@ body {
   flex-wrap: wrap;
 }
 
-/* ============ Two-Column ============ */
+/* ============ Special Attention Zone ============ */
+.special-attention-card {
+  background: #FFFBEB;
+  border: 1.5px solid #FCD34D;
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  border-left: 4px solid var(--color-985);
+}
+.special-attention-card .sa-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #B45309;
+}
+.special-attention-card .sa-badge {
+  display: inline-block;
+  background: var(--color-985);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-right: 4px;
+}
+.sa-school-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  margin-bottom: 4px;
+  background: #fff;
+  border-radius: 6px;
+  border: 1px solid #FDE68A;
+}
+.sa-school-row:last-child { margin-bottom: 0; }
+.sa-school-name { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.sa-school-prob { font-size: 13px; font-weight: 700; color: var(--color-985); }
+.sa-school-zero { font-size: 11px; color: var(--color-danger); font-weight: 600; }
+.sa-school-city { font-size: 11px; color: var(--text-secondary); }
 .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .flex-row { display: flex; gap: 8px; align-items: center; }
 .flex-between { display: flex; justify-content: space-between; align-items: center; }
@@ -982,12 +1028,44 @@ body {
       <div class="page active" id="page-login">
         <div class="brand-section">
           <div class="brand-logo">🎓 AI高考志愿规划师</div>
-          <div class="brand-subtitle">直播辅助工具 · v3.0</div>
+          <div class="brand-subtitle">直播辅助工具 · v5.0</div>
         </div>
-        <div class="trust-badge">
-          <span>📊 2200万+</span>
-          <span>📅 6年覆盖</span>
-          <span>✅ 98.3% 准确率</span>
+        <div class="hero-copy">
+          <div class="hero-copy-item">
+            <span class="hc-icon">📊</span>
+            <div class="hc-text">
+              <div class="hc-head">巨量数据支撑</div>
+              <div class="hc-body">深耕近6年全国2200万+真实录取数据，规避滑档风险。</div>
+            </div>
+          </div>
+          <div class="hero-copy-item">
+            <span class="hc-icon">📍</span>
+            <div class="hc-text">
+              <div class="hc-head">精准坐标指引</div>
+              <div class="hc-body">紧扣2026年最新"一分一段"分数排名，精准定位。</div>
+            </div>
+          </div>
+          <div class="hero-copy-item">
+            <span class="hc-icon">🤖</span>
+            <div class="hc-text">
+              <div class="hc-head">顶尖AI坐镇</div>
+              <div class="hc-body">运用国内外三大顶尖模型 ChatGPT / Claude / DeepSeek V4 Pro 交叉综合分析。</div>
+            </div>
+          </div>
+          <div class="hero-copy-item">
+            <span class="hc-icon">❤️</span>
+            <div class="hc-text">
+              <div class="hc-head">独家懂你定制</div>
+              <div class="hc-body">不止看分数，更深度结合孩子的兴趣爱好、性格特质与家庭背景。</div>
+            </div>
+          </div>
+          <div class="hero-copy-item">
+            <span class="hc-icon">✨</span>
+            <div class="hc-text">
+              <div class="hc-head">拒绝盲目跟风，只选对的！</div>
+              <div class="hc-body">帮你把分数变成满意的录取通知书，锁定最适合孩子的黄金赛道。</div>
+            </div>
+          </div>
         </div>
         <div class="card" style="margin-top:12px">
           <div class="form-group">
@@ -1200,7 +1278,7 @@ body {
           <div class="analyzing-icon">🧠</div>
           <div class="analyzing-title">⚡ AI 深度分析中</div>
           <div class="analyzing-subtitle">
-            近6年 <strong>2200万+</strong> 历史录取记录 · 请稍候 15–30 秒
+            近6年 <strong>2200万+</strong> 历史录取记录 · 约1-2秒
           </div>
           <div class="engine-badges">
             <span class="engine-badge"><span class="dot blue"></span> Claude</span>
@@ -1305,6 +1383,43 @@ body {
           <div class="flex-row" style="justify-content:center;flex-wrap:wrap;gap:6px;margin-top:4px">
             <span class="badge badge-211">📌 小明</span>
             <span style="font-size:12px;color:var(--text-secondary)">河南 · 560分 · 物理+化学 · 位次48230</span>
+          </div>
+        </div>
+
+        <!-- Special Attention Zone (意向学校，不计入15所) -->
+        <div class="special-attention-card">
+          <div class="sa-header">
+            <span>★</span> 📌 特别关注 · 意向院校 <span style="font-size:10px;font-weight:400;color:var(--text-secondary)">（不计入15所推荐，独立展示）</span>
+          </div>
+          <div class="sa-school-row">
+            <div>
+              <div class="sa-school-name">北京大学 <span class="sa-badge">意向</span></div>
+              <div class="sa-school-city">北京 · 985/211/双一流</div>
+            </div>
+            <div style="text-align:right">
+              <div class="sa-school-zero">录取概率 0%</div>
+              <div style="font-size:10px;color:var(--text-secondary)">成绩未达该校录取线</div>
+            </div>
+          </div>
+          <div class="sa-school-row">
+            <div>
+              <div class="sa-school-name">河南科技大学 <span class="sa-badge">意向</span></div>
+              <div class="sa-school-city">洛阳 · 双一流</div>
+            </div>
+            <div style="text-align:right">
+              <div class="sa-school-prob">72%</div>
+              <div style="font-size:10px;color:var(--text-secondary)">成绩排名推荐率</div>
+            </div>
+          </div>
+          <div class="sa-school-row">
+            <div>
+              <div class="sa-school-name">洛阳师范学院 <span class="sa-badge">意向</span></div>
+              <div class="sa-school-city">洛阳 · 公办</div>
+            </div>
+            <div style="text-align:right">
+              <div class="sa-school-prob">85%</div>
+              <div style="font-size:10px;color:var(--text-secondary)">成绩排名推荐率</div>
+            </div>
           </div>
         </div>
 
@@ -1429,7 +1544,7 @@ body {
 
         <div class="flex-row" style="gap:6px;margin-top:12px">
           <button class="btn btn-ghost" style="flex:1;font-size:12px" onclick="showToast('PDF下载中…','success')">📥 下载PDF</button>
-          <button class="btn btn-ghost" style="flex:1;font-size:12px" onclick="navigateTo('student')">👤 下一位学生</button>
+          <button class="btn btn-ghost" style="flex:1;font-size:12px" onclick="navigateTo('student')">👤 测下一个</button>
           <button class="btn btn-primary" style="flex:1;font-size:12px" onclick="navigateTo('qa')">🤖 直播答疑</button>
         </div>
       </div>
