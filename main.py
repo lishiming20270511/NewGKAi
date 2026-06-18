@@ -67,6 +67,12 @@ _FRONTEND = os.path.join(os.path.dirname(__file__), "frontend")
 async def serve_index():
     return FileResponse(os.path.join(_FRONTEND, "index.html"))
 
+@app.get("/admin", include_in_schema=False)
+@app.get("/admin/", include_in_schema=False)
+async def serve_admin_redirect():
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/admin.html")
+
 @app.get("/admin.html", include_in_schema=False)
 async def serve_admin():
     return FileResponse(os.path.join(_FRONTEND, "admin.html"))

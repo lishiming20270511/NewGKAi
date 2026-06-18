@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI高考志愿规划师 — 极简扁平风 v6.0 方案C</title>
+<style>
+/* ============ 方案C：极简扁平风 ============
+   色彩体系：
+   · 导航栏底板：纯色暖柠檬黄 #FFDD44，哑光平整
+   · 导航文字：深近黑藏青色 #1A1A2E，强对比
+   · 全局风格：极简扁平，纯色块分区，无装饰特效
+   · 定位：清爽青春高考类APP风格
+*/
+:root {
+  --nav-bg: #FFDD44;
+  --nav-text: #1A1A2E;
+  --nav-text-dim: #3D3D5C;
+  --bg-page: #F8F9FB;
+  --card-bg: #FFFFFF;
+  --text-primary: #1A1A2E;
+  --text-secondary: #5C5C7A;
+  --text-muted: #9999B0;
+  --accent: #FFDD44;
+  --accent-hover: #F5CC00;
+  --accent-light: #FFF9E0;
+  --accent-text: #1A1A2E;
+  --blue: #3366FF;
+  --green: #00B578;
+  --amber: #FF9500;
+  --purple: #7B61FF;
+  --red: #FF3B30;
+  --border: #E8E8F0;
+  --border-input: #DCDCE8;
+  --input-bg: #F5F5FA;
+  --blur: #E8E8F0;
+  --mono: 'JetBrains Mono','Cascadia Code','Consolas',monospace;
+  --r-xl:12px; --r-lg:10px; --r-md:8px; --r-sm:6px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:#E8E8F0;display:flex;justify-content:center;align-items:flex-start;min-height:100vh;padding:20px;gap:18px;flex-wrap:wrap}
+.vlabel{position:absolute;top:-32px;left:0;right:0;text-align:center;font-size:12px;font-weight:700;color:#5C5C7A;letter-spacing:.5px}
+
+/* Phone Frame */
+.pf{width:375px;height:800px;background:var(--bg-page);border-radius:24px;overflow:hidden;box-shadow:0 0 0 1px rgba(0,0,0,.06),0 16px 48px rgba(0,0,0,.12);display:flex;flex-direction:column;position:relative}
+.sb{height:28px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;font-size:11px;font-weight:600;color:var(--text-secondary);background:#fff;flex-shrink:0}
+
+/* Nav Bar — 纯色暖柠檬黄 #FFDD44 */
+.nb{display:flex;flex-wrap:wrap;gap:4px;padding:8px 8px;background:var(--nav-bg);flex-shrink:0}
+.nbtn{flex:0 0 auto;padding:5px 10px;font-size:10px;font-weight:600;border:1.5px solid transparent;border-radius:20px;background:transparent;color:var(--nav-text-dim);cursor:pointer;transition:all .15s;white-space:nowrap}
+.nbtn:hover{color:var(--nav-text);border-color:rgba(26,26,46,.15)}
+.nbtn.on{background:var(--nav-text);color:var(--nav-bg);border-color:var(--nav-text);font-weight:700}
+.nbtn.live{background:var(--red);color:#fff;border-color:var(--red);font-weight:700}
+
+.pc{flex:1;overflow-y:auto;overflow-x:hidden}
+.pc::-webkit-scrollbar{width:3px}
+.pc::-webkit-scrollbar-track{background:transparent}
+.pc::-webkit-scrollbar-thumb{background:#DCDCE8;border-radius:2px}
+.pg{display:none;padding:14px;flex-direction:column;gap:10px;animation:fi .15s ease}
+.pg.on{display:flex}
+@keyframes fi{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.hb{height:24px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:#fff;border-top:1px solid var(--border)}
+.hb::after{content:'';width:100px;height:4px;background:#DCDCE8;border-radius:99px}
+
+/* Typography */
+.pt{font-size:18px;font-weight:700;color:var(--text-primary)}
+.ps{font-size:12px;color:var(--text-secondary)}
+.st{font-size:14px;font-weight:700;color:var(--text-primary)}
+
+/* Card */
+.cd{background:var(--card-bg);border-radius:var(--r-xl);padding:14px;border:1px solid var(--border)}
+.pn{background:var(--card-bg);border-radius:var(--r-lg);padding:14px;border:1px solid var(--border)}
+.pnt{font-size:14px;font-weight:700;color:var(--text-primary)}
+
+/* Form */
+.fg{display:flex;flex-direction:column;gap:4px}
+.fl{font-size:12px;font-weight:600;color:var(--text-primary)}
+.fi,.fs{width:100%;padding:10px 12px;font-size:14px;border:1.5px solid var(--border-input);border-radius:var(--r-md);background:var(--input-bg);color:var(--text-primary);transition:border-color .15s;font-family:inherit}
+.fi::placeholder{color:var(--text-muted);font-weight:400}
+.fi:focus,.fs:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(51,102,255,.08)}
+.iw{display:flex;align-items:center;border:1.5px solid var(--border-input);border-radius:var(--r-md);overflow:hidden;background:var(--input-bg)}
+.iw:focus-within{border-color:var(--blue)}
+.iw input{flex:1;border:none;padding:10px 12px;font-size:14px;outline:none;font-family:inherit;background:transparent;color:var(--text-primary)}
+.iw .sfx{padding:0 10px;font-size:13px;color:var(--text-secondary);font-weight:600}
+.pww{display:flex;align-items:center;border:1.5px solid var(--border-input);border-radius:var(--r-md);overflow:hidden;background:var(--input-bg)}
+.pww:focus-within{border-color:var(--blue)}
+.pww input{flex:1;border:none;padding:10px 12px;font-size:14px;outline:none;font-family:inherit;background:transparent;color:var(--text-primary)}
+.te{background:none;border:none;padding:0 12px;cursor:pointer;font-size:16px;color:var(--text-secondary)}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:11px 20px;border:none;border-radius:var(--r-lg);font-size:14px;font-weight:700;cursor:pointer;transition:all .18s cubic-bezier(.4,0,.2,1);font-family:inherit;white-space:nowrap;position:relative;overflow:hidden}
+.btn:active{transform:scale(.97)}
+.btn-blk{width:100%}
+.btn-lg{padding:14px 24px;font-size:16px;font-weight:800}
+
+/* 主CTA：柠檬黄底+深藏青字，与导航栏同色系统一 */
+.btn-go{background:var(--accent);color:var(--accent-text);box-shadow:0 2px 8px rgba(255,221,68,.25)}
+.btn-go:hover{background:var(--accent-hover);color:var(--accent-text);box-shadow:0 4px 16px rgba(255,221,68,.35);transform:translateY(-1px)}
+.btn-go:active{transform:scale(.98) translateY(0)}
+
+/* 次要按钮：浅黄底+深色字 */
+.btn-gh{background:var(--accent-light);color:var(--accent-text);border:1.5px solid rgba(255,221,68,.4);font-weight:600}
+.btn-gh:hover{background:var(--accent);border-color:var(--accent)}
+
+/* 纯线框按钮：hover变黄 */
+.btn-outline{background:transparent;color:var(--text-secondary);border:1.5px solid var(--border-input);font-weight:600}
+.btn-outline:hover{border-color:var(--accent);color:var(--accent-text);background:var(--accent-light)}
+
+/* 大型解锁按钮：黄底+深色字 */
+.btn-unlock{background:var(--accent);color:var(--accent-text);box-shadow:0 4px 16px rgba(255,221,68,.3);font-size:18px;padding:15px 24px;font-weight:800;letter-spacing:.5px}
+.btn-unlock:hover{background:var(--accent-hover);box-shadow:0 6px 24px rgba(255,221,68,.4);transform:translateY(-2px)}
+
+.btn:disabled{opacity:.35;cursor:not-allowed;transform:none!important;box-shadow:none!important}
+
+/* Tags */
+.tg{display:flex;flex-wrap:wrap;gap:6px}
+.tg2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.tag{padding:6px 12px;font-size:11px;font-weight:500;border:1.5px solid var(--border-input);border-radius:20px;cursor:pointer;transition:all .15s;background:var(--input-bg);color:var(--text-secondary);user-select:none}
+.tag:hover{border-color:var(--blue);color:var(--blue);background:#F0F4FF}
+.tag.sel{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:700}
+.tr{padding:9px 16px;font-size:13px;font-weight:600;border:1.5px solid var(--border-input);border-radius:var(--r-sm);cursor:pointer;transition:all .15s;background:var(--input-bg);color:var(--text-secondary);text-align:center;user-select:none;flex:1}
+.tr:hover{border-color:var(--blue);background:#F0F4FF}
+.tr.sel{background:var(--blue);color:#fff;border-color:var(--blue);font-weight:700}
+
+/* Badges */
+.bdg{display:inline-block;padding:2px 7px;border-radius:3px;font-size:10px;font-weight:700;color:#fff}
+.bdg-985{background:var(--amber)}.bdg-211{background:var(--purple)}.bdg-df{background:#00B4D8}
+
+/* Hero */
+.hc{text-align:center;padding:20px 14px}
+.hl{font-size:24px;font-weight:800;color:var(--text-primary);letter-spacing:-.3px}
+.hs{font-size:12px;color:var(--text-secondary);margin-top:2px;font-weight:500}
+.hcc{text-align:left;margin-top:14px;display:flex;flex-direction:column;gap:7px}
+.hci{font-size:12px;color:var(--text-secondary);line-height:1.5;display:flex;gap:8px;align-items:flex-start}
+.hci .ic{flex-shrink:0;width:16px;text-align:center}
+
+/* Step */
+.si{display:flex;align-items:center;gap:8px}
+.sd{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;transition:all .3s}
+.sd.ac{background:var(--blue);color:#fff}
+.sd.dn{background:var(--green);color:#fff}
+.sd.pd{background:transparent;border:2px solid var(--border-input);color:var(--text-muted)}
+.sl{flex:1;height:2px;background:var(--border-input);border-radius:1px}
+.sl.dn{background:var(--green)}
+
+/* Blur */
+.bl{background:var(--blur);border-radius:var(--r-sm);padding:11px 14px;color:#B0B0C0;font-size:13px;font-weight:500;text-align:center}
+.bl2{background:repeating-linear-gradient(45deg,#F0F0F5,#F0F0F5 6px,#E8E8F0 6px,#E8E8F0 10px)}
+
+/* School Card */
+.sc{background:var(--card-bg);border-radius:var(--r-lg);overflow:hidden;border:1px solid var(--border)}
+.sch{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--border);background:#FAFAFD}
+.snm{font-size:15px;font-weight:700;color:var(--text-primary);flex:1}
+.spr{font-size:15px;font-weight:800;padding:4px 10px;border-radius:6px;font-family:var(--mono)}
+.spr.ru{color:var(--red);background:#FFF0F0}
+.spr.sf{color:var(--blue);background:#F0F4FF}
+.spr.bt{color:var(--green);background:#F0FFF5}
+.scb{padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.srw{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary)}
+.srw .lb{color:var(--text-muted);min-width:55px;flex-shrink:0;font-weight:500}
+.srw .vl{color:var(--text-primary);font-weight:600}
+.smt{color:var(--green);font-weight:700;font-size:11px}
+.sac{background:#FFFBF0;border-left:3px solid var(--amber);padding:8px 12px;font-size:12px;color:#7C4A00;margin:0 14px 12px;border-radius:0 6px 6px 0;line-height:1.6}
+
+/* Tier */
+.th{display:flex;align-items:center;gap:8px;padding:10px 0 4px;font-size:15px;font-weight:800;color:var(--text-primary)}
+.th.ru{color:var(--red)}.th.sf{color:var(--blue)}.th.bt{color:var(--green)}
+.tc{font-size:11px;color:var(--text-muted);font-weight:500}
+
+/* Prob Bar */
+.pb{height:4px;border-radius:2px;background:var(--border);overflow:hidden;margin-top:2px}
+.pbf{height:100%;border-radius:2px;transition:width .5s ease}
+.pbf.ru{background:var(--red)}.pbf.sf{background:var(--blue)}.pbf.bt{background:var(--green)}
+
+.spc{border:1px solid rgba(255,149,0,.25);background:#FFFBF5}
+.fb{display:flex;justify-content:space-between;align-items:center}
+.mn{font-family:var(--mono);font-weight:700}
+</style>
+</head>
+<body>
+
+<!-- 登录页 -->
+<div style="position:relative">
+  <div class="vlabel">🔑 登录页</div>
+  <div class="pf" style="margin-top:28px">
+    <div class="sb"><span>9:41</span><span style="font-size:11px">📶 🔋</span></div>
+    <div class="nb">
+      <button class="nbtn on">🔑 登录</button><button class="nbtn">① 考生信息</button>
+      <button class="nbtn">② 意向偏好</button><button class="nbtn">📋 样板</button>
+    </div>
+    <div class="pc"><div class="pg on">
+      <div class="cd hc">
+        <div class="hl">🎓 AI高考志愿规划师</div>
+        <div class="hs">AI 智能报考分析系统</div>
+        <div class="hcc">
+          <div class="hci"><span class="ic">📊</span><span>近6年2200万+真实录取数据，规避滑档风险</span></div>
+          <div class="hci"><span class="ic">📍</span><span>2026最新"一分一段"排名，精准定位</span></div>
+          <div class="hci"><span class="ic">🤖</span><span>ChatGPT / Claude / DeepSeek V4 Pro 交叉分析</span></div>
+          <div class="hci"><span class="ic">❤️</span><span>深度结合兴趣爱好、性格特质与家庭背景</span></div>
+          <div class="hci"><span class="ic">✨</span><span>帮你把分数变成满意的录取通知书</span></div>
+        </div>
+      </div>
+      <div class="pn">
+        <div class="fg"><label class="fl">📱 手机号</label><input class="fi" type="tel" maxlength="11" placeholder="请输入手机号"></div>
+        <div class="fg" style="margin-top:10px"><label class="fl">🔒 密码</label>
+          <div class="pww"><input type="password" placeholder="请输入密码"><button class="te">👁</button></div>
+        </div>
+        <button class="btn btn-blk btn-lg btn-go" style="margin-top:16px">登 录</button>
+      </div>
+      <div style="text-align:center;font-size:11px;color:var(--text-muted);padding:6px 0">数据来源：教育部 · 阳光高考网</div>
+    </div></div>
+    <div class="hb"></div>
+  </div>
+</div>
+
+<!-- 考生信息 -->
+<div style="position:relative">
+  <div class="vlabel">① 考生信息 (STEP 1/2)</div>
+  <div class="pf" style="margin-top:28px">
+    <div class="sb"><span>9:41</span><span style="font-size:11px">📶 🔋</span></div>
+    <div class="nb">
+      <button class="nbtn">🔑</button><button class="nbtn on">① 考生信息</button>
+      <button class="nbtn">② 意向偏好</button><button class="nbtn live">🔴</button>
+    </div>
+    <div class="pc"><div class="pg on" style="gap:8px">
+      <div class="cd" style="padding:10px 14px">
+        <div class="si"><div class="sd ac">1</div><div class="sl"></div><div class="sd pd">2</div></div>
+        <div class="pt" style="font-size:16px;margin-top:4px">STEP 1/2 · 考生基本信息</div>
+        <div class="ps">录入考生成绩与选科信息</div>
+      </div>
+      <div class="pn">
+        <div class="fg"><label class="fl">姓名/昵称</label><input class="fi" placeholder="考虑用户隐私，建议用网名代替"></div>
+        <div class="fg" style="margin-top:8px"><label class="fl">省份</label><select class="fs"><option>请选择省份</option><option selected>河南</option></select></div>
+        <div class="fg" style="margin-top:8px"><label class="fl">高考分数</label><div class="iw"><input type="number" value="560"><span class="sfx">/750</span></div></div>
+        <div class="fg" style="margin-top:8px"><label class="fl">省内位次（选填）</label><input class="fi" placeholder="可留空自动估算"></div>
+        <div class="fg" style="margin-top:8px"><label class="fl">选科（3+1+2模式）</label>
+          <div style="display:flex;gap:6px;margin-top:4px"><div class="tr sel">物理</div><div class="tr">历史</div></div>
+          <div class="tg" style="margin-top:6px"><span class="tag sel">化学</span><span class="tag">生物</span><span class="tag sel">政治</span><span class="tag">地理</span></div>
+        </div>
+        <div class="fg" style="margin-top:8px"><label class="fl">服从调剂</label>
+          <div style="display:flex;gap:6px;margin-top:4px"><div class="tr sel">服从</div><div class="tr">不服从</div></div>
+        </div>
+        <div class="fg" style="margin-top:8px"><label class="fl">家庭经济</label><select class="fs"><option>请选择</option><option selected>一般</option></select></div>
+      </div>
+      <button class="btn btn-blk btn-lg btn-go">下一步：意向偏好 →</button>
+    </div></div>
+    <div class="hb"></div>
+  </div>
+</div>
+
+<!-- 意向偏好 -->
+<div style="position:relative">
+  <div class="vlabel">② 意向偏好 (STEP 2/2)</div>
+  <div class="pf" style="margin-top:28px">
+    <div class="sb"><span>9:41</span><span style="font-size:11px">📶 🔋</span></div>
+    <div class="nb">
+      <button class="nbtn">🔑</button><button class="nbtn">①</button>
+      <button class="nbtn on">② 意向偏好</button><button class="nbtn live">🔴</button>
+    </div>
+    <div class="pc"><div class="pg on" style="gap:8px">
+      <div class="cd" style="padding:10px 14px">
+        <div class="si"><div class="sd dn">✓</div><div class="sl dn"></div><div class="sd ac">2</div></div>
+        <div class="pt" style="font-size:16px;margin-top:4px">STEP 2/2 · 意向偏好</div>
+        <div class="ps">选择越细致，推荐越精准</div>
+      </div>
+      <div class="pn"><div class="pnt" style="margin-bottom:8px">📚 专业方向（多选）</div>
+        <div class="tg"><span class="tag sel">计算机</span><span class="tag">软件工程</span><span class="tag sel">人工智能</span><span class="tag">数据科学</span><span class="tag">电子信息</span><span class="tag">通信工程</span><span class="tag">临床医学</span><span class="tag">金融学</span><span class="tag">法学</span><span class="tag">生物</span></div>
+      </div>
+      <div class="pn"><div class="pnt" style="margin-bottom:8px">🏙️ 意向城市（多选）</div>
+        <div class="tg"><span class="tag sel">北京</span><span class="tag">上海</span><span class="tag">广州</span><span class="tag">深圳</span><span class="tag">杭州</span><span class="tag">南京</span><span class="tag">武汉</span><span class="tag sel">郑州</span><span class="tag">西安</span><span class="tag">成都</span></div>
+        <input class="fi" placeholder="其他城市（自填）" style="margin-top:8px">
+      </div>
+      <div class="pn"><div class="pnt" style="margin-bottom:8px">🏫 意向院校（最多3所）</div><input class="fi" placeholder="🔍 输入学校名称搜索…"></div>
+      <div class="pn"><div class="pnt" style="margin-bottom:8px">🧠 性格/倾向（多选）</div>
+        <div class="tg2"><span class="tag">外向活泼</span><span class="tag sel">沉稳内敛</span><span class="tag sel">钻研学术</span><span class="tag">领导管理</span><span class="tag">艺术创作</span><span class="tag">社交沟通</span><span class="tag">动手实践</span><span class="tag sel">逻辑分析</span></div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-outline" style="flex:1">← 返回</button>
+        <button class="btn btn-go" style="flex:2">🚀 开始AI分析</button>
+      </div>
+    </div></div>
+    <div class="hb"></div>
+  </div>
+</div>
+
+<!-- 付款墙 -->
+<div style="position:relative">
+  <div class="vlabel">🔒 付款墙</div>
+  <div class="pf" style="margin-top:28px">
+    <div class="sb"><span>9:41</span><span style="font-size:11px">📶 🔋</span></div>
+    <div class="nb">
+      <button class="nbtn">🔑</button><button class="nbtn">①</button>
+      <button class="nbtn">②</button><button class="nbtn on">🔒 付款墙</button>
+    </div>
+    <div class="pc"><div class="pg on" style="gap:8px">
+      <div class="pn" style="text-align:center">
+        <div class="pt" style="font-size:18px">📋 志愿规划报告</div>
+        <div class="ps" style="color:var(--text-muted)">GK260617-1428 · 防伪</div>
+      </div>
+      <div class="pn" style="padding:10px 14px"><span style="font-size:12px;color:var(--text-primary)">📌 快手大明 · 河南 · 560分 · 物+化</span></div>
+      <div class="pn"><div class="pnt" style="margin-bottom:6px">AI 洞察</div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div class="bl bl2">院校-分数匹配度 ——</div><div class="bl bl2">录取概率置信度 ——</div>
+          <div class="bl bl2">专业就业契合度 ——</div><div class="bl bl2">近6年数据覆盖率 ——</div>
+        </div>
+      </div>
+      <div class="pn"><div class="pnt" style="margin-bottom:6px">🏫 AI 推荐院校（15所）· 已加密</div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div class="bl bl2">🔒 郑州大学 ——</div><div class="bl bl2">🔒 河南大学 ——</div>
+          <div class="bl bl2">🔒 河南师范大学 ——</div><div class="bl bl2">🔒 河南科技大学 ——</div>
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);text-align:center;padding:6px 0 0">…共15所…</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:14px;color:var(--text-primary);margin-bottom:4px">剩余解锁次数：<strong class="mn" style="color:var(--accent-hover);font-size:20px">8</strong> 次</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px">次数不足时请联系平台充值</div>
+      </div>
+      <button class="btn btn-blk btn-unlock">🔓 一键解锁完整报告</button>
+      <div style="text-align:center;font-size:11px;color:var(--text-muted)">数据来源：教育部官网 · 阳光高考 · 近6年2200万+录取记录</div>
+    </div></div>
+    <div class="hb"></div>
+  </div>
+</div>
+
+<!-- 完整报告 -->
+<div style="position:relative">
+  <div class="vlabel">📊 完整报告（冲/稳/保）</div>
+  <div class="pf" style="margin-top:28px">
+    <div class="sb"><span>9:41</span><span style="font-size:11px">📶 🔋</span></div>
+    <div class="nb">
+      <button class="nbtn">🔑</button><button class="nbtn">①</button>
+      <button class="nbtn">②</button><button class="nbtn on">📊 报告</button>
+    </div>
+    <div class="pc"><div class="pg on" style="gap:8px;padding-bottom:20px">
+      <div class="pn">
+        <div class="fb"><span style="font-size:13px;font-weight:700;color:var(--text-primary)">报告 GK260617-1428</span>
+          <span style="font-size:10px;color:var(--blue);border:1px solid var(--border);padding:2px 7px;border-radius:4px;font-weight:600">防伪</span></div>
+        <div style="font-size:12px;color:var(--text-secondary);margin-top:4px">📌 快手大明 · 河南 · 560分 · 物+化 · 位次48,230</div>
+      </div>
+      <div class="pn">
+        <div style="display:flex;gap:12px;justify-content:center;text-align:center">
+          <div><div class="mn" style="font-size:24px;color:var(--red)">5</div><div style="font-size:11px;color:var(--text-secondary)">🔴 冲刺</div><div style="font-size:10px;color:var(--text-muted)">22%-38%</div></div>
+          <div><div class="mn" style="font-size:24px;color:var(--blue)">5</div><div style="font-size:11px;color:var(--text-secondary)">🔵 稳妥</div><div style="font-size:10px;color:var(--text-muted)">52%-72%</div></div>
+          <div><div class="mn" style="font-size:24px;color:var(--green)">5</div><div style="font-size:11px;color:var(--text-secondary)">🟢 保底</div><div style="font-size:10px;color:var(--text-muted)">83%-94%</div></div>
+        </div>
+      </div>
+      <div class="pn spc">
+        <div style="font-size:12px;font-weight:700;color:var(--amber)">★ 特别关注（意向学校）</div>
+        <div style="font-size:13px;color:var(--text-primary);margin-top:4px">郑州大学 · 录取概率 <span class="mn" style="color:var(--red)">22%</span></div>
+      </div>
+      <div class="th ru">🚀 冲刺院校<span class="tc">共5所 · 22%-38%</span></div>
+      <div class="sc" style="border-left:3px solid var(--red)">
+        <div class="sch"><span class="bdg bdg-211">211</span><span class="snm">郑州大学</span><span class="spr ru">22%</span></div>
+        <div class="scb">
+          <div class="srw"><span class="lb">📍 城市</span><span class="vl">郑州（新一线）</span></div>
+          <div class="srw"><span class="lb">📊 近年线</span><span class="vl">约604分 (2025)</span></div>
+          <div class="srw"><span class="lb">位次</span><span class="smt">✓ 位次匹配</span></div>
+          <div class="srw"><span class="lb">📈 趋势</span><span class="vl">602→606→609→612 ↑微升</span></div>
+          <div class="pb"><div class="pbf ru" style="width:22%"></div></div>
+        </div>
+        <div class="sac"><span style="font-weight:700">💡 点评：</span>"郑州大学计算机，河南扛把子！就业率稳稳在92%以上。"</div>
+      </div>
+      <div class="th sf">🎯 稳妥院校<span class="tc">共5所 · 52%-72%</span></div>
+      <div class="sc" style="border-left:3px solid var(--blue)">
+        <div class="sch"><span class="snm">河南理工大学</span><span class="spr sf">68%</span></div>
+        <div class="scb">
+          <div class="srw"><span class="lb">📍 城市</span><span class="vl">焦作</span></div>
+          <div class="srw"><span class="lb">📊 近年线</span><span class="vl">约572分 (2025)</span></div>
+          <div class="pb"><div class="pbf sf" style="width:68%"></div></div>
+        </div>
+      </div>
+      <div class="th bt">🟢 保底院校<span class="tc">共5所 · 83%-94%</span></div>
+      <div class="sc" style="border-left:3px solid var(--green)">
+        <div class="sch"><span class="snm">郑州工业应用技术学院</span><span class="spr bt">87%</span></div>
+        <div class="scb">
+          <div class="srw"><span class="lb">📍 城市</span><span class="vl">郑州</span></div>
+          <div class="pb"><div class="pbf bt" style="width:87%"></div></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:8px">
+        <button class="btn btn-go" style="flex:1;font-size:12px">📥 下载PDF</button>
+        <button class="btn btn-outline" style="flex:1;font-size:12px">👤 测下一个</button>
+        <button class="btn btn-outline" style="flex:1;font-size:12px">🤖 直播答疑</button>
+      </div>
+    </div></div>
+    <div class="hb"></div>
+  </div>
+</div>
+
+</body>
+</html>
