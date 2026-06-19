@@ -92,11 +92,11 @@ PROVINCE_EXPAND: dict[str, list[str]] = {
 }
 
 # Tier 阈值
-TIER_BOOST_MIN = 30.0
-TIER_SOLID_MIN = 60.0
-TIER_SAFE_MIN = 85.0
+TIER_BOOST_MIN = 30.0   # 冲刺下界（含）
+TIER_SOLID_MIN = 50.0   # 稳妥下界（含）；冲刺上界（不含）
+TIER_SAFE_MIN  = 85.0   # 保底下界（含）
 LOW_SCORE_BOUNDARY = 400
-LOW_SCORE_TIER_MIN = 5.0
+LOW_SCORE_TIER_MIN = 5.0  # 低分段（<400分）冲刺下界
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -719,14 +719,14 @@ def assign_tier(rank_prob: float, score: int) -> tuple[int, str]:
     low_score = score < LOW_SCORE_BOUNDARY
     boost_min = LOW_SCORE_TIER_MIN if low_score else TIER_BOOST_MIN
 
-    if boost_min <= rank_prob < TIER_SOLID_MIN:
-        return 0, "冲刺"
-    elif TIER_SOLID_MIN <= rank_prob < TIER_SAFE_MIN:
-        return 1, "稳妥"
-    elif rank_prob >= TIER_SAFE_MIN:
+    if rank_prob >= TIER_SAFE_MIN:
         return 2, "保底"
+    elif rank_prob >= TIER_SOLID_MIN:
+        return 1, "稳妥"
+    elif rank_prob >= boost_min:
+        return 0, "冲刺"
     else:
-        return 0, "冲刺"  # Below threshold → treat as aggressive pick
+        return -1, "低于推荐线"  # Excluded from output; filtered in sort_and_slice
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -734,88 +734,40 @@ def assign_tier(rank_prob: float, score: int) -> tuple[int, str]:
 # ──────────────────────────────────────────────────────────────────────────────
 
 def sort_and_slice(schools: list[SchoolRecord], personality: list[str]) -> list[SchoolRecord]:
-    """Guarantees 5+5+5 tier distribution with hard cap of 5 per tier.
-    When a tier is short, fills from adjacent tiers and relabels to the target tier
-    so that the output always shows exactly 5 冲刺 / 5 稳妥 / 5 保底."""
-    _TIER_LABELS = {0: "冲刺", 1: "稳妥", 2: "保底"}
+    """Selects schools by actual tier, max 5 per tier, in order 冲刺→稳妥→保底.
 
+    Rules (per product spec):
+      冲刺  : TIER_BOOST_MIN ≤ rank_prob < TIER_SOLID_MIN  (30–50%)
+      稳妥  : TIER_SOLID_MIN ≤ rank_prob < TIER_SAFE_MIN   (50–85%)
+      保底  : rank_prob ≥ TIER_SAFE_MIN                    (≥85%)
+      排除  : tier == -1 (rank_prob below minimum threshold)
+
+    No cross-tier relabeling. Each school stays in its natural tier.
+    A tier may have 0–5 schools depending on what the algorithm produces.
+    """
     def sort_key(s: SchoolRecord):
-        tier = s.tier if s.tier is not None else 3
         intended_city_flag = 0 if s.is_intended_city else 1
         rank_prob_neg = -(s.rank_prob or 0)
         personality_neg = -_personality_score(s, personality)
-        # National ranking tiebreaker: 985(0) > 211(1) > 双一流(2) > 其他(3)
         ranking = 0 if s.is_985 else (1 if s.is_211 else (2 if s.is_double_first else 3))
         weighted_neg = -(s.weighted_prob or 0)
-        return (tier, intended_city_flag, rank_prob_neg, personality_neg, ranking, weighted_neg)
+        return (intended_city_flag, rank_prob_neg, personality_neg, ranking, weighted_neg)
 
-    schools_sorted = sorted(schools, key=sort_key)
+    # Drop schools below the minimum probability threshold
+    eligible = [s for s in schools if (s.tier is not None and s.tier >= 0)]
 
-    # Group by tier (sorted within each tier by preference)
     tiers: dict[int, list[SchoolRecord]] = {0: [], 1: [], 2: []}
-    for s in schools_sorted:
-        t = s.tier if s.tier is not None else 0
+    for s in eligible:
+        t = s.tier if s.tier in tiers else 0
         tiers[t].append(s)
 
-    selected: list[SchoolRecord] = []
-    used_ids: set[int] = set()
+    # Sort within each tier by preference, then cap at 5
+    result: list[SchoolRecord] = []
+    for t in [0, 1, 2]:
+        bucket = sorted(tiers[t], key=sort_key)[:5]
+        result.extend(bucket)
 
-    def _take(tier_list: list[SchoolRecord], n: int, relabel_as: int | None = None) -> list[SchoolRecord]:
-        """Take up to n unused schools from tier_list.
-        If relabel_as is set, update tier/tier_label on borrowed schools so
-        the hard cap of 5 per tier is enforced in the final output."""
-        result = []
-        for s in tier_list:
-            if s.school_id in used_ids:
-                continue
-            if relabel_as is not None:
-                s.tier = relabel_as
-                s.tier_label = _TIER_LABELS[relabel_as]
-            result.append(s)
-            used_ids.add(s.school_id)
-            if len(result) >= n:
-                break
-        return result
-
-    # Tier 0: 冲刺 (max 5) — shortfall filled from tier 1 (relabeled 冲刺)
-    selected += _take(tiers[0], 5)
-    if len(selected) < 5:
-        selected += _take(tiers[1], 5 - len(selected), relabel_as=0)
-
-    # Tier 1: 稳妥 (5) — shortfall filled from tier 2, then tier 0 remainder (relabeled 稳妥)
-    solid_taken = _take(tiers[1], 5)
-    if len(solid_taken) < 5:
-        solid_taken += _take(tiers[2], 5 - len(solid_taken), relabel_as=1)
-    if len(solid_taken) < 5:
-        solid_taken += _take(tiers[0], 5 - len(solid_taken), relabel_as=1)
-    selected += solid_taken
-
-    # Tier 2: 保底 (5) — shortfall filled from tier 1 remainder, then tier 0 remainder (relabeled 保底)
-    safe_taken = _take(tiers[2], 5)
-    if len(safe_taken) < 5:
-        safe_taken += _take(tiers[1], 5 - len(safe_taken), relabel_as=2)
-    if len(safe_taken) < 5:
-        safe_taken += _take(tiers[0], 5 - len(safe_taken), relabel_as=2)
-    selected += safe_taken
-
-    # Final fallback: if still < 15, fill from any remaining school with tier by slot position
-    if len(selected) < 15:
-        for t in [0, 1, 2]:
-            for s in tiers[t]:
-                if s.school_id in used_ids:
-                    continue
-                target = 0 if len(selected) < 5 else (1 if len(selected) < 10 else 2)
-                if s.tier != target:
-                    s.tier = target
-                    s.tier_label = _TIER_LABELS[target]
-                selected.append(s)
-                used_ids.add(s.school_id)
-                if len(selected) >= 15:
-                    break
-            if len(selected) >= 15:
-                break
-
-    return selected[:15]
+    return result
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -1702,8 +1654,8 @@ async def generate_recommendation(req: RecommendRequest, db: AsyncSession) -> di
         "special_attention": [_school_to_dict(s) for s in special_attention],
         "schools": [_school_to_dict(s) for s in selected],
         "tier_summary": {
-            "boost": {"count": sum(1 for s in selected if s.tier == 0), "range": "30%-60%"},
-            "solid": {"count": sum(1 for s in selected if s.tier == 1), "range": "60%-85%"},
+            "boost": {"count": sum(1 for s in selected if s.tier == 0), "range": "30%-50%"},
+            "solid": {"count": sum(1 for s in selected if s.tier == 1), "range": "50%-85%"},
             "safe":  {"count": sum(1 for s in selected if s.tier == 2), "range": "≥85%"},
         },
         "data_quality_summary": {

@@ -1423,8 +1423,8 @@ function buildAdviceSection(stu, pref, data) {
   <div class="card" style="margin-top:0">
     <div class="section-title" style="margin-bottom:8px">📐 4.2 梯度策略</div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;text-align:center;font-size:12px;margin-bottom:8px">
-      <div style="background:rgba(239,68,68,.1);border-radius:var(--radius-sm);padding:8px"><div style="color:var(--color-danger);font-weight:800;font-size:18px">${boostC}</div><div style="color:var(--text-secondary)">冲刺</div><div style="font-size:10px;color:var(--text-muted)">30%-60%</div></div>
-      <div style="background:rgba(59,130,246,.1);border-radius:var(--radius-sm);padding:8px"><div style="color:var(--color-info);font-weight:800;font-size:18px">${solidC}</div><div style="color:var(--text-secondary)">稳妥</div><div style="font-size:10px;color:var(--text-muted)">60%-85%</div></div>
+      <div style="background:rgba(239,68,68,.1);border-radius:var(--radius-sm);padding:8px"><div style="color:var(--color-danger);font-weight:800;font-size:18px">${boostC}</div><div style="color:var(--text-secondary)">冲刺</div><div style="font-size:10px;color:var(--text-muted)">30%-50%</div></div>
+      <div style="background:rgba(59,130,246,.1);border-radius:var(--radius-sm);padding:8px"><div style="color:var(--color-info);font-weight:800;font-size:18px">${solidC}</div><div style="color:var(--text-secondary)">稳妥</div><div style="font-size:10px;color:var(--text-muted)">50%-85%</div></div>
       <div style="background:rgba(34,197,94,.1);border-radius:var(--radius-sm);padding:8px"><div style="color:var(--color-success);font-weight:800;font-size:18px">${safeC}</div><div style="color:var(--text-secondary)">保底</div><div style="font-size:10px;color:var(--text-muted)">≥85%</div></div>
     </div>
     <div style="font-size:11px;color:var(--text-muted);line-height:1.6">梯度建议：冲刺不超过3所，稳妥5所，保底5-7所（最后一志愿必须有把握）。</div>
@@ -2005,12 +2005,12 @@ function buildPositioningPage(stu, data, reportId) {
       <div class="tier-blk rush">
         <div class="tier-lbl">🚀 冲刺院校</div>
         <div class="tier-cnt">${rushCnt} 所</div>
-        <div class="tier-prob">录取概率 30%-60%</div>
+        <div class="tier-prob">录取概率 30%-50%</div>
       </div>
       <div class="tier-blk stable">
         <div class="tier-lbl">🎯 稳妥院校</div>
         <div class="tier-cnt">${stableCnt} 所</div>
-        <div class="tier-prob">录取概率 60%-85%</div>
+        <div class="tier-prob">录取概率 50%-85%</div>
       </div>
       <div class="tier-blk safe">
         <div class="tier-lbl">🟢 保底院校</div>
@@ -2198,12 +2198,12 @@ function buildSchoolPages(stu, data, reportId, pageStart) {
   }
 
   if (rush.length > 0) {
-    addBlock(`<div class="sec-title" style="background:#FEF2F2;border-radius:5px;padding:6px 10px;color:#DC2626;border-bottom:none;margin-bottom:10px;">🚀 冲刺院校（${rush.length}所）· 录取概率 30%-60%</div>`, 36);
+    addBlock(`<div class="sec-title" style="background:#FEF2F2;border-radius:5px;padding:6px 10px;color:#DC2626;border-bottom:none;margin-bottom:10px;">🚀 冲刺院校（${rush.length}所）· 录取概率 30%-50%</div>`, 36);
     rush.forEach((s, i) => addBlock(buildSchoolCardHTML(s, i+1, 'rush'), estimateCardHeight(s)));
   }
 
   if (stable.length > 0) {
-    addBlock(`<div class="sec-title" style="background:#EFF6FF;border-radius:5px;padding:6px 10px;color:#2563EB;border-bottom:none;margin-bottom:10px;">🎯 稳妥院校（${stable.length}所）· 录取概率 60%-85%</div>`, 36);
+    addBlock(`<div class="sec-title" style="background:#EFF6FF;border-radius:5px;padding:6px 10px;color:#2563EB;border-bottom:none;margin-bottom:10px;">🎯 稳妥院校（${stable.length}所）· 录取概率 50%-85%</div>`, 36);
     stable.forEach((s, i) => addBlock(buildSchoolCardHTML(s, rush.length+i+1, 'stable'), estimateCardHeight(s)));
   }
 
