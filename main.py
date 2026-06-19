@@ -89,6 +89,11 @@ async def serve_student():
         headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"}
     )
 
+@app.get("/chat.html", include_in_schema=False)
+@app.get("/chat", include_in_schema=False)
+async def serve_chat():
+    return FileResponse(os.path.join(_FRONTEND, "chat.html"))
+
 if os.path.isdir(_FRONTEND):
     app.mount("/static", StaticFiles(directory=_FRONTEND), name="static")
 

@@ -61,63 +61,62 @@ async def search_schools(
     except Exception:
         pass
 
-    # FULLTEXT MATCH AGAINST for natural language search (≥2 chars), fallback LIKE
-    if len(q) >= 2:
-        rows = await db.execute(
-            text("""
-                SELECT school_id, name, province, level, school_type,
-                       is_985, is_211, is_double_first
-                FROM schools
-                WHERE MATCH(name) AGAINST (:q IN BOOLEAN MODE)
-                ORDER BY is_985 DESC, is_211 DESC, is_double_first DESC
-                LIMIT :limit
-            """),
-            {"q": f"{q}*", "limit": limit},
-        )
-    else:
-        rows = await db.execute(
-            text("""
-                SELECT school_id, name, province, level, school_type,
-                       is_985, is_211, is_double_first
-                FROM schools
-                WHERE name LIKE :q
-                ORDER BY is_985 DESC, is_211 DESC
-                LIMIT :limit
-            """),
-            {"q": f"%{q}%", "limit": limit},
-        )
-
-    results = []
-    for row in rows.mappings():
-        results.append({
-            "school_id": row["school_id"],
-            "name": row["name"],
-            "province": row["province"],
-            "city": _extract_city(row["name"], row["province"]),
-            "tags": _build_tags(row),
-        })
-
-    # If FULLTEXT returned nothing, fall back to LIKE
-    if not results and len(q) >= 2:
-        rows2 = await db.execute(
-            text("""
-                SELECT school_id, name, province, level, school_type,
-                       is_985, is_211, is_double_first
-                FROM schools
-                WHERE name LIKE :q
-                ORDER BY is_985 DESC, is_211 DESC
-                LIMIT :limit
-            """),
-            {"q": f"%{q}%", "limit": limit},
-        )
-        for row in rows2.mappings():
-            results.append({
+    def _map_rows(mappings) -> list[dict]:
+        return [
+            {
                 "school_id": row["school_id"],
                 "name": row["name"],
                 "province": row["province"],
                 "city": _extract_city(row["name"], row["province"]),
                 "tags": _build_tags(row),
-            })
+            }
+            for row in mappings
+        ]
+
+    # Step 1: prefix LIKE — fast when there is an index on name(prefix)
+    prefix_rows = await db.execute(
+        text("""
+            SELECT school_id, name, province, level, school_type,
+                   is_985, is_211, is_double_first
+            FROM schools
+            WHERE name LIKE :q_prefix
+            ORDER BY is_985 DESC, is_211 DESC, is_double_first DESC
+            LIMIT :limit
+        """),
+        {"q_prefix": f"{q}%", "limit": limit},
+    )
+    results = _map_rows(prefix_rows.mappings())
+
+    # Step 2: FULLTEXT (InnoDB ngram or boolean mode) if prefix didn't fill the quota
+    if len(results) < limit and len(q) >= 2:
+        ft_rows = await db.execute(
+            text("""
+                SELECT school_id, name, province, level, school_type,
+                       is_985, is_211, is_double_first
+                FROM schools
+                WHERE MATCH(name) AGAINST (:q IN BOOLEAN MODE)
+                  AND name NOT LIKE :q_prefix
+                ORDER BY is_985 DESC, is_211 DESC, is_double_first DESC
+                LIMIT :limit
+            """),
+            {"q": f"{q}*", "q_prefix": f"{q}%", "limit": limit},
+        )
+        results.extend(_map_rows(ft_rows.mappings()))
+
+    # Step 3: contains LIKE fallback (full table scan, only when still no results)
+    if not results:
+        like_rows = await db.execute(
+            text("""
+                SELECT school_id, name, province, level, school_type,
+                       is_985, is_211, is_double_first
+                FROM schools
+                WHERE name LIKE :q_contains
+                ORDER BY is_985 DESC, is_211 DESC
+                LIMIT :limit
+            """),
+            {"q_contains": f"%{q}%", "limit": limit},
+        )
+        results = _map_rows(like_rows.mappings())
 
     response = {"results": results}
 
@@ -138,61 +137,59 @@ async def search_schools_public(
     limit: int = Query(8, ge=1, le=20),
     db: AsyncSession = Depends(get_db),
 ):
-    if len(q) >= 2:
-        rows = await db.execute(
-            text("""
-                SELECT school_id, name, province, level, school_type,
-                       is_985, is_211, is_double_first
-                FROM schools
-                WHERE MATCH(name) AGAINST (:q IN BOOLEAN MODE)
-                ORDER BY is_985 DESC, is_211 DESC, is_double_first DESC
-                LIMIT :limit
-            """),
-            {"q": f"{q}*", "limit": limit},
-        )
-    else:
-        rows = await db.execute(
-            text("""
-                SELECT school_id, name, province, level, school_type,
-                       is_985, is_211, is_double_first
-                FROM schools
-                WHERE name LIKE :q
-                ORDER BY is_985 DESC, is_211 DESC
-                LIMIT :limit
-            """),
-            {"q": f"%{q}%", "limit": limit},
-        )
-
-    results = []
-    for row in rows.mappings():
-        results.append({
-            "school_id": row["school_id"],
-            "name": row["name"],
-            "province": row["province"],
-            "city": _extract_city(row["name"], row["province"]),
-            "tags": _build_tags(row),
-        })
-
-    if not results and len(q) >= 2:
-        rows2 = await db.execute(
-            text("""
-                SELECT school_id, name, province, level, school_type,
-                       is_985, is_211, is_double_first
-                FROM schools
-                WHERE name LIKE :q
-                ORDER BY is_985 DESC, is_211 DESC
-                LIMIT :limit
-            """),
-            {"q": f"%{q}%", "limit": limit},
-        )
-        for row in rows2.mappings():
-            results.append({
+    def _map_rows_pub(mappings) -> list[dict]:
+        return [
+            {
                 "school_id": row["school_id"],
                 "name": row["name"],
                 "province": row["province"],
                 "city": _extract_city(row["name"], row["province"]),
                 "tags": _build_tags(row),
-            })
+            }
+            for row in mappings
+        ]
+
+    prefix_rows = await db.execute(
+        text("""
+            SELECT school_id, name, province, level, school_type,
+                   is_985, is_211, is_double_first
+            FROM schools
+            WHERE name LIKE :q_prefix
+            ORDER BY is_985 DESC, is_211 DESC, is_double_first DESC
+            LIMIT :limit
+        """),
+        {"q_prefix": f"{q}%", "limit": limit},
+    )
+    results = _map_rows_pub(prefix_rows.mappings())
+
+    if len(results) < limit and len(q) >= 2:
+        ft_rows = await db.execute(
+            text("""
+                SELECT school_id, name, province, level, school_type,
+                       is_985, is_211, is_double_first
+                FROM schools
+                WHERE MATCH(name) AGAINST (:q IN BOOLEAN MODE)
+                  AND name NOT LIKE :q_prefix
+                ORDER BY is_985 DESC, is_211 DESC, is_double_first DESC
+                LIMIT :limit
+            """),
+            {"q": f"{q}*", "q_prefix": f"{q}%", "limit": limit},
+        )
+        results.extend(_map_rows_pub(ft_rows.mappings()))
+
+    if not results:
+        like_rows = await db.execute(
+            text("""
+                SELECT school_id, name, province, level, school_type,
+                       is_985, is_211, is_double_first
+                FROM schools
+                WHERE name LIKE :q_contains
+                ORDER BY is_985 DESC, is_211 DESC
+                LIMIT :limit
+            """),
+            {"q_contains": f"%{q}%", "limit": limit},
+        )
+        results = _map_rows_pub(like_rows.mappings())
 
     return {"results": results}
 

@@ -523,17 +523,52 @@ body{background:#080D1A;min-height:100vh;display:flex;align-items:flex-start;jus
       </div>
       <div class="analyzing-steps" id="analyzingSteps">
         <div class="analyzing-step" id="step0">
-          <div class="step-icon">📊</div>
+          <div class="step-icon">📂</div>
           <div class="step-info">
-            <div class="step-label">加载省份历年录取数据</div>
+            <div class="step-label">读取考生信息与历史数据</div>
             <div class="step-progress-bar"><div class="fill" id="stepBar0"></div></div>
           </div>
           <div class="step-status" id="stepStatus0">0%</div>
         </div>
         <div class="analyzing-step" id="step1">
-          <div class="step-icon">⚡</div>
-          <div class="step-info"><div class="step-label">AI 交叉验证分析中</div></div>
-          <div class="step-status" id="stepStatus1">—</div>
+          <div class="step-icon">🔍</div>
+          <div class="step-info">
+            <div class="step-label">全国高校录取数据检索</div>
+            <div class="step-progress-bar"><div class="fill" id="stepBar1"></div></div>
+          </div>
+          <div class="step-status" id="stepStatus1">0%</div>
+        </div>
+        <div class="analyzing-step" id="step2">
+          <div class="step-icon">📊</div>
+          <div class="step-info">
+            <div class="step-label">智能位次估算与精准匹配</div>
+            <div class="step-progress-bar"><div class="fill" id="stepBar2"></div></div>
+          </div>
+          <div class="step-status" id="stepStatus2">0%</div>
+        </div>
+        <div class="analyzing-step" id="step3">
+          <div class="step-icon">🤖</div>
+          <div class="step-info">
+            <div class="step-label">三大AI引擎概率深度计算</div>
+            <div class="step-progress-bar"><div class="fill" id="stepBar3"></div></div>
+          </div>
+          <div class="step-status" id="stepStatus3">0%</div>
+        </div>
+        <div class="analyzing-step" id="step4">
+          <div class="step-icon">💡</div>
+          <div class="step-info">
+            <div class="step-label">个性化偏好分析与适配</div>
+            <div class="step-progress-bar"><div class="fill" id="stepBar4"></div></div>
+          </div>
+          <div class="step-status" id="stepStatus4">0%</div>
+        </div>
+        <div class="analyzing-step" id="step5">
+          <div class="step-icon">📝</div>
+          <div class="step-info">
+            <div class="step-label">志愿梯度策略生成与校验</div>
+            <div class="step-progress-bar"><div class="fill" id="stepBar5"></div></div>
+          </div>
+          <div class="step-status" id="stepStatus5">0%</div>
         </div>
       </div>
       <div class="analyzing-info">
@@ -661,54 +696,20 @@ body{background:#080D1A;min-height:100vh;display:flex;align-items:flex-start;jus
       <div style="text-align:center;font-size:11px;color:#94A3B8;margin-top:4px">以上为样板数据，实际推荐将根据考生真实分数和偏好生成。</div>
     </div>
 
-    <!-- ====== 主播助手（原Q&A升级为双Tab）====== -->
+    <!-- ====== 主播助手（话术工作台）====== -->
     <div class="page" id="page-assistant">
       <div class="page-title">🎙️ 主播助手</div>
 
-      <!-- 双Tab导航 -->
-      <div style="display:flex;border-bottom:1px solid var(--border-subtle);margin-bottom:8px">
-        <button id="assistantTabA" style="flex:1;padding:8px 4px;background:none;border:none;border-bottom:2px solid var(--color-accent);color:var(--color-accent);font-size:13px;font-weight:600;cursor:pointer" onclick="switchAssistantTab('scripts')">📋 直播话术</button>
-        <button id="assistantTabB" style="flex:1;padding:8px 4px;background:none;border:none;border-bottom:2px solid transparent;color:var(--text-secondary);font-size:13px;font-weight:500;cursor:pointer" onclick="switchAssistantTab('qa')">🤖 AI问答</button>
-      </div>
-
-      <!-- Tab A: 直播话术 -->
+      <!-- 直播话术 -->
       <div id="assistantScripts">
         <div id="scriptsLoading" style="color:var(--text-secondary);font-size:13px;padding:8px">加载话术中…</div>
         <div id="scriptsContent"></div>
       </div>
 
-      <!-- Tab B: AI问答 -->
-      <div id="assistantQA" style="display:none">
-        <div class="card">
-          <div class="section-title">快捷提问（点击填入）</div>
-          <div class="tag-group" style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-            <span class="tag" onclick="fillQA(this.textContent)" style="text-align:center">这个专业好就业吗？</span>
-            <span class="tag" onclick="fillQA(this.textContent)" style="text-align:center">这所学校值得报吗？</span>
-            <span class="tag" onclick="fillQA(this.textContent)" style="text-align:center">这个专业未来薪资怎么样？</span>
-            <span class="tag" onclick="fillQA(this.textContent)" style="text-align:center">冲这所学校风险大吗？</span>
-            <span class="tag" onclick="fillQA(this.textContent)" style="text-align:center">要不要服从调剂？</span>
-            <span class="tag" onclick="fillQA(this.textContent)" style="text-align:center">这所学校省内认可度怎样？</span>
-            <span class="tag" onclick="fillQA(this.textContent)" style="text-align:center">这个城市适合毕业后留下来吗？</span>
-            <span class="tag" onclick="fillQA(this.textContent)" style="text-align:center">这个专业考研好考吗？</span>
-            <span class="tag" onclick="fillQA(this.textContent)" style="text-align:center">复读还是填这所学校好？</span>
-            <span class="tag" onclick="fillQA(this.textContent)" style="text-align:center">这所学校有哪些特色专业？</span>
-          </div>
-        </div>
-        <div class="card">
-          <textarea class="form-textarea" id="qaInput" placeholder="观众问啥，你就输啥，最多100字…" maxlength="100" oninput="updateCharCount()"></textarea>
-          <div class="flex-between" style="margin-top:4px">
-            <span style="font-size:11px;color:var(--text-secondary)" id="charCount">0/100</span>
-            <button class="btn btn-primary btn-lg" id="btnSendQA" onclick="sendQA()">发送 →</button>
-          </div>
-        </div>
-        <div class="card">
-          <div class="section-title">对话历史</div>
-          <div class="chat-area" id="chatArea"></div>
-          <div class="flex-row" style="margin-top:8px;gap:6px">
-            <button class="btn btn-ghost" style="font-size:12px;flex:1" onclick="document.getElementById('qaInput').value='';updateCharCount()">清空输入</button>
-            <button class="btn btn-ghost" style="font-size:12px;flex:1" onclick="clearQAChat()">清空历史</button>
-          </div>
-        </div>
+      <!-- 入口：独立AI问答页 -->
+      <div class="card" style="margin-top:10px;text-align:center">
+        <div style="font-size:13px;color:var(--text-secondary);margin-bottom:10px">需要AI答疑？打开独立问答页面（可多窗口操作）</div>
+        <button class="btn btn-primary" onclick="openChatPage()">🤖 打开AI问答助手</button>
       </div>
     </div>
 
@@ -809,7 +810,7 @@ function navigate(page, updateHash = true) {
 
   if (page === 'paywall') renderPaywall();
   if (page === 'report') renderReport();
-  if (page === 'assistant') switchAssistantTab('scripts');
+  if (page === 'assistant') switchAssistantTab();
 }
 
 function updateNavBar() {
@@ -1065,12 +1066,64 @@ function getSelectedTags(groupId) {
   return [...document.querySelectorAll('#' + groupId + ' .tag.selected')].map(t => t.dataset.val);
 }
 
-// ── School search with debounce ──
+// ── School search with debounce + local cache ──
+const _schoolSearchCache = new Map();
+
+function _buildSchoolDropdown(dropdown, results) {
+  dropdown.replaceChildren();
+  const filtered = results.filter(r => !S.selectedSchools.find(s => s.name === r.name));
+  if (filtered.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'search-dropdown-item';
+    empty.style.color = 'var(--text-secondary)';
+    empty.textContent = '未找到该学校';
+    dropdown.appendChild(empty);
+  } else {
+    filtered.forEach(r => {
+      const item = document.createElement('div');
+      item.className = 'search-dropdown-item';
+      item.addEventListener('click', () => selectSchool(r.school_id, r.name, r.city || r.province));
+
+      const nameSpan = document.createElement('span');
+      nameSpan.textContent = r.name + ' ';
+      if (r.tags.includes('985')) {
+        const b = document.createElement('span'); b.className = 'badge badge-985'; b.textContent = '985'; nameSpan.appendChild(b);
+      } else if (r.tags.includes('211')) {
+        const b = document.createElement('span'); b.className = 'badge badge-211'; b.textContent = '211'; nameSpan.appendChild(b);
+      } else if (r.tags.includes('双一流')) {
+        const b = document.createElement('span'); b.className = 'badge badge-double-first'; b.textContent = '双一流'; nameSpan.appendChild(b);
+      }
+      const citySpan = document.createElement('span');
+      citySpan.className = 'city';
+      citySpan.textContent = r.city || r.province;
+      item.appendChild(nameSpan);
+      item.appendChild(citySpan);
+      dropdown.appendChild(item);
+    });
+  }
+  dropdown.classList.add('show');
+}
+
 function setupSchoolSearch() {
   const inp = document.getElementById('schoolSearch');
   inp.addEventListener('input', () => {
     clearTimeout(S.schoolSearchTimer);
-    S.schoolSearchTimer = setTimeout(() => doSchoolSearch(inp.value.trim()), 300);
+    const q = inp.value.trim();
+    const dd = document.getElementById('schoolDropdown');
+    if (q.length < 2) { dd.classList.remove('show'); return; }
+    // Show cached results or loading indicator immediately (reduces perceived latency)
+    if (_schoolSearchCache.has(q)) {
+      _buildSchoolDropdown(dd, _schoolSearchCache.get(q));
+    } else {
+      dd.replaceChildren();
+      const loadItem = document.createElement('div');
+      loadItem.className = 'search-dropdown-item';
+      loadItem.style.color = 'var(--text-secondary)';
+      loadItem.textContent = '搜索中…';
+      dd.appendChild(loadItem);
+      dd.classList.add('show');
+    }
+    S.schoolSearchTimer = setTimeout(() => doSchoolSearch(q), 400);
   });
   document.addEventListener('click', e => {
     if (!e.target.closest('.search-wrap')) {
@@ -1084,22 +1137,16 @@ async function doSchoolSearch(q) {
   if (q.length < 2) { dropdown.classList.remove('show'); return; }
   if (!S.token) return;
 
+  if (_schoolSearchCache.has(q)) {
+    _buildSchoolDropdown(dropdown, _schoolSearchCache.get(q));
+    return;
+  }
+
   try {
     const data = await api('GET', `/api/schools/search?q=${encodeURIComponent(q)}&limit=8`);
-    const results = (data.results || []).filter(r => !S.selectedSchools.find(s => s.name === r.name));
-    if (results.length === 0) {
-      dropdown.innerHTML = '<div class="search-dropdown-item" style="color:var(--text-secondary)">未找到该学校</div>';
-    } else {
-      dropdown.innerHTML = results.map(r => {
-        const badge = r.tags.includes('985') ? '<span class="badge badge-985">985</span>' :
-                      r.tags.includes('211') ? '<span class="badge badge-211">211</span>' :
-                      r.tags.includes('双一流') ? '<span class="badge badge-double-first">双一流</span>' : '';
-        return `<div class="search-dropdown-item" onclick="selectSchool(${r.school_id},'${r.name}','${r.city||r.province}')">
-          <span>${r.name} ${badge}</span><span class="city">${r.city || r.province}</span>
-        </div>`;
-      }).join('');
-    }
-    dropdown.classList.add('show');
+    const results = data.results || [];
+    _schoolSearchCache.set(q, results);
+    _buildSchoolDropdown(dropdown, results);
   } catch(e) {
     dropdown.classList.remove('show');
   }
@@ -1149,7 +1196,10 @@ function startAnalyze() {
 }
 
 async function runAnalysis() {
-  const animPromise = runAnalysisAnimation();
+  // Minimum display time 45s so the analysis feels credible
+  const MIN_ANALYSIS_MS = 45000;
+  const animPromise    = runAnalysisAnimation();
+  const minWaitPromise = new Promise(r => setTimeout(r, MIN_ANALYSIS_MS));
 
   const req = {
     province: S.student.province,
@@ -1163,65 +1213,84 @@ async function runAnalysis() {
     economic_level: S.pref.economy,
   };
 
-  try {
-    // Fire API immediately; wait for BOTH animation AND API, with 800ms min floor
-    const apiPromise = api('POST', '/api/recommendation/generate', req);
-    const [, result] = await Promise.all([
-      Promise.all([animPromise, new Promise(r => setTimeout(r, 800))]),
-      apiPromise,
-    ]);
-    S.reportData = result;
-    sessionStorage.setItem('gk_report', JSON.stringify(result));
-    navigate('paywall');
-    showToast('✓ 分析完成！15所院校已就绪', 'success');
-  } catch(e) {
-    showToast('分析失败：' + e.message, 'error');
+  // Wrap API call so a failure doesn't short-circuit Promise.all before min time
+  let apiError = null;
+  const apiPromise = api('POST', '/api/recommendation/generate', req).catch(err => {
+    apiError = err;
+    return null;
+  });
+
+  // Wait for all three: API result + minimum 45s + animation (whichever is longest)
+  const [result] = await Promise.all([apiPromise, minWaitPromise, animPromise]);
+
+  if (apiError) {
+    showToast('分析失败：' + apiError.message, 'error');
     navigate('pref');
+    return;
   }
+
+  S.reportData = result;
+  sessionStorage.setItem('gk_report', JSON.stringify(result));
+  navigate('paywall');
+  showToast('✓ 分析完成！15所院校已就绪', 'success');
 }
 
 function runAnalysisAnimation() {
+  // 6 steps: 5s + 8s + 8s + 10s + 8s + 6s = 45s total
+  const steps = [
+    { bar: 'stepBar0', status: 'stepStatus0', el: 'step0', duration: 5000 },
+    { bar: 'stepBar1', status: 'stepStatus1', el: 'step1', duration: 8000 },
+    { bar: 'stepBar2', status: 'stepStatus2', el: 'step2', duration: 8000 },
+    { bar: 'stepBar3', status: 'stepStatus3', el: 'step3', duration: 10000 },
+    { bar: 'stepBar4', status: 'stepStatus4', el: 'step4', duration: 8000 },
+    { bar: 'stepBar5', status: 'stepStatus5', el: 'step5', duration: 6000 },
+  ];
+
+  // Compute cumulative start times
+  const timings = steps.reduce((acc, s, i) => {
+    acc.push(i === 0 ? 0 : acc[i - 1] + steps[i - 1].duration);
+    return acc;
+  }, []);
+
   return new Promise(resolve => {
-    const steps = [
-      { bar: 'stepBar0', status: 'stepStatus0', el: 'step0', hasBar: true, duration: 800 },
-      { status: 'stepStatus1', el: 'step1', hasBar: false, duration: 700 },
-    ];
+    // Reset all steps
     steps.forEach(s => {
-      document.getElementById(s.el).classList.remove('active','done');
-      if (s.hasBar) document.getElementById(s.bar).style.width = '0%';
-      document.getElementById(s.status).textContent = s.hasBar ? '0%' : '—';
+      document.getElementById(s.el).classList.remove('active', 'done');
+      document.getElementById(s.bar).style.width = '0%';
+      document.getElementById(s.status).textContent = '0%';
     });
 
-    const timings = [0, 800];
-    const durations = [800, 700];
+    function runStep(i) {
+      const s = steps[i];
+      const el     = document.getElementById(s.el);
+      const bar    = document.getElementById(s.bar);
+      const status = document.getElementById(s.status);
+      el.classList.add('active');
 
-    function completeStep(i) {
-      document.getElementById(steps[i].el).classList.remove('active');
-      document.getElementById(steps[i].el).classList.add('done');
-      document.getElementById(steps[i].status).textContent = '✓ 完成';
-      if (i === steps.length - 1) resolve();
+      let pct = 0;
+      // Progress advances fast at start and slows near 95% for realism
+      const iv = setInterval(() => {
+        const remaining = 95 - pct;
+        pct += remaining * 0.07 + Math.random() * 2;
+        if (pct > 95) pct = 95;
+        bar.style.width = pct + '%';
+        status.textContent = Math.round(pct) + '%';
+      }, 80);
+
+      setTimeout(() => {
+        clearInterval(iv);
+        bar.style.width = '100%';
+        status.textContent = '✓';
+        el.classList.remove('active');
+        el.classList.add('done');
+        if (i === steps.length - 1) {
+          resolve();
+        }
+      }, s.duration);
     }
 
-    steps.forEach((s, i) => {
-      setTimeout(() => {
-        document.getElementById(s.el).classList.add('active');
-        if (s.hasBar) {
-          let pct = 0;
-          const bar = document.getElementById(s.bar);
-          const iv = setInterval(() => {
-            pct += Math.random() * 15 + 8;
-            if (pct >= 100) { pct = 100; clearInterval(iv); }
-            bar.style.width = pct + '%';
-            document.getElementById(s.status).textContent = Math.round(pct) + '%';
-          }, 60);
-          setTimeout(() => { clearInterval(iv); bar.style.width='100%'; document.getElementById(s.status).textContent='100%'; completeStep(i); }, durations[i]);
-        } else {
-          const dots = ['','.','..',  '...'];
-          let di = 0;
-          const dv = setInterval(() => { di=(di+1)%dots.length; document.getElementById(s.status).textContent='分析中'+dots[di]; }, 200);
-          setTimeout(() => { clearInterval(dv); completeStep(i); }, durations[i]);
-        }
-      }, timings[i]);
+    steps.forEach((_, i) => {
+      setTimeout(() => runStep(i), timings[i]);
     });
   });
 }
@@ -2647,24 +2716,12 @@ function nextStudent() {
 // ══════════════════════════════════════════════════════════
 // Assistant Page (dual-tab: Scripts + Q&A)
 // ══════════════════════════════════════════════════════════
-function switchAssistantTab(tab) {
-  const scriptDiv = document.getElementById('assistantScripts');
-  const qaDiv     = document.getElementById('assistantQA');
-  const tabA      = document.getElementById('assistantTabA');
-  const tabB      = document.getElementById('assistantTabB');
-  if (!scriptDiv || !qaDiv) return;
-  if (tab === 'scripts') {
-    scriptDiv.style.display = '';
-    qaDiv.style.display     = 'none';
-    if (tabA) { tabA.style.background='#667eea'; tabA.style.color='#fff'; }
-    if (tabB) { tabB.style.background=''; tabB.style.color=''; }
-    loadAssistantScripts();
-  } else {
-    scriptDiv.style.display = 'none';
-    qaDiv.style.display     = '';
-    if (tabA) { tabA.style.background=''; tabA.style.color=''; }
-    if (tabB) { tabB.style.background='#667eea'; tabB.style.color='#fff'; }
-  }
+function switchAssistantTab() {
+  loadAssistantScripts();
+}
+
+function openChatPage() {
+  window.open('/chat.html', '_blank');
 }
 
 async function loadAssistantScripts() {
@@ -2674,9 +2731,8 @@ async function loadAssistantScripts() {
   if (loading) loading.style.display = '';
   content.replaceChildren();
   try {
-    const token = localStorage.getItem('token');
     const res = await fetch('/api/scripts', {
-      headers: token ? { Authorization: 'Bearer ' + token } : {}
+      headers: S.token ? { Authorization: 'Bearer ' + S.token } : {}
     });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
@@ -2735,52 +2791,6 @@ function copyScript(content) {
   });
 }
 
-// ══════════════════════════════════════════════════════════
-// Q&A Page
-// ══════════════════════════════════════════════════════════
-function fillQA(text) {
-  document.getElementById('qaInput').value = text;
-  updateCharCount();
-}
-
-function updateCharCount() {
-  const len = document.getElementById('qaInput').value.length;
-  document.getElementById('charCount').textContent = len + '/100';
-}
-
-async function sendQA() {
-  const inp = document.getElementById('qaInput');
-  const text = inp.value.trim();
-  if (!text) { showToast('请输入问题', 'warning'); return; }
-
-  const chatArea = document.getElementById('chatArea');
-  chatArea.innerHTML += `<div class="chat-bubble user">${esc(text)}</div>`;
-  inp.value = ''; updateCharCount();
-
-  const loadEl = document.createElement('div');
-  loadEl.className = 'chat-bubble ai';
-  loadEl.innerHTML = '<span class="spinner spinner-dark"></span> AI思考中…';
-  chatArea.appendChild(loadEl);
-  chatArea.scrollTop = chatArea.scrollHeight;
-
-  const btn = document.getElementById('btnSendQA');
-  btn.disabled = true;
-
-  try {
-    const data = await api('POST', '/api/qa/ask', { question: text });
-    loadEl.textContent = data.answer || data.response || '暂时无法回答该问题，请稍后再试。';
-  } catch(e) {
-    loadEl.textContent = '⚠ ' + e.message;
-    loadEl.style.color = 'var(--color-danger)';
-  } finally {
-    btn.disabled = false;
-    chatArea.scrollTop = chatArea.scrollHeight;
-  }
-}
-
-function clearQAChat() {
-  document.getElementById('chatArea').innerHTML = '';
-}
 
 // ══════════════════════════════════════════════════════════
 // Live Mode

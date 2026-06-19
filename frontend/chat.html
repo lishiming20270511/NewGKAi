@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI高考问答助手 · 主播专用</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0F172A;--bg-card:#1E293B;--bg-input:#1E293B;
+  --text:#F1F5F9;--text-secondary:#94A3B8;--text-muted:#64748B;
+  --accent:#818CF8;--accent-hover:#6366F1;--danger:#EF4444;--success:#22C55E;
+  --border:rgba(148,163,184,.08);--border-s:rgba(148,163,184,.15);
+  --r8:8px;--r12:12px;--r20:20px;
+  color-scheme:dark;
+}
+body{background:#080D1A;min-height:100vh;font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;color:var(--text)}
+
+/* Header */
+.header{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(15,23,42,.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--border-s);display:flex;align-items:center;padding:0 20px;height:52px;gap:12px}
+.header-title{font-size:16px;font-weight:700;flex:1}
+.header-user{font-size:12px;color:var(--text-secondary);background:rgba(129,140,248,.1);border:1px solid rgba(129,140,248,.2);padding:3px 10px;border-radius:20px}
+.back-btn{font-size:12px;color:var(--text-secondary);background:none;border:1px solid var(--border-s);padding:4px 12px;border-radius:var(--r8);cursor:pointer;text-decoration:none;display:flex;align-items:center;gap:4px;transition:all .2s}
+.back-btn:hover{color:var(--accent);border-color:var(--accent)}
+
+/* Layout */
+.wrap{max-width:900px;margin:0 auto;padding:68px 20px 20px;display:flex;flex-direction:column;height:100vh}
+
+/* Login Page */
+.login-page{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:20px}
+.login-card{background:var(--bg-card);border:1px solid var(--border-s);border-radius:var(--r12);padding:32px;width:100%;max-width:400px}
+.login-title{font-size:20px;font-weight:800;text-align:center;margin-bottom:4px}
+.login-sub{font-size:13px;color:var(--text-secondary);text-align:center;margin-bottom:24px}
+.form-group{margin-bottom:14px}
+.form-label{font-size:13px;color:var(--text-secondary);display:block;margin-bottom:5px}
+.form-input{width:100%;background:var(--bg-input);border:1px solid var(--border-s);border-radius:var(--r8);color:var(--text);font-size:14px;padding:10px 12px;outline:none;-webkit-appearance:none}
+.form-input:focus{border-color:var(--accent)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 20px;border-radius:var(--r8);font-size:14px;font-weight:600;cursor:pointer;border:none;transition:all .2s}
+.btn-primary{background:var(--accent);color:#fff;width:100%}
+.btn-primary:hover{background:var(--accent-hover)}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed}
+
+/* Chat Layout */
+.chat-layout{display:flex;flex-direction:column;flex:1;overflow:hidden;gap:12px}
+
+/* Presets */
+.presets-card{background:var(--bg-card);border:1px solid var(--border-s);border-radius:var(--r12);padding:14px 16px;flex-shrink:0}
+.presets-title{font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:10px}
+.presets-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:6px}
+.preset-btn{background:rgba(129,140,248,.08);border:1px solid rgba(129,140,248,.15);border-radius:var(--r8);padding:7px 10px;font-size:12px;color:var(--text);cursor:pointer;text-align:left;transition:all .2s;line-height:1.4}
+.preset-btn:hover{background:rgba(129,140,248,.18);border-color:var(--accent);color:var(--accent)}
+
+/* Chat Area */
+.chat-card{background:var(--bg-card);border:1px solid var(--border-s);border-radius:var(--r12);padding:16px;flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:200px}
+.chat-area{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding-right:4px}
+.chat-area::-webkit-scrollbar{width:4px}
+.chat-area::-webkit-scrollbar-track{background:transparent}
+.chat-area::-webkit-scrollbar-thumb{background:var(--border-s);border-radius:4px}
+.bubble{padding:10px 14px;border-radius:12px;font-size:14px;line-height:1.6;max-width:80%;word-break:break-word}
+.bubble.user{background:rgba(129,140,248,.18);color:var(--text);align-self:flex-end;border-bottom-right-radius:4px}
+.bubble.ai{background:rgba(30,41,59,.8);border:1px solid var(--border-s);color:var(--text);align-self:flex-start;border-bottom-left-radius:4px}
+.bubble.ai.loading{color:var(--text-secondary)}
+.empty-hint{text-align:center;color:var(--text-muted);font-size:13px;padding:30px 0;flex:1;display:flex;align-items:center;justify-content:center}
+
+/* Input Area */
+.input-card{background:var(--bg-card);border:1px solid var(--border-s);border-radius:var(--r12);padding:14px 16px;flex-shrink:0}
+.input-row{display:flex;gap:10px;align-items:flex-end}
+.textarea-wrap{flex:1;position:relative}
+.chat-textarea{width:100%;background:var(--bg-input);border:1px solid var(--border-s);border-radius:var(--r8);color:var(--text);font-size:14px;padding:10px 12px;resize:none;outline:none;font-family:inherit;line-height:1.5;min-height:44px;max-height:120px}
+.chat-textarea:focus{border-color:var(--accent)}
+.char-count{position:absolute;bottom:6px;right:10px;font-size:11px;color:var(--text-muted);pointer-events:none}
+.send-btn{background:var(--accent);color:#fff;border:none;border-radius:var(--r8);padding:10px 20px;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .2s;align-self:flex-end}
+.send-btn:hover{background:var(--accent-hover)}
+.send-btn:disabled{opacity:.5;cursor:not-allowed}
+.input-actions{display:flex;gap:8px;margin-top:8px}
+.act-btn{background:none;border:1px solid var(--border-s);color:var(--text-secondary);font-size:12px;padding:4px 12px;border-radius:var(--r8);cursor:pointer;transition:all .2s}
+.act-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+/* Toast */
+.toast{position:fixed;top:64px;left:50%;transform:translateX(-50%);background:#334155;color:var(--text);padding:8px 20px;border-radius:20px;font-size:13px;white-space:nowrap;opacity:0;pointer-events:none;z-index:9999;transition:opacity .3s}
+.toast.show{opacity:1}
+
+/* Spinner */
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Mobile responsive */
+@media(max-width:600px){
+  .presets-grid{grid-template-columns:1fr 1fr}
+  .bubble{max-width:95%}
+}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <span class="header-title">🤖 AI高考问答助手</span>
+  <span class="header-user" id="headerUser">未登录</span>
+  <a class="back-btn" id="backBtn" href="/">← 返回主播台</a>
+</header>
+
+<div class="wrap" id="wrapMain">
+
+  <!-- Login Page -->
+  <div id="loginPage" class="login-page" style="display:none">
+    <div class="login-card">
+      <div class="login-title">🤖 AI高考问答助手</div>
+      <div class="login-sub">请先登录主播账号</div>
+      <div class="form-group">
+        <label class="form-label">手机号</label>
+        <input class="form-input" id="loginPhone" type="tel" placeholder="请输入手机号" maxlength="11">
+      </div>
+      <div class="form-group">
+        <label class="form-label">密码</label>
+        <input class="form-input" id="loginPwd" type="password" placeholder="请输入密码">
+      </div>
+      <button class="btn btn-primary" id="loginBtn" onclick="doLogin()">登录</button>
+    </div>
+  </div>
+
+  <!-- Chat Page -->
+  <div id="chatPage" class="chat-layout" style="display:none">
+
+    <!-- Quick Preset Questions -->
+    <div class="presets-card">
+      <div class="presets-title">💬 快捷提问（点击填入）</div>
+      <div class="presets-grid" id="presetsGrid"></div>
+    </div>
+
+    <!-- Chat History -->
+    <div class="chat-card">
+      <div class="chat-area" id="chatArea">
+        <div class="empty-hint" id="emptyHint">向AI发送问题，获得张雪峰风格的解答 💡</div>
+      </div>
+    </div>
+
+    <!-- Input Area -->
+    <div class="input-card">
+      <div class="input-row">
+        <div class="textarea-wrap">
+          <textarea class="chat-textarea" id="qaInput" placeholder="观众问啥，你就输啥，最多100字…" maxlength="100" rows="2" oninput="onInputChange()"></textarea>
+          <span class="char-count" id="charCount">0/100</span>
+        </div>
+        <button class="send-btn" id="sendBtn" onclick="sendQA()">发送 →</button>
+      </div>
+      <div class="input-actions">
+        <button class="act-btn" onclick="clearInput()">清空输入</button>
+        <button class="act-btn" onclick="clearHistory()">清空历史</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── Preset Questions ─────────────────────────────────────
+const PRESETS = [
+  '这个专业好就业吗？',
+  '这所学校值得报吗？',
+  '这个专业未来薪资怎么样？',
+  '冲这所学校风险大吗？',
+  '要不要服从调剂？',
+  '这所学校省内认可度怎样？',
+  '这个城市适合毕业后留下来吗？',
+  '这个专业考研好考吗？',
+  '复读还是填这所学校好？',
+  '这所学校有哪些特色专业？',
+];
+
+// ─── State ────────────────────────────────────────────────
+let _token = null;
+let _streamer = null;
+let _sending = false;
+let _toastTimer = null;
+
+// ─── Init ─────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  _token = localStorage.getItem('gk_token');
+  const sv = localStorage.getItem('gk_streamer');
+  if (sv) { try { _streamer = JSON.parse(sv); } catch(e){} }
+
+  buildPresets();
+
+  if (_token) {
+    showChat();
+  } else {
+    showLogin();
+  }
+
+  // Enter key in input
+  document.getElementById('qaInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendQA(); }
+  });
+});
+
+function buildPresets() {
+  const grid = document.getElementById('presetsGrid');
+  PRESETS.forEach(q => {
+    const btn = document.createElement('button');
+    btn.className = 'preset-btn';
+    btn.textContent = q;
+    btn.addEventListener('click', () => {
+      document.getElementById('qaInput').value = q;
+      onInputChange();
+      document.getElementById('qaInput').focus();
+    });
+    grid.appendChild(btn);
+  });
+}
+
+function showLogin() {
+  document.getElementById('loginPage').style.display = '';
+  document.getElementById('chatPage').style.display = 'none';
+  document.getElementById('headerUser').textContent = '未登录';
+}
+
+function showChat() {
+  document.getElementById('loginPage').style.display = 'none';
+  document.getElementById('chatPage').style.display = '';
+  if (_streamer) {
+    document.getElementById('headerUser').textContent = _streamer.name || _streamer.phone || '主播';
+  }
+}
+
+// ─── Login ────────────────────────────────────────────────
+async function doLogin() {
+  const phone = document.getElementById('loginPhone').value.trim();
+  const pwd   = document.getElementById('loginPwd').value;
+  if (!phone || !pwd) { showToast('请填写手机号和密码', 'warn'); return; }
+
+  const btn = document.getElementById('loginBtn');
+  btn.disabled = true;
+  btn.textContent = '登录中…';
+  try {
+    const res = await fetch('/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, password: pwd }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || '登录失败');
+    _token    = data.token;
+    _streamer = data.streamer;
+    localStorage.setItem('gk_token', _token);
+    localStorage.setItem('gk_streamer', JSON.stringify(_streamer));
+    showChat();
+    showToast('登录成功', 'success');
+  } catch(e) {
+    showToast(e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '登录';
+  }
+}
+
+// ─── Q&A ─────────────────────────────────────────────────
+function onInputChange() {
+  const len = document.getElementById('qaInput').value.length;
+  document.getElementById('charCount').textContent = len + '/100';
+}
+
+function clearInput() {
+  document.getElementById('qaInput').value = '';
+  onInputChange();
+}
+
+function clearHistory() {
+  const area = document.getElementById('chatArea');
+  area.replaceChildren();
+  const hint = document.createElement('div');
+  hint.id = 'emptyHint';
+  hint.className = 'empty-hint';
+  hint.textContent = '向AI发送问题，获得张雪峰风格的解答 💡';
+  area.appendChild(hint);
+}
+
+async function sendQA() {
+  if (_sending) return;
+  const inp  = document.getElementById('qaInput');
+  const text = inp.value.trim();
+  if (!text) { showToast('请输入问题', 'warn'); return; }
+  if (!_token) { showToast('请先登录', 'warn'); return; }
+
+  const area = document.getElementById('chatArea');
+  // Remove empty hint
+  const hint = document.getElementById('emptyHint');
+  if (hint) hint.remove();
+
+  // User bubble
+  const userBub = document.createElement('div');
+  userBub.className = 'bubble user';
+  userBub.textContent = text;
+  area.appendChild(userBub);
+
+  inp.value = '';
+  onInputChange();
+
+  // AI loading bubble
+  const aiBub = document.createElement('div');
+  aiBub.className = 'bubble ai loading';
+  const spin = document.createElement('span');
+  spin.className = 'spinner';
+  aiBub.appendChild(spin);
+  aiBub.appendChild(document.createTextNode('AI思考中…'));
+  area.appendChild(aiBub);
+  area.scrollTop = area.scrollHeight;
+
+  _sending = true;
+  document.getElementById('sendBtn').disabled = true;
+
+  try {
+    const res = await fetch('/api/qa/ask', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _token },
+      body: JSON.stringify({ question: text }),
+    });
+    if (res.status === 401) {
+      localStorage.removeItem('gk_token');
+      localStorage.removeItem('gk_streamer');
+      showToast('登录已过期，请重新登录', 'error');
+      showLogin();
+      return;
+    }
+    const data = await res.json();
+    aiBub.className = 'bubble ai';
+    aiBub.textContent = data.answer || data.response || '暂时无法回答，请稍后再试。';
+  } catch(e) {
+    aiBub.className = 'bubble ai';
+    aiBub.style.color = 'var(--danger)';
+    aiBub.textContent = '⚠ 请求失败：' + e.message;
+  } finally {
+    _sending = false;
+    document.getElementById('sendBtn').disabled = false;
+    area.scrollTop = area.scrollHeight;
+  }
+}
+
+// ─── Toast ────────────────────────────────────────────────
+function showToast(msg) {
+  clearTimeout(_toastTimer);
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  _toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+</script>
+</body>
+</html>
