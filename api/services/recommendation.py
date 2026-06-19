@@ -929,6 +929,8 @@ async def classify_score_segment(
 
 def _is_vocational(school: SchoolRecord) -> bool:
     """判断是否为专科/高职/职业技术类院校。"""
+    if school.is_985 or school.is_211 or school.is_double_first:
+        return False
     stype = (school.school_type or "").lower()
     level = (school.level or "").lower()
     name = school.name or ""
@@ -941,6 +943,7 @@ def _is_vocational(school: SchoolRecord) -> bool:
         or "职业学院" in name
         or "高职" in name
         or "技师学院" in name
+        or "技术学院" in name
     )
 
 
@@ -1061,6 +1064,10 @@ def sort_and_slice(
         fill_ids = {s.school_id for s in result_by_tier[2]}
         for s in remaining_by_prob_desc:
             if s.school_id not in fill_ids and s.school_id not in used_ids:
+                if score_segment in ("high", "mid") and _is_vocational(s):
+                    continue
+                s.tier = 2
+                s.tier_label = "保底"
                 result_by_tier[2].append(s)
                 used_ids.add(s.school_id)
                 needed -= 1
@@ -1078,6 +1085,8 @@ def sort_and_slice(
         )
         for s in remaining_asc:
             if s.school_id not in fill_ids:
+                s.tier = 0
+                s.tier_label = "冲刺"
                 result_by_tier[0].append(s)
                 used_ids.add(s.school_id)
                 needed -= 1
@@ -1094,6 +1103,10 @@ def sort_and_slice(
         )
         for s in remaining_mid:
             if s.school_id not in fill_ids:
+                if score_segment in ("high", "mid") and _is_vocational(s):
+                    continue
+                s.tier = 1
+                s.tier_label = "稳妥"
                 result_by_tier[1].append(s)
                 used_ids.add(s.school_id)
                 needed -= 1

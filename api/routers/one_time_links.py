@@ -198,7 +198,9 @@ async def validate_token(
     rec = row.mappings().first()
     if not rec:
         return {"status": "invalid"}
-    return {"status": rec["status"]}
+    db_status = rec["status"]
+    api_status = "valid" if db_status == "active" else db_status
+    return {"status": api_status}
 
 
 # ─── 学生端: 消费令牌（推荐生成成功后调用）──────────────────────────────────
