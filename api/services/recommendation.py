@@ -734,8 +734,11 @@ def assign_tier(rank_prob: float, score: int) -> tuple[int, str]:
 # ──────────────────────────────────────────────────────────────────────────────
 
 def sort_and_slice(schools: list[SchoolRecord], personality: list[str]) -> list[SchoolRecord]:
-    """Guarantees 5+5+5 tier distribution. When a tier is short, fills from
-    adjacent tiers (closest rankProb match) to maintain the 15-school count."""
+    """Guarantees 5+5+5 tier distribution with hard cap of 5 per tier.
+    When a tier is short, fills from adjacent tiers and relabels to the target tier
+    so that the output always shows exactly 5 冲刺 / 5 稳妥 / 5 保底."""
+    _TIER_LABELS = {0: "冲刺", 1: "稳妥", 2: "保底"}
+
     def sort_key(s: SchoolRecord):
         tier = s.tier if s.tier is not None else 3
         intended_city_flag = 0 if s.is_intended_city else 1
@@ -757,44 +760,54 @@ def sort_and_slice(schools: list[SchoolRecord], personality: list[str]) -> list[
     selected: list[SchoolRecord] = []
     used_ids: set[int] = set()
 
-    def _take(tier_list: list[SchoolRecord], n: int) -> list[SchoolRecord]:
+    def _take(tier_list: list[SchoolRecord], n: int, relabel_as: int | None = None) -> list[SchoolRecord]:
+        """Take up to n unused schools from tier_list.
+        If relabel_as is set, update tier/tier_label on borrowed schools so
+        the hard cap of 5 per tier is enforced in the final output."""
         result = []
         for s in tier_list:
             if s.school_id in used_ids:
                 continue
+            if relabel_as is not None:
+                s.tier = relabel_as
+                s.tier_label = _TIER_LABELS[relabel_as]
             result.append(s)
             used_ids.add(s.school_id)
             if len(result) >= n:
                 break
         return result
 
-    # Tier 0: 冲刺 (5) — shortfall filled from tier 1
+    # Tier 0: 冲刺 (max 5) — shortfall filled from tier 1 (relabeled 冲刺)
     selected += _take(tiers[0], 5)
     if len(selected) < 5:
-        selected += _take(tiers[1], 5 - len(selected))
+        selected += _take(tiers[1], 5 - len(selected), relabel_as=0)
 
-    # Tier 1: 稳妥 (5) — shortfall filled from tier 2, then tier 0 remaining
+    # Tier 1: 稳妥 (5) — shortfall filled from tier 2, then tier 0 remainder (relabeled 稳妥)
     solid_taken = _take(tiers[1], 5)
     if len(solid_taken) < 5:
-        solid_taken += _take(tiers[2], 5 - len(solid_taken))
+        solid_taken += _take(tiers[2], 5 - len(solid_taken), relabel_as=1)
     if len(solid_taken) < 5:
-        solid_taken += _take(tiers[0], 5 - len(solid_taken))
+        solid_taken += _take(tiers[0], 5 - len(solid_taken), relabel_as=1)
     selected += solid_taken
 
-    # Tier 2: 保底 (5) — shortfall filled from tier 1 remaining, then tier 0
+    # Tier 2: 保底 (5) — shortfall filled from tier 1 remainder, then tier 0 remainder (relabeled 保底)
     safe_taken = _take(tiers[2], 5)
     if len(safe_taken) < 5:
-        safe_taken += _take(tiers[1], 5 - len(safe_taken))
+        safe_taken += _take(tiers[1], 5 - len(safe_taken), relabel_as=2)
     if len(safe_taken) < 5:
-        safe_taken += _take(tiers[0], 5 - len(safe_taken))
+        safe_taken += _take(tiers[0], 5 - len(safe_taken), relabel_as=2)
     selected += safe_taken
 
-    # Final fallback: if still < 15, fill from any remaining school
+    # Final fallback: if still < 15, fill from any remaining school with tier by slot position
     if len(selected) < 15:
         for t in [0, 1, 2]:
             for s in tiers[t]:
                 if s.school_id in used_ids:
                     continue
+                target = 0 if len(selected) < 5 else (1 if len(selected) < 10 else 2)
+                if s.tier != target:
+                    s.tier = target
+                    s.tier_label = _TIER_LABELS[target]
                 selected.append(s)
                 used_ids.add(s.school_id)
                 if len(selected) >= 15:
