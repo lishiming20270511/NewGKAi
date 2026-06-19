@@ -91,6 +91,69 @@ PROVINCE_EXPAND: dict[str, list[str]] = {
     "安徽": ["江苏", "浙江", "湖北", "河南", "江西"],
 }
 
+# ──────────────────────────────────────────────────────────────────────────────
+# 城市经济等级（用于 T11.3 地域扩展：周边城市按等级降序排列）
+# 1=一线  2=新一线  3=二线  4=三线
+# ──────────────────────────────────────────────────────────────────────────────
+CITY_ECONOMIC_LEVEL: dict[str, int] = {
+    "北京": 1, "上海": 1, "广州": 1, "深圳": 1,
+    "成都": 2, "杭州": 2, "武汉": 2, "重庆": 2, "西安": 2,
+    "南京": 2, "郑州": 2, "长沙": 2, "天津": 2, "苏州": 2,
+    "合肥": 2, "青岛": 2, "济南": 2, "沈阳": 2, "大连": 2,
+    "厦门": 2, "福州": 2, "哈尔滨": 2, "昆明": 2, "南昌": 2,
+    "贵阳": 2, "太原": 2, "石家庄": 2, "兰州": 2, "银川": 2,
+    "西宁": 2, "乌鲁木齐": 2, "南宁": 2, "呼和浩特": 2,
+    "宁波": 3, "温州": 3, "无锡": 3, "南通": 3, "徐州": 3,
+    "绍兴": 3, "嘉兴": 3, "金华": 3, "台州": 3,
+    "芜湖": 3, "安庆": 3, "蚌埠": 3,
+    "泉州": 3, "漳州": 3, "龙岩": 3,
+    "赣州": 3, "九江": 3, "宜春": 3,
+    "株洲": 3, "岳阳": 3, "常德": 3,
+    "宜昌": 3, "荆州": 3, "黄石": 3,
+    "洛阳": 3, "开封": 3, "新乡": 3,
+    "绵阳": 3, "南充": 3, "宜宾": 3,
+    "咸阳": 3, "宝鸡": 3,
+    "济宁": 3, "潍坊": 3, "临沂": 3, "烟台": 3,
+    "长春": 3, "鞍山": 3,
+    "东莞": 3, "佛山": 3, "珠海": 3, "惠州": 3,
+}
+
+# 城市 → 周边城市列表（按经济等级降序，一线最优先）
+CITY_NEARBY_BY_LEVEL: dict[str, list[str]] = {
+    "北京":   ["上海", "广州", "天津", "石家庄", "太原"],
+    "上海":   ["北京", "广州", "深圳", "南京", "杭州", "苏州", "无锡"],
+    "广州":   ["深圳", "上海", "北京", "厦门", "南宁", "长沙", "福州"],
+    "深圳":   ["广州", "上海", "北京", "厦门", "东莞", "惠州", "珠海"],
+    "郑州":   ["武汉", "西安", "南京", "北京", "上海", "合肥", "济南", "石家庄"],
+    "武汉":   ["上海", "南京", "长沙", "成都", "郑州", "合肥", "南昌"],
+    "西安":   ["北京", "上海", "郑州", "成都", "武汉", "咸阳", "兰州"],
+    "成都":   ["重庆", "上海", "北京", "武汉", "西安", "昆明", "贵阳", "绵阳"],
+    "南京":   ["上海", "苏州", "杭州", "合肥", "徐州", "无锡", "南通"],
+    "杭州":   ["上海", "南京", "苏州", "宁波", "无锡", "金华", "绍兴"],
+    "长沙":   ["武汉", "广州", "南昌", "贵阳", "株洲", "岳阳"],
+    "合肥":   ["南京", "杭州", "上海", "武汉", "郑州", "芜湖", "蚌埠"],
+    "青岛":   ["上海", "南京", "济南", "北京", "烟台", "潍坊"],
+    "济南":   ["北京", "天津", "南京", "郑州", "石家庄", "济宁"],
+    "沈阳":   ["北京", "天津", "大连", "长春", "石家庄", "鞍山"],
+    "大连":   ["北京", "上海", "沈阳", "天津", "长春"],
+    "厦门":   ["上海", "广州", "福州", "泉州", "漳州"],
+    "福州":   ["上海", "广州", "厦门", "温州", "宁波"],
+    "哈尔滨": ["北京", "沈阳", "长春", "大连"],
+    "长春":   ["北京", "沈阳", "哈尔滨", "大连"],
+    "南昌":   ["上海", "武汉", "广州", "合肥", "长沙", "赣州"],
+    "昆明":   ["成都", "重庆", "贵阳", "上海", "广州"],
+    "贵阳":   ["成都", "重庆", "昆明", "长沙", "广州"],
+    "太原":   ["北京", "天津", "石家庄", "郑州", "西安"],
+    "石家庄": ["北京", "天津", "太原", "郑州", "济南"],
+    "重庆":   ["成都", "武汉", "西安", "贵阳", "昆明", "南充", "宜宾"],
+    "天津":   ["北京", "石家庄", "济南", "沈阳"],
+    "苏州":   ["上海", "南京", "杭州", "无锡", "南通"],
+    "宁波":   ["上海", "杭州", "温州", "台州", "绍兴"],
+    "兰州":   ["西安", "成都", "银川", "西宁"],
+    "南宁":   ["广州", "昆明", "贵阳", "长沙"],
+    "呼和浩特": ["北京", "天津", "太原", "沈阳"],
+}
+
 # Tier 阈值
 TIER_BOOST_MIN = 30.0   # 冲刺下界（含）
 TIER_SOLID_MIN = 50.0   # 稳妥下界（含）；冲刺上界（不含）
@@ -116,6 +179,7 @@ class SchoolRecord:
     is_double_first: bool
     is_intended: bool = False
     is_intended_city: bool = False
+    globe_expanded: bool = False        # True = L4全国扩展推荐，仅冲刺档使用
 
     # 填充于 PHASE 2
     rank_prob: Optional[float] = None
@@ -405,6 +469,7 @@ async def build_candidate_pool(
                 is_985=bool(r["is_985"]),
                 is_211=bool(r["is_211"]),
                 is_double_first=bool(r["is_double_first"]),
+                globe_expanded=True,   # L4 全国扩展，仅用于冲刺档
             ))
             seen_ids.add(r["school_id"])
             if len(pool) >= 105:
@@ -730,11 +795,136 @@ def assign_tier(rank_prob: float, score: int) -> tuple[int, str]:
 
 
 # ──────────────────────────────────────────────────────────────────────────────
+# PHASE 0.5: 成绩段位判断（PRD §4.7）
+# ──────────────────────────────────────────────────────────────────────────────
+
+async def classify_score_segment(
+    province: str, subject_category: str, score: int, db: AsyncSession
+) -> str:
+    """查询 province_cutoffs 判断成绩段位。
+    返回: 'high'（≥一本线）/ 'mid'（专科线≤x<一本线）/ 'low'（<专科线）/ 'unknown'（无数据）
+    """
+    # 科类别名：旧高考科类 → 统一字段
+    _CAT_ALIAS = {"理科": "物理", "文科": "历史"}
+    cats_to_try = [subject_category, _CAT_ALIAS.get(subject_category, ""), "综合"]
+    cats_to_try = [c for c in cats_to_try if c]
+
+    for cat in cats_to_try:
+        try:
+            row = await db.execute(
+                text("""
+                    SELECT cutoff_yiben, cutoff_zhuanke
+                    FROM province_cutoffs
+                    WHERE province = :p AND subject_category = :s AND year = 2025
+                """),
+                {"p": province, "s": cat},
+            )
+            cutoff = row.mappings().first()
+            if cutoff:
+                if cutoff["cutoff_yiben"] and score >= cutoff["cutoff_yiben"]:
+                    return "high"
+                if cutoff["cutoff_zhuanke"] and score >= cutoff["cutoff_zhuanke"]:
+                    return "mid"
+                return "low"
+        except Exception:
+            pass
+    return "unknown"
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# PHASE 3.5: 院校质量底线过滤（PRD §4.8）
+# ──────────────────────────────────────────────────────────────────────────────
+
+def _is_vocational(school: SchoolRecord) -> bool:
+    """判断是否为专科/高职/职业技术类院校。"""
+    stype = (school.school_type or "").lower()
+    level = (school.level or "").lower()
+    name = school.name or ""
+    return (
+        "专科" in stype
+        or "职业" in stype
+        or "高职" in stype
+        or "专科" in level
+        or "职业技术" in name
+        or "职业学院" in name
+        or "高职" in name
+        or "技师学院" in name
+    )
+
+
+def _is_elite(school: SchoolRecord) -> bool:
+    """判断是否为985/211/双一流精英院校。"""
+    return school.is_985 or school.is_211 or school.is_double_first
+
+
+def _is_public_yiben(school: SchoolRecord) -> bool:
+    """判断是否为公办本科（含一本/二本）。"""
+    stype = (school.school_type or "").lower()
+    level = (school.level or "").lower()
+    is_public = "民办" not in stype and "独立" not in stype and "职业" not in stype
+    is_benke = "本科" in level or school.level in ("一本", "二本", "本科", "重点本科")
+    return is_public and is_benke
+
+
+def apply_quality_threshold_filter(
+    schools: list[SchoolRecord], score_segment: str
+) -> list[SchoolRecord]:
+    """按 PRD §4.8 院校质量底线规则过滤候选学校。
+
+    - 意向学校（is_intended）和意向城市（is_intended_city）标记学校不过滤
+    - 低分段/未知段位不过滤（低分段保底可纳入专科）
+    """
+    if score_segment in ("low", "unknown"):
+        return schools
+
+    result = []
+    for s in schools:
+        # 意向学校和意向城市强制保留，不受质量底线约束
+        if s.is_intended or s.is_intended_city:
+            result.append(s)
+            continue
+
+        tier = s.tier if s.tier is not None else -1
+
+        if score_segment == "high":
+            if tier == 0:    # 冲刺档：仅 985/211/双一流
+                if _is_elite(s):
+                    result.append(s)
+            elif tier == 1:  # 稳妥档：公办本科
+                if not _is_vocational(s):
+                    result.append(s)
+            elif tier == 2:  # 保底档：排除专科/职业技术
+                if not _is_vocational(s):
+                    result.append(s)
+            else:
+                result.append(s)
+
+        elif score_segment == "mid":
+            if tier == 2:    # 中分段保底：保留二本为主，排除专科
+                if not _is_vocational(s):
+                    result.append(s)
+            else:
+                result.append(s)
+
+        else:
+            result.append(s)
+
+    return result
+
+
+# ──────────────────────────────────────────────────────────────────────────────
 # PHASE 4: 排序 + 选15所
 # ──────────────────────────────────────────────────────────────────────────────
 
-def sort_and_slice(schools: list[SchoolRecord], personality: list[str]) -> list[SchoolRecord]:
+def sort_and_slice(
+    schools: list[SchoolRecord],
+    personality: list[str],
+    score_segment: str = "unknown",
+) -> list[SchoolRecord]:
     """Selects schools by actual tier, max 5 per tier, in order 冲刺→稳妥→保底.
+
+    globe_expanded schools only appear in 冲刺 tier (L4全国扩展).
+    quality_threshold is applied via apply_quality_threshold_filter() before this call.
 
     Rules (per product spec):
       冲刺  : TIER_BOOST_MIN ≤ rank_prob < TIER_SOLID_MIN  (30–50%)
@@ -754,11 +944,14 @@ def sort_and_slice(schools: list[SchoolRecord], personality: list[str]) -> list[
         return (intended_city_flag, rank_prob_neg, personality_neg, ranking, weighted_neg)
 
     # Drop schools below the minimum probability threshold
+    # globe_expanded schools only go into boost tier (冲刺)
     eligible = [s for s in schools if (s.tier is not None and s.tier >= 0)]
 
     tiers: dict[int, list[SchoolRecord]] = {0: [], 1: [], 2: []}
     for s in eligible:
         t = s.tier if s.tier in tiers else 0
+        if s.globe_expanded and t != 0:
+            continue  # L4全国扩展只出现在冲刺档
         tiers[t].append(s)
 
     # Sort within each tier by preference, then cap at 5
@@ -1588,6 +1781,11 @@ async def generate_recommendation(req: RecommendRequest, db: AsyncSession) -> di
         rank = await estimate_rank(req.province, req.score, req.subject_category, db)
         rank_source = "estimated"
 
+    # PHASE 0.5: 成绩段位前置判断（PRD §4.7）
+    score_segment = await classify_score_segment(
+        req.province, req.subject_category, req.score, db
+    )
+
     # PHASE 1: 候选池
     special_attention, candidates = await build_candidate_pool(req, db)
 
@@ -1634,8 +1832,11 @@ async def generate_recommendation(req: RecommendRequest, db: AsyncSession) -> di
         s.admission_data = _build_admission_summary(history)
         scored.append(s)
 
-    # PHASE 3+4: Tier排序 + 截取15所
-    selected = sort_and_slice(scored, req.personality)
+    # PHASE 3.5: 院校质量底线过滤（PRD §4.8）— 在 sort_and_slice 之前
+    scored = apply_quality_threshold_filter(scored, score_segment)
+
+    # PHASE 4: Tier排序 + 截取15所（globe_expanded 仅保留在冲刺档）
+    selected = sort_and_slice(scored, req.personality, score_segment)
 
     # PHASE 2d: 16维度数据聚合 (batched — only for selected 15 + special_attention)
     schools_for_dims = selected + [s for s in special_attention if s.school_id not in {x.school_id for x in selected}]
@@ -1651,6 +1852,7 @@ async def generate_recommendation(req: RecommendRequest, db: AsyncSession) -> di
     result = {
         "student_rank": rank,
         "rank_source": rank_source,
+        "score_segment": score_segment,
         "special_attention": [_school_to_dict(s) for s in special_attention],
         "schools": [_school_to_dict(s) for s in selected],
         "tier_summary": {
@@ -1819,6 +2021,9 @@ def _school_to_dict(s: SchoolRecord) -> dict:
     if s.tier is not None:
         d["tier"] = s.tier
         d["tier_label"] = s.tier_label
+    if s.globe_expanded:
+        d["globe_expanded"] = True
+        d["globe_note"] = "🌐 全国扩展推荐：您的成绩已超出意向城市所有院校录取线"
     if s.is_intended and s.rank_prob == 0.0:
         d["note"] = "您的成绩无法达到该校录取线"
     return d

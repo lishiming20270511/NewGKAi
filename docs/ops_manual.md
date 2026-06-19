@@ -249,4 +249,96 @@ redis-cli ping
 
 ---
 
-*最后更新：2026-06-17*
+---
+
+## T15.1 · v5.3/v5.4 迁移部署（执行一次）
+
+> 前置：代码已部署到 `/root/gaokao-ai/`，MySQL 已运行
+
+### 步骤 1：备份数据库
+
+```bash
+mysqldump -u root -p gaokao_ai > /root/backup_$(date +%Y%m%d_%H%M).sql
+```
+
+### 步骤 2：执行 DDL 迁移
+
+```bash
+mysql -u root -p gaokao_ai < /root/gaokao-ai/scripts/migrate_v5_new_features.sql
+# 验证：
+mysql -u root -p gaokao_ai -e "SHOW TABLES LIKE 'province_%';"
+mysql -u root -p gaokao_ai -e "SHOW TABLES LIKE 'one_time_%';"
+mysql -u root -p gaokao_ai -e "SHOW TABLES LIKE 'broadcast_%';"
+```
+
+### 步骤 3：填充种子数据
+
+```bash
+cd /root/gaokao-ai
+python scripts/seed_province_cutoffs.py
+python scripts/seed_broadcast_scripts.py
+# 验证：
+mysql -u root -p gaokao_ai -e "SELECT COUNT(*) FROM province_cutoffs;"    # 期望 ≥ 60
+mysql -u root -p gaokao_ai -e "SELECT COUNT(*) FROM broadcast_scripts;"   # 期望 15
+```
+
+### 步骤 4：更新代码 + 重启服务
+
+```bash
+cd /root/gaokao-ai
+git pull origin main
+pip install -r requirements.txt   # 若有新依赖
+systemctl restart gaokao-api
+systemctl status gaokao-api       # 确认 Active: running
+```
+
+### 步骤 5：Nginx 新增 /s 路由
+
+在 `/etc/nginx/sites-available/gaokao` 的 `server {}` 块内添加：
+
+```nginx
+location = /s {
+    proxy_pass http://127.0.0.1:8000;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+}
+location /s/ {
+    proxy_pass http://127.0.0.1:8000;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+}
+```
+
+```bash
+nginx -t && systemctl reload nginx
+```
+
+### 步骤 6：冒烟测试
+
+```bash
+# 健康检查
+curl http://121.41.69.234/health
+
+# /gk-admin 重定向
+curl -I http://121.41.69.234/gk-admin   # → 301 Location: /admin.html
+
+# 一次性链接（需先用管理员token）
+TOKEN=$(curl -s -X POST http://121.41.69.234/api/auth/login -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"<admin_pwd>"}' | python3 -c "import sys,json;print(json.load(sys.stdin)['access_token'])")
+
+curl -s -X POST http://121.41.69.234/admin/one-time-links/generate \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"note":"冒烟测试","count":1}' | python3 -m json.tool
+
+# 验证链接（用上面返回的token）
+curl -s "http://121.41.69.234/s/validate?t=<token>" | python3 -m json.tool
+
+# 话术API
+curl -s http://121.41.69.234/api/scripts \
+  -H "Authorization: Bearer $TOKEN" | python3 -m json.tool
+```
+
+---
+
+*最后更新：2026-06-19*

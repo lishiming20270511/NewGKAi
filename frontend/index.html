@@ -588,7 +588,7 @@ body{background:#080D1A;min-height:100vh;display:flex;align-items:flex-start;jus
       <div class="flex-row" style="gap:6px;margin-top:4px">
         <button class="btn btn-ghost" style="flex:1;font-size:12px" onclick="downloadPDF()">📥 下载PDF</button>
         <button class="btn btn-ghost" style="flex:1;font-size:12px" onclick="nextStudent()">👤 测下一个</button>
-        <button class="btn btn-primary" style="flex:1;font-size:12px" onclick="navigate('qa')">🤖 直播答疑</button>
+        <button class="btn btn-primary" style="flex:1;font-size:12px" onclick="navigate('assistant')">🎙️ 主播助手</button>
       </div>
     </div>
 
@@ -661,35 +661,53 @@ body{background:#080D1A;min-height:100vh;display:flex;align-items:flex-start;jus
       <div style="text-align:center;font-size:11px;color:#94A3B8;margin-top:4px">以上为样板数据，实际推荐将根据考生真实分数和偏好生成。</div>
     </div>
 
-    <!-- ====== Q&A ====== -->
-    <div class="page" id="page-qa">
-      <div class="page-title">🤖 AI 直播答疑</div>
-      <div class="card">
-        <div class="section-title">快捷提问（点击填入）</div>
-        <div class="tag-group" style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-          <span class="tag" onclick="fillQA(this.textContent)" style="text-align:center">这个专业好就业吗？</span>
-          <span class="tag" onclick="fillQA(this.textContent)" style="text-align:center">这所学校值得报吗？</span>
-          <span class="tag" onclick="fillQA(this.textContent)" style="text-align:center">这个专业未来薪资怎么样？</span>
-          <span class="tag" onclick="fillQA(this.textContent)" style="text-align:center">冲这所学校风险大吗？</span>
-          <span class="tag" onclick="fillQA(this.textContent)" style="text-align:center">要不要服从调剂？</span>
-          <span class="tag" onclick="fillQA(this.textContent)" style="text-align:center">这所学校省内认可度怎样？</span>
-          <span class="tag" onclick="fillQA(this.textContent)" style="text-align:center">这个城市适合毕业后留下来吗？</span>
-          <span class="tag" onclick="fillQA(this.textContent)" style="text-align:center">这个专业考研好考吗？</span>
-        </div>
+    <!-- ====== 主播助手（原Q&A升级为双Tab）====== -->
+    <div class="page" id="page-assistant">
+      <div class="page-title">🎙️ 主播助手</div>
+
+      <!-- 双Tab导航 -->
+      <div style="display:flex;border-bottom:1px solid var(--border-subtle);margin-bottom:8px">
+        <button id="assistantTabA" style="flex:1;padding:8px 4px;background:none;border:none;border-bottom:2px solid var(--color-accent);color:var(--color-accent);font-size:13px;font-weight:600;cursor:pointer" onclick="switchAssistantTab('scripts')">📋 直播话术</button>
+        <button id="assistantTabB" style="flex:1;padding:8px 4px;background:none;border:none;border-bottom:2px solid transparent;color:var(--text-secondary);font-size:13px;font-weight:500;cursor:pointer" onclick="switchAssistantTab('qa')">🤖 AI问答</button>
       </div>
-      <div class="card">
-        <textarea class="form-textarea" id="qaInput" placeholder="观众问啥，你就输啥，最多100字…" maxlength="100" oninput="updateCharCount()"></textarea>
-        <div class="flex-between" style="margin-top:4px">
-          <span style="font-size:11px;color:var(--text-secondary)" id="charCount">0/100</span>
-          <button class="btn btn-primary btn-lg" id="btnSendQA" onclick="sendQA()">发送 →</button>
-        </div>
+
+      <!-- Tab A: 直播话术 -->
+      <div id="assistantScripts">
+        <div id="scriptsLoading" style="color:var(--text-secondary);font-size:13px;padding:8px">加载话术中…</div>
+        <div id="scriptsContent"></div>
       </div>
-      <div class="card">
-        <div class="section-title">对话历史</div>
-        <div class="chat-area" id="chatArea"></div>
-        <div class="flex-row" style="margin-top:8px;gap:6px">
-          <button class="btn btn-ghost" style="font-size:12px;flex:1" onclick="document.getElementById('qaInput').value='';updateCharCount()">清空输入</button>
-          <button class="btn btn-ghost" style="font-size:12px;flex:1" onclick="clearQAChat()">清空历史</button>
+
+      <!-- Tab B: AI问答 -->
+      <div id="assistantQA" style="display:none">
+        <div class="card">
+          <div class="section-title">快捷提问（点击填入）</div>
+          <div class="tag-group" style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+            <span class="tag" onclick="fillQA(this.textContent)" style="text-align:center">这个专业好就业吗？</span>
+            <span class="tag" onclick="fillQA(this.textContent)" style="text-align:center">这所学校值得报吗？</span>
+            <span class="tag" onclick="fillQA(this.textContent)" style="text-align:center">这个专业未来薪资怎么样？</span>
+            <span class="tag" onclick="fillQA(this.textContent)" style="text-align:center">冲这所学校风险大吗？</span>
+            <span class="tag" onclick="fillQA(this.textContent)" style="text-align:center">要不要服从调剂？</span>
+            <span class="tag" onclick="fillQA(this.textContent)" style="text-align:center">这所学校省内认可度怎样？</span>
+            <span class="tag" onclick="fillQA(this.textContent)" style="text-align:center">这个城市适合毕业后留下来吗？</span>
+            <span class="tag" onclick="fillQA(this.textContent)" style="text-align:center">这个专业考研好考吗？</span>
+            <span class="tag" onclick="fillQA(this.textContent)" style="text-align:center">复读还是填这所学校好？</span>
+            <span class="tag" onclick="fillQA(this.textContent)" style="text-align:center">这所学校有哪些特色专业？</span>
+          </div>
+        </div>
+        <div class="card">
+          <textarea class="form-textarea" id="qaInput" placeholder="观众问啥，你就输啥，最多100字…" maxlength="100" oninput="updateCharCount()"></textarea>
+          <div class="flex-between" style="margin-top:4px">
+            <span style="font-size:11px;color:var(--text-secondary)" id="charCount">0/100</span>
+            <button class="btn btn-primary btn-lg" id="btnSendQA" onclick="sendQA()">发送 →</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="section-title">对话历史</div>
+          <div class="chat-area" id="chatArea"></div>
+          <div class="flex-row" style="margin-top:8px;gap:6px">
+            <button class="btn btn-ghost" style="font-size:12px;flex:1" onclick="document.getElementById('qaInput').value='';updateCharCount()">清空输入</button>
+            <button class="btn btn-ghost" style="font-size:12px;flex:1" onclick="clearQAChat()">清空历史</button>
+          </div>
         </div>
       </div>
     </div>
@@ -791,6 +809,7 @@ function navigate(page, updateHash = true) {
 
   if (page === 'paywall') renderPaywall();
   if (page === 'report') renderReport();
+  if (page === 'assistant') switchAssistantTab('scripts');
 }
 
 function updateNavBar() {
@@ -1359,6 +1378,11 @@ function renderReport() {
     html += `<div class="card" style="text-align:center;color:var(--text-secondary);padding:24px">暂无推荐数据，请检查输入信息后重试</div>`;
   }
 
+  // ── 板块三补充: 三档横向对比表 ──
+  if (rush.length + safe.length + bottom.length > 0) {
+    html += buildComparisonTable(rush, safe, bottom);
+  }
+
   // ── 板块四: AI个性化填报建议书 ──
   html += `<div class="board-header" style="padding:4px 0 4px;margin-top:4px"><span class="board-num">四</span><span class="board-title">AI个性化填报建议书</span></div>`;
   html += buildAdviceSection(stu, pref, data);
@@ -1454,6 +1478,98 @@ function buildAdviceSection(stu, pref, data) {
       <div class="advice-item"><span class="advice-num">③</span><span><strong style="color:var(--text-primary)">保底兜底</strong>——最后一个志愿必须选有绝对把握的保底院校，防止落榜。</span></div>
       <div class="advice-item"><span class="advice-num">④</span><span><strong style="color:var(--text-primary)">以官为准</strong>——AI推荐仅供参考，最终以官方招生计划和投档线为准。</span></div>
     </div>
+  </div>
+  ${buildGradientSummary(boostC, solidC, safeC, stu.obey)}`;
+}
+
+function buildGradientSummary(boostC, solidC, safeC, obey) {
+  const total = boostC + solidC + safeC;
+  const boostAdvice = boostC <= 2 ? '✓ 数量适当' : boostC <= 4 ? '⚠ 略多，风险较高' : '❌ 过多，建议减少到3所以内';
+  const solidAdvice = solidC >= 3 && solidC <= 6 ? '✓ 梯度合理' : solidC < 3 ? '⚠ 偏少，建议补充稳妥院校' : '✓ 充足';
+  const safeAdvice  = safeC  >= 2 ? '✓ 保底充足' : '⚠ 建议至少选2所保底院校';
+
+  return `<div class="card" style="margin-top:0;border:1px solid rgba(129,140,248,.2);background:rgba(129,140,248,.04)">
+    <div class="section-title" style="margin-bottom:10px">🎯 4.7 整体梯度搭配策略总结</div>
+    <div style="font-size:13px;color:var(--text-secondary);margin-bottom:10px;line-height:1.8">
+      综合推荐：<strong style="color:var(--color-danger)">冲刺${boostC}所</strong>（建议2-3所）
+      + <strong style="color:var(--color-info)">稳妥${solidC}所</strong>（建议3-5所）
+      + <strong style="color:var(--color-success)">保底${safeC}所</strong>（建议2-3所）
+      = 共${total}所
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;font-size:12px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="width:60px;color:var(--color-danger);font-weight:600">冲刺档</span>
+        <span style="color:var(--text-secondary)">${boostAdvice}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="width:60px;color:var(--color-info);font-weight:600">稳妥档</span>
+        <span style="color:var(--text-secondary)">${solidAdvice}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="width:60px;color:var(--color-success);font-weight:600">保底档</span>
+        <span style="color:var(--text-secondary)">${safeAdvice}</span>
+      </div>
+    </div>
+    <div style="margin-top:10px;font-size:11px;color:var(--text-muted);line-height:1.8;border-top:1px solid var(--border);padding-top:8px">
+      ⚠ 注意事项：①最后一个志愿必须是有绝对把握的保底院校；②${obey ? '已服从调剂，可适当冲高' : '未服从调剂，需确保分数覆盖投档线'}；③同等条件优先选就业率高、薪资高的院校；④最终志愿方案须参照官方投档线确认。
+    </div>
+  </div>`;
+}
+
+function buildComparisonTable(rush, safe, bottom) {
+  const groups = [
+    { label: '🚀 冲刺', color: 'var(--color-danger)', schools: rush },
+    { label: '🎯 稳妥', color: 'var(--color-info)',   schools: safe },
+    { label: '🟢 保底', color: 'var(--color-success)', schools: bottom },
+  ].filter(g => g.schools.length > 0);
+
+  if (groups.length === 0) return '';
+
+  let rows = '';
+  groups.forEach(g => {
+    rows += `<tr><td colspan="8" style="background:rgba(148,163,184,.08);font-size:11px;font-weight:700;color:${g.color};padding:5px 8px">${g.label}</td></tr>`;
+    g.schools.forEach(s => {
+      const dim = s.dimensions || {};
+      const adm = s.admission_data || {};
+      const prob = s.rank_prob || s.weighted_prob || 0;
+      const score = adm.latest_min_score ? `${adm.latest_min_score}分` : '—';
+      const probStr = prob > 0 ? `${Math.round(prob)}%` : '—';
+      const employ = dim.employment_rate || '—';
+      const salary = dim.avg_salary_start || dim.avg_salary || '—';
+      const tuition = dim.tuition || dim.tuition_per_year || '—';
+      const level = (s.tags||[]).includes('985') ? '985' : (s.tags||[]).includes('211') ? '211' : (s.tags||[]).includes('双一流') ? '双一流' : s.tags?.[0] || '本科';
+      const riskLevel = dim.risk_level || '—';
+      rows += `<tr>
+        <td style="max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(s.name)}</td>
+        <td style="color:${g.color}">${esc(level)}</td>
+        <td>${esc(score)}</td>
+        <td style="color:${g.color};font-weight:600">${esc(probStr)}</td>
+        <td>${esc(String(employ))}</td>
+        <td>${esc(String(salary))}</td>
+        <td>${esc(String(tuition))}</td>
+        <td>${esc(String(riskLevel))}</td>
+      </tr>`;
+    });
+  });
+
+  return `<div class="card" style="margin-top:4px;overflow-x:auto">
+    <div class="board-header" style="padding:4px 0 8px;margin-bottom:8px"><span class="board-num" style="background:var(--color-accent)">补</span><span class="board-title">三档院校综合横向对比表</span></div>
+    <table style="width:100%;border-collapse:collapse;font-size:11px;color:var(--text-secondary)">
+      <thead>
+        <tr style="border-bottom:1px solid var(--border-subtle);color:var(--text-muted)">
+          <th style="text-align:left;padding:5px 8px;font-weight:600">院校名称</th>
+          <th style="text-align:left;padding:5px 8px;font-weight:600">层次</th>
+          <th style="text-align:left;padding:5px 8px;font-weight:600">近年录取分</th>
+          <th style="text-align:left;padding:5px 8px;font-weight:600">录取概率</th>
+          <th style="text-align:left;padding:5px 8px;font-weight:600">就业率</th>
+          <th style="text-align:left;padding:5px 8px;font-weight:600">均薪(月)</th>
+          <th style="text-align:left;padding:5px 8px;font-weight:600">年学费</th>
+          <th style="text-align:left;padding:5px 8px;font-weight:600">风险等级</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div style="font-size:10px;color:var(--text-muted);margin-top:6px">* 部分数据为AI估算，以官方招生计划为准</div>
   </div>`;
 }
 
@@ -2526,6 +2642,97 @@ function nextStudent() {
   document.querySelectorAll('#majorTags .tag, #cityTags .tag, #personalityTags .tag').forEach(t => t.classList.remove('selected'));
   document.getElementById('cityCustom').value = '';
   navigate('student');
+}
+
+// ══════════════════════════════════════════════════════════
+// Assistant Page (dual-tab: Scripts + Q&A)
+// ══════════════════════════════════════════════════════════
+function switchAssistantTab(tab) {
+  const scriptDiv = document.getElementById('assistantScripts');
+  const qaDiv     = document.getElementById('assistantQA');
+  const tabA      = document.getElementById('assistantTabA');
+  const tabB      = document.getElementById('assistantTabB');
+  if (!scriptDiv || !qaDiv) return;
+  if (tab === 'scripts') {
+    scriptDiv.style.display = '';
+    qaDiv.style.display     = 'none';
+    if (tabA) { tabA.style.background='#667eea'; tabA.style.color='#fff'; }
+    if (tabB) { tabB.style.background=''; tabB.style.color=''; }
+    loadAssistantScripts();
+  } else {
+    scriptDiv.style.display = 'none';
+    qaDiv.style.display     = '';
+    if (tabA) { tabA.style.background=''; tabA.style.color=''; }
+    if (tabB) { tabB.style.background='#667eea'; tabB.style.color='#fff'; }
+  }
+}
+
+async function loadAssistantScripts() {
+  const loading = document.getElementById('scriptsLoading');
+  const content = document.getElementById('scriptsContent');
+  if (!content) return;
+  if (loading) loading.style.display = '';
+  content.replaceChildren();
+  try {
+    const token = localStorage.getItem('token');
+    const res = await fetch('/api/scripts', {
+      headers: token ? { Authorization: 'Bearer ' + token } : {}
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    const categories = data.categories || [];
+    const scripts    = data.scripts   || {};
+    if (categories.length === 0) {
+      const p = document.createElement('p');
+      p.textContent = '暂无话术';
+      p.style.cssText = 'text-align:center;color:#888;padding:20px';
+      content.appendChild(p);
+      return;
+    }
+    categories.forEach(cat => {
+      const catItems = scripts[cat] || [];
+      // category header
+      const header = document.createElement('div');
+      header.style.cssText = 'font-weight:700;font-size:15px;color:#667eea;margin:16px 0 8px';
+      header.textContent = cat;
+      content.appendChild(header);
+      catItems.forEach(item => {
+        const card = document.createElement('div');
+        card.style.cssText = 'background:#f8f9ff;border-radius:8px;padding:12px 14px;margin-bottom:8px;display:flex;gap:10px;align-items:flex-start';
+        const text = document.createElement('div');
+        text.style.cssText = 'flex:1;font-size:13px;line-height:1.6;color:#333;white-space:pre-wrap';
+        const titleEl = document.createElement('div');
+        titleEl.style.cssText = 'font-size:12px;color:#667eea;font-weight:600;margin-bottom:4px';
+        titleEl.textContent = item.title;
+        text.appendChild(titleEl);
+        const bodyEl = document.createElement('div');
+        bodyEl.textContent = item.content;
+        text.appendChild(bodyEl);
+        const btn = document.createElement('button');
+        btn.textContent = '复制';
+        btn.style.cssText = 'flex-shrink:0;padding:4px 10px;background:#667eea;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer';
+        btn.onclick = () => copyScript(item.content);
+        card.appendChild(text);
+        card.appendChild(btn);
+        content.appendChild(card);
+      });
+    });
+  } catch (e) {
+    const errEl = document.createElement('p');
+    errEl.style.cssText = 'text-align:center;color:#e74c3c;padding:20px';
+    errEl.textContent = '加载失败，请重试';
+    content.appendChild(errEl);
+  } finally {
+    if (loading) loading.style.display = 'none';
+  }
+}
+
+function copyScript(content) {
+  navigator.clipboard.writeText(content).then(() => {
+    showToast('已复制到剪贴板', 'success');
+  }).catch(() => {
+    showToast('复制失败，请手动复制', 'warning');
+  });
 }
 
 // ══════════════════════════════════════════════════════════

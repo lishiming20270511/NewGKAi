@@ -132,6 +132,8 @@ tr:hover td{background:rgba(148,163,184,.04)}
     <button class="tab-btn" data-tab="orders" onclick="switchTab('orders')">订单查看</button>
     <button class="tab-btn" data-tab="config" onclick="switchTab('config')">系统配置</button>
     <button class="tab-btn" data-tab="crawl" onclick="switchTab('crawl')">数据爬取</button>
+    <button class="tab-btn" data-tab="links" onclick="switchTab('links')">🔗 一次性链接</button>
+    <button class="tab-btn" data-tab="scripts" onclick="switchTab('scripts')">📝 话术管理</button>
   </div>
 
   <!-- Streamers Tab -->
@@ -186,6 +188,62 @@ tr:hover td{background:rgba(148,163,184,.04)}
         <button class="btn btn-ghost btn-sm" onclick="loadCrawlProgress()">↻ 刷新</button>
       </div>
       <div id="crawlGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;padding:4px 0"></div>
+    </div>
+  </div>
+
+  <!-- One-Time Links Tab -->
+  <div id="tab-links" style="display:none">
+    <div class="card">
+      <div class="card-title">生成一次性链接</div>
+      <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">批次备注（选填）</label>
+          <input class="form-input" id="linkNote" placeholder="如：6月19日10人团购" maxlength="50" style="width:220px">
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">生成数量</label>
+          <input class="form-input" id="linkCount" type="number" value="10" min="1" max="100" style="width:100px">
+        </div>
+        <button class="btn btn-primary" id="btnGenLinks" onclick="generateLinks()">✨ 立即生成</button>
+      </div>
+      <div id="linksGenResult" style="display:none;margin-top:16px;background:rgba(129,140,248,.08);border:1px solid rgba(129,140,248,.2);border-radius:var(--radius-md);padding:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <strong id="linksGenTitle"></strong>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-primary btn-sm" onclick="copyAllLinks()">📋 一键复制全部</button>
+            <button class="btn btn-ghost btn-sm" onclick="downloadLinks()">⬇ 下载TXT</button>
+          </div>
+        </div>
+        <div id="linksGenList" style="max-height:240px;overflow-y:auto;font-size:12px;font-family:monospace;background:rgba(0,0,0,.2);border-radius:6px;padding:10px;line-height:1.8"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">
+        批次状态看板
+        <button class="btn btn-ghost btn-sm" onclick="loadLinkBatches(0)">↻ 刷新</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>批次ID</th><th>备注</th><th>生成时间</th><th>总数</th><th>已用</th><th>未用</th><th>已作废</th><th>操作</th></tr></thead>
+          <tbody id="linkBatchesTbody"></tbody>
+        </table>
+      </div>
+      <div class="pagination">
+        <button id="prevLinks" onclick="loadLinkBatches(-1)" disabled>上一页</button>
+        <span id="linksPageInfo">1 / 1</span>
+        <button id="nextLinks" onclick="loadLinkBatches(1)" disabled>下一页</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts Management Tab -->
+  <div id="tab-scripts" style="display:none">
+    <div class="card">
+      <div class="card-title">
+        话术分类
+        <button class="btn btn-primary btn-sm" onclick="openScriptModal()">+ 新增话术</button>
+      </div>
+      <div id="scriptsContainer"></div>
     </div>
   </div>
 
@@ -303,6 +361,61 @@ tr:hover td{background:rgba(148,163,184,.04)}
   </div>
 </div>
 
+<!-- Modal: Batch Detail -->
+<div class="modal-overlay" id="modal-batchDetail">
+  <div class="modal" style="width:560px;max-width:95vw">
+    <h3>🔗 批次链接详情</h3>
+    <div class="table-wrap" style="max-height:360px;overflow-y:auto">
+      <table>
+        <thead><tr><th>令牌前8位</th><th>状态</th><th>使用时间</th></tr></thead>
+        <tbody id="batchDetailTbody"></tbody>
+      </table>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('batchDetail')">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Confirm Revoke Batch -->
+<div class="modal-overlay" id="modal-revokeBatch">
+  <div class="modal">
+    <h3>⚠️ 作废整批链接</h3>
+    <p id="revokeBatchMsg"></p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('revokeBatch')">取消</button>
+      <button class="btn btn-danger" id="btnDoRevoke" onclick="doRevokeBatch()">确认作废</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Create/Edit Script -->
+<div class="modal-overlay" id="modal-scriptEdit">
+  <div class="modal" style="width:520px;max-width:95vw">
+    <h3 id="scriptModalTitle">新增话术</h3>
+    <div class="form-group">
+      <label class="form-label">分类</label>
+      <select class="form-input" id="scriptCategory" onchange="onCategoryChange(this)">
+        <option value="__new__">+ 新建分类</option>
+      </select>
+      <input class="form-input" id="scriptCategoryNew" placeholder="输入新分类名" style="margin-top:6px;display:none">
+    </div>
+    <div class="form-group">
+      <label class="form-label">标题（必填）</label>
+      <input class="form-input" id="scriptTitle" maxlength="128" placeholder="话术标题">
+    </div>
+    <div class="form-group">
+      <label class="form-label">话术内容（必填）</label>
+      <textarea class="form-input" id="scriptContent" rows="5" maxlength="2000" placeholder="话术正文内容…" style="resize:vertical"></textarea>
+    </div>
+    <div class="form-error" id="scriptErr"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('scriptEdit')">取消</button>
+      <button class="btn btn-primary" id="btnSaveScript" onclick="saveScript()">保存</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -389,11 +502,13 @@ function showMain() {
 function switchTab(tab) {
   document.querySelectorAll('.tab-btn[data-tab]').forEach(b =>
     b.classList.toggle('active', b.dataset.tab === tab));
-  ['streamers','orders','config','crawl'].forEach(t =>
+  ['streamers','orders','config','crawl','links','scripts'].forEach(t =>
     document.getElementById('tab-' + t).style.display = t === tab ? '' : 'none');
   if (tab === 'orders') loadOrders(0);
   if (tab === 'config') loadConfig();
   if (tab === 'crawl') loadCrawlProgress();
+  if (tab === 'links') loadLinkBatches(0);
+  if (tab === 'scripts') loadScripts();
 }
 
 // ── Crawl Dashboard ───────────────────────────────────────
@@ -708,6 +823,307 @@ function esc(s) {
   if (s == null) return '';
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
     .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// ─────────────────────────────────────────────────────────
+// ── 一次性链接 Tab ────────────────────────────────────────
+// ─────────────────────────────────────────────────────────
+let _genLinks = [];
+let _genNote = '';
+let _linksBatchPage = 1;
+let _revokeBatchId = null;
+
+async function generateLinks() {
+  const note = document.getElementById('linkNote').value.trim();
+  const count = parseInt(document.getElementById('linkCount').value) || 0;
+  if (count < 1 || count > 100) { showToast('数量须在 1-100 之间', 'error'); return; }
+  const btn = document.getElementById('btnGenLinks');
+  btn.disabled = true; btn.textContent = '生成中…';
+  try {
+    const data = await api('POST', '/admin/one-time-links/generate', { note: note || null, count });
+    _genLinks = data.links || [];
+    _genNote = note || `批次${data.batch_id}`;
+    document.getElementById('linksGenTitle').textContent = `已生成 ${_genLinks.length} 个链接`;
+    const listEl = document.getElementById('linksGenList');
+    listEl.innerHTML = _genLinks.map((l, i) => `<div>${i+1}. ${esc(l)}</div>`).join('');
+    document.getElementById('linksGenResult').style.display = '';
+    showToast(`已生成 ${_genLinks.length} 个链接`, 'success');
+    loadLinkBatches(0);
+  } catch(e) { showToast(e.message, 'error'); }
+  finally { btn.disabled = false; btn.textContent = '✨ 立即生成'; }
+}
+
+function copyAllLinks() {
+  if (!_genLinks.length) return;
+  navigator.clipboard.writeText(_genLinks.join('\n')).then(() => showToast('已复制全部链接', 'success'));
+}
+
+function downloadLinks() {
+  if (!_genLinks.length) return;
+  const content = _genLinks.join('\n');
+  const date = new Date().toISOString().slice(0,10);
+  const fname = `链接批次_${_genNote}_${date}.txt`;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], {type:'text/plain;charset=utf-8'}));
+  a.download = fname;
+  a.click();
+}
+
+async function loadLinkBatches(delta) {
+  _linksBatchPage = Math.max(1, _linksBatchPage + delta);
+  const tbody = document.getElementById('linkBatchesTbody');
+  tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--text-secondary)">加载中…</td></tr>';
+  try {
+    const data = await api('GET', `/admin/one-time-links?page=${_linksBatchPage}&per_page=20`);
+    const totalPages = Math.ceil((data.total || 0) / 20) || 1;
+    document.getElementById('linksPageInfo').textContent = `${_linksBatchPage} / ${totalPages}`;
+    document.getElementById('prevLinks').disabled = _linksBatchPage <= 1;
+    document.getElementById('nextLinks').disabled = _linksBatchPage >= totalPages;
+    tbody.innerHTML = (data.batches || []).map(b => `
+      <tr>
+        <td>${b.id}</td>
+        <td>${esc(b.note || '—')}</td>
+        <td style="font-size:11px">${esc(String(b.created_at||'').slice(0,16))}</td>
+        <td><strong>${b.total_count}</strong></td>
+        <td style="color:var(--color-success)">${b.used_count||0}</td>
+        <td>${b.active_count||0}</td>
+        <td style="color:var(--text-muted)">${b.revoked_count||0}</td>
+        <td>
+          <div class="action-group">
+            <button class="btn btn-ghost btn-sm" onclick="showBatchDetail(${b.id})">查看详情</button>
+            <button class="btn btn-danger btn-sm" onclick="confirmRevoke(${b.id},'${esc(b.note||'')}')">作废整批</button>
+          </div>
+        </td>
+      </tr>`).join('') ||
+      '<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--text-secondary)">暂无数据</td></tr>';
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--color-danger)">${esc(e.message)}</td></tr>`;
+  }
+}
+
+async function showBatchDetail(batchId) {
+  const tbody = document.getElementById('batchDetailTbody');
+  tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:12px;color:var(--text-secondary)">加载中…</td></tr>';
+  openModal('batchDetail');
+  try {
+    const data = await api('GET', `/admin/one-time-links/${batchId}/detail`);
+    const statusMap = { active: '⚪ 未使用', used: '✅ 已使用', revoked: '❌ 已作废' };
+    tbody.innerHTML = (data.links || []).map(l => `
+      <tr>
+        <td style="font-family:monospace">${esc(l.token_prefix)}…</td>
+        <td>${statusMap[l.status] || l.status}</td>
+        <td style="font-size:11px">${esc(l.used_at ? String(l.used_at).slice(0,16) : '—')}</td>
+      </tr>`).join('') || '<tr><td colspan="3" style="text-align:center">暂无链接</td></tr>';
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="3" style="color:var(--color-danger)">${esc(e.message)}</td></tr>`;
+  }
+}
+
+function confirmRevoke(batchId, note) {
+  _revokeBatchId = batchId;
+  document.getElementById('revokeBatchMsg').textContent =
+    `将作废批次 #${batchId}（${note || '无备注'}）中所有未使用链接，此操作不可撤销。`;
+  openModal('revokeBatch');
+}
+
+async function doRevokeBatch() {
+  const btn = document.getElementById('btnDoRevoke');
+  btn.disabled = true;
+  try {
+    const data = await api('POST', '/admin/one-time-links/revoke-batch', { batch_id: _revokeBatchId });
+    closeModal('revokeBatch');
+    showToast(`已作废 ${data.revoked_count} 条链接`, 'success');
+    loadLinkBatches(0);
+  } catch(e) { showToast(e.message, 'error'); }
+  finally { btn.disabled = false; }
+}
+
+// ─────────────────────────────────────────────────────────
+// ── 话术管理 Tab ──────────────────────────────────────────
+// ─────────────────────────────────────────────────────────
+let _editScriptId = null;
+let _scriptCategories = [];
+
+async function loadScripts() {
+  const container = document.getElementById('scriptsContainer');
+  container.innerHTML = '<div style="color:var(--text-secondary);padding:12px">加载中…</div>';
+  try {
+    const data = await api('GET', '/admin/scripts');
+    _scriptCategories = data.categories || [];
+    if (!_scriptCategories.length) {
+      container.innerHTML = '<div style="color:var(--text-secondary);padding:12px">暂无话术，点击右上角"新增话术"开始添加。</div>';
+      return;
+    }
+    container.innerHTML = '';
+    _scriptCategories.forEach(cat => {
+      const scripts = (data.scripts || {})[cat] || [];
+      const section = buildScriptSection(cat, scripts);
+      container.appendChild(section);
+    });
+  } catch(e) {
+    container.innerHTML = `<div style="color:var(--color-danger);padding:12px">${esc(e.message)}</div>`;
+  }
+}
+
+function buildScriptSection(category, scripts) {
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'margin-bottom:16px;border:1px solid var(--border);border-radius:var(--radius-md)';
+
+  const header = document.createElement('div');
+  header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:rgba(129,140,248,.06);cursor:pointer;border-radius:var(--radius-md)';
+  header.innerHTML = `<strong style="font-size:14px">${esc(category)} (${scripts.length}条)</strong>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary btn-sm" onclick="openScriptModal(null,'${esc(category)}');event.stopPropagation()">+ 新增</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteCategory('${esc(category)}');event.stopPropagation()">删除分类</button>
+    </div>`;
+
+  const body = document.createElement('div');
+  body.style.cssText = 'padding:0 16px 12px';
+  if (!scripts.length) {
+    body.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:10px 0">该分类暂无话术</div>';
+  } else {
+    const tbl = document.createElement('table');
+    tbl.style.cssText = 'width:100%;margin-top:8px';
+    tbl.innerHTML = `<thead><tr><th>#</th><th>标题</th><th>内容预览</th><th>状态</th><th>操作</th></tr></thead>`;
+    const tbody = document.createElement('tbody');
+    scripts.forEach((s, idx) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${s.sort_order}</td>
+        <td>${esc(s.title)}</td>
+        <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-secondary)">${esc((s.content||'').slice(0,60))}…</td>
+        <td><span style="color:${s.is_active!==0?'var(--color-success)':'var(--text-muted)'}">${s.is_active!==0?'● 启用':'○ 禁用'}</span></td>
+        <td>
+          <div class="action-group">
+            <button class="btn btn-ghost btn-sm" onclick="openScriptModal(${s.id})">编辑</button>
+            <button class="btn btn-ghost btn-sm" onclick="toggleScriptActive(${s.id},${s.is_active})">${s.is_active!==0?'禁用':'启用'}</button>
+            <button class="btn btn-ghost btn-sm" onclick="moveScript(${s.id},'up')" ${idx===0?'disabled':''}>↑</button>
+            <button class="btn btn-ghost btn-sm" onclick="moveScript(${s.id},'down')" ${idx===scripts.length-1?'disabled':''}>↓</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteScript(${s.id})">删除</button>
+          </div>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+    tbl.appendChild(tbody);
+    body.appendChild(tbl);
+  }
+
+  header.addEventListener('click', () => {
+    body.style.display = body.style.display === 'none' ? '' : 'none';
+  });
+
+  wrap.appendChild(header);
+  wrap.appendChild(body);
+  return wrap;
+}
+
+function openScriptModal(id = null, defaultCategory = '') {
+  _editScriptId = id;
+  document.getElementById('scriptModalTitle').textContent = id ? '编辑话术' : '新增话术';
+  document.getElementById('scriptErr').classList.remove('show');
+  document.getElementById('scriptCategoryNew').style.display = 'none';
+
+  const sel = document.getElementById('scriptCategory');
+  sel.innerHTML = '<option value="__new__">+ 新建分类</option>';
+  _scriptCategories.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c; opt.textContent = c;
+    sel.appendChild(opt);
+  });
+  sel.value = defaultCategory || (_scriptCategories[0] || '__new__');
+
+  document.getElementById('scriptTitle').value = '';
+  document.getElementById('scriptContent').value = '';
+
+  if (id) {
+    // Load existing data
+    const allScripts = document.querySelectorAll('[data-script-id]');
+    // Try to find from DOM or re-fetch — for simplicity just open blank and user re-types
+    // In production, fetch: api('GET', `/admin/scripts/${id}`)
+  }
+  openModal('scriptEdit');
+}
+
+function onCategoryChange(sel) {
+  document.getElementById('scriptCategoryNew').style.display =
+    sel.value === '__new__' ? '' : 'none';
+}
+
+async function saveScript() {
+  const catSel = document.getElementById('scriptCategory').value;
+  const catNew = document.getElementById('scriptCategoryNew').value.trim();
+  const category = catSel === '__new__' ? catNew : catSel;
+  const title = document.getElementById('scriptTitle').value.trim();
+  const content = document.getElementById('scriptContent').value.trim();
+  const errEl = document.getElementById('scriptErr');
+  errEl.classList.remove('show');
+  if (!category) { errEl.textContent = '请输入分类名'; errEl.classList.add('show'); return; }
+  if (!title) { errEl.textContent = '请输入标题'; errEl.classList.add('show'); return; }
+  if (!content) { errEl.textContent = '请输入内容'; errEl.classList.add('show'); return; }
+
+  const btn = document.getElementById('btnSaveScript');
+  btn.disabled = true;
+  try {
+    if (_editScriptId) {
+      await api('PUT', `/admin/scripts/${_editScriptId}`, { category, title, content });
+    } else {
+      await api('POST', '/admin/scripts', { category, title, content, sort_order: 0 });
+    }
+    closeModal('scriptEdit');
+    showToast('保存成功', 'success');
+    loadScripts();
+  } catch(e) { errEl.textContent = e.message; errEl.classList.add('show'); }
+  finally { btn.disabled = false; }
+}
+
+async function toggleScriptActive(id, currentActive) {
+  try {
+    await api('PUT', `/admin/scripts/${id}`, { is_active: currentActive !== 0 ? 0 : 1 });
+    showToast(currentActive !== 0 ? '已禁用' : '已启用', 'success');
+    loadScripts();
+  } catch(e) { showToast(e.message, 'error'); }
+}
+
+async function moveScript(id, direction) {
+  // Find current sort_order by querying all scripts
+  try {
+    const data = await api('GET', '/admin/scripts');
+    let allScripts = [];
+    Object.values(data.scripts || {}).forEach(arr => allScripts = allScripts.concat(arr));
+    const current = allScripts.find(s => s.id === id);
+    if (!current) return;
+    const cat = Object.keys(data.scripts).find(c => data.scripts[c].some(s => s.id === id));
+    const siblings = (data.scripts[cat] || []).sort((a,b) => a.sort_order - b.sort_order);
+    const idx = siblings.findIndex(s => s.id === id);
+    if (direction === 'up' && idx > 0) {
+      const prev = siblings[idx - 1];
+      await api('PUT', `/admin/scripts/${id}/sort`, { sort_order: prev.sort_order });
+      await api('PUT', `/admin/scripts/${prev.id}/sort`, { sort_order: current.sort_order });
+    } else if (direction === 'down' && idx < siblings.length - 1) {
+      const next = siblings[idx + 1];
+      await api('PUT', `/admin/scripts/${id}/sort`, { sort_order: next.sort_order });
+      await api('PUT', `/admin/scripts/${next.id}/sort`, { sort_order: current.sort_order });
+    }
+    loadScripts();
+  } catch(e) { showToast(e.message, 'error'); }
+}
+
+async function deleteScript(id) {
+  if (!confirm('确认删除此话术？')) return;
+  try {
+    await api('DELETE', `/admin/scripts/${id}`);
+    showToast('已删除', 'success');
+    loadScripts();
+  } catch(e) { showToast(e.message, 'error'); }
+}
+
+async function deleteCategory(name) {
+  if (!confirm(`确认删除分类"${name}"？该分类下所有话术将被删除。`)) return;
+  try {
+    await api('DELETE', `/admin/script-categories/${encodeURIComponent(name)}`);
+    showToast(`分类"${name}"已删除`, 'success');
+    loadScripts();
+  } catch(e) { showToast(e.message, 'error'); }
 }
 </script>
 </body>

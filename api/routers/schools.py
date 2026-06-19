@@ -130,6 +130,73 @@ async def search_schools(
     return response
 
 
+# ─── Public Search (for student self-service page, no JWT) ───────────────────
+
+@router.get("/search-public")
+async def search_schools_public(
+    q: str = Query(..., min_length=1, max_length=50),
+    limit: int = Query(8, ge=1, le=20),
+    db: AsyncSession = Depends(get_db),
+):
+    if len(q) >= 2:
+        rows = await db.execute(
+            text("""
+                SELECT school_id, name, province, level, school_type,
+                       is_985, is_211, is_double_first
+                FROM schools
+                WHERE MATCH(name) AGAINST (:q IN BOOLEAN MODE)
+                ORDER BY is_985 DESC, is_211 DESC, is_double_first DESC
+                LIMIT :limit
+            """),
+            {"q": f"{q}*", "limit": limit},
+        )
+    else:
+        rows = await db.execute(
+            text("""
+                SELECT school_id, name, province, level, school_type,
+                       is_985, is_211, is_double_first
+                FROM schools
+                WHERE name LIKE :q
+                ORDER BY is_985 DESC, is_211 DESC
+                LIMIT :limit
+            """),
+            {"q": f"%{q}%", "limit": limit},
+        )
+
+    results = []
+    for row in rows.mappings():
+        results.append({
+            "school_id": row["school_id"],
+            "name": row["name"],
+            "province": row["province"],
+            "city": _extract_city(row["name"], row["province"]),
+            "tags": _build_tags(row),
+        })
+
+    if not results and len(q) >= 2:
+        rows2 = await db.execute(
+            text("""
+                SELECT school_id, name, province, level, school_type,
+                       is_985, is_211, is_double_first
+                FROM schools
+                WHERE name LIKE :q
+                ORDER BY is_985 DESC, is_211 DESC
+                LIMIT :limit
+            """),
+            {"q": f"%{q}%", "limit": limit},
+        )
+        for row in rows2.mappings():
+            results.append({
+                "school_id": row["school_id"],
+                "name": row["name"],
+                "province": row["province"],
+                "city": _extract_city(row["name"], row["province"]),
+                "tags": _build_tags(row),
+            })
+
+    return {"results": results}
+
+
 # ─── Detail ──────────────────────────────────────────────────────────────────
 
 @router.get("/{school_id}")

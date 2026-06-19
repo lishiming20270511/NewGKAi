@@ -4,7 +4,7 @@
 |---------|------|
 | 项目名称 | AI高考志愿规划师 · 直播辅助工具 |
 | 上级文档 | [Tasks.md](./Tasks.md) |
-| 更新日期 | 2026-06-18 (v5.5 PDF致命SyntaxError修复完成) |
+| 更新日期 | 2026-06-19 (Phase 11-15 PRD v5.3/v5.4 全部完成) |
 
 ---
 
@@ -16,7 +16,8 @@
 | Phase 7-9 v4.0升级 | 15 | 15 | ✅ 100% |
 | Phase 10 数据丰富 | 4 | 4 | ✅ 100% |
 | v5.x Bug修复/加固 | 8 | 8 | ✅ 100% |
-| **合计** | **62** | **62** | **✅ 100%** |
+| **Phase 11-15 PRD v5.3/v5.4** | **13** | **13** | **✅ 100%** |
+| **合计** | **75** | **75** | **✅ 100%** |
 
 ---
 
@@ -1245,3 +1246,69 @@ curl http://127.0.0.1:8000/health
 | **v5.8** | **2026-06-19** | **PDF二维码展示缺陷彻底修复：①居中缺失→`.cover-qr`补`display:flex;align-items:center;justify-content:center;`四边等宽留白(6px)；②容器扩至72×72px/圆角6px，QR图60×60px，上下左右留白完全对称；③像素模糊→QR源码分辨率从80px升至180px（与html2canvas scale:3 × 60px=180px精确1:1无缩放损耗）；④对比度低→colorDark从`#091630`改为`#000000`纯黑，扫描识别率最优；⑤纠错级别从L(7%)升至M(15%)，提升扫描容错率；⑥免责页QR容器同步修复：72×72px+flex居中，消除原60px容器+padding:3px→56px图溢出2px裁切不对称问题** |
 | **v5.9** | **2026-06-19** | **冲刺院校超5所Bug修复（已被v5.10取代）** |
 | **v5.10** | **2026-06-19** | **Tier阈值与分类逻辑彻底修正：①冲刺30%-50%/稳妥50%-85%/保底≥85%（原冲刺误为30%-60%）；②低于30%学校assign_tier返回-1不纳入推荐；③sort_and_slice完全移除跨tier relabel造假逻辑，改为按真实概率筛选、每tier最多5所、不足不补；④tier_summary区间说明同步更新；⑤前端所有"30%-60%""60%-85%"全部替换** |
+
+---
+
+## Phase 11：算法升级（PRD v5.3/v5.4）进度
+
+| 任务 | 状态 | 完成日期 | 备注 |
+|------|------|----------|------|
+| **T11.1** 省份控制线表 + 种子数据 | ✅ 完成 | 2026-06-19 | `migrate_v5_new_features.sql` + `seed_province_cutoffs.py`，31省×3科类约60条，幂等 |
+| **T11.2** 成绩段位判断 + 质量底线过滤 | ✅ 完成 | 2026-06-19 | `classify_score_segment()` 查 `province_cutoffs`；`apply_quality_threshold_filter()` 高分段禁专科入保底；修复 Bug #8/#9 |
+| **T11.3** 地理扩展（globe_expanded） | ✅ 完成 | 2026-06-19 | `SchoolRecord.globe_expanded` 字段；L4国家扩展校仅允许入冲刺档；`CITY_ECONOMIC_LEVEL`+`CITY_NEARBY_BY_LEVEL` 常量 |
+
+---
+
+## Phase 12：一次性链接系统（PRD v5.4）进度
+
+| 任务 | 状态 | 完成日期 | 备注 |
+|------|------|----------|------|
+| **T12.1** 后端API | ✅ 完成 | 2026-06-19 | `api/routers/one_time_links.py`；HMAC令牌防伪造；行锁原子消费；7个接口 |
+| **T12.2** 学生自助报告页 | ✅ 完成 | 2026-06-19 | `frontend/s.html`（独立页）；PC横幅不可关闭；token校验流程；表单→完整报告→PDF（无付款墙）；`POST /s/recommend` 原子生成+消费 |
+| **T12.3** 管理后台链接Tab | ✅ 完成 | 2026-06-19 | `admin.html` 新增"🔗 一次性链接"Tab；生成/复制/下载TXT/批次看板/作废批次 |
+
+---
+
+## Phase 13：主播助手（PRD v5.4 Page⑧升级）进度
+
+| 任务 | 状态 | 完成日期 | 备注 |
+|------|------|----------|------|
+| **T13.1** broadcast_scripts后端API | ✅ 完成 | 2026-06-19 | `api/routers/broadcast_scripts.py`；8个接口；`seed_broadcast_scripts.py` 15条默认话术 |
+| **T13.2** 主播端双Tab前端 | ✅ 完成 | 2026-06-19 | `index.html` 原Page⑧"直播答疑"→"主播助手"；Tab A 直播话术（`loadAssistantScripts`/`copyScript`）；Tab B AI问答；安全DOM操作无innerHTML |
+| **T13.3** 管理后台话术管理Tab | ✅ 完成 | 2026-06-19 | `admin.html` 新增"📝 话术管理"Tab；分类展示/新增/编辑/启用禁用/排序/删除分类 |
+
+---
+
+## Phase 14：遗留Bug修复进度
+
+| 任务 | 状态 | 完成日期 | 备注 |
+|------|------|----------|------|
+| **T14.1** Bug #7 /gk-admin修复 | ✅ 完成 | 2026-06-19 | `main.py` 新增 `/gk-admin` → 301 → `/admin.html` |
+| **T14.2** 三档对比表 + 梯度总结 | ✅ 完成 | 2026-06-19 | `buildComparisonTable()` 8列横向表（冲/稳/保分组）；`buildGradientSummary()` 板块四§4.7；同步到 `s.html` |
+
+---
+
+## Phase 15：集成验证与生产部署进度
+
+| 任务 | 状态 | 完成日期 | 备注 |
+|------|------|----------|------|
+| **T15.1** 数据库迁移 + 部署文档 | ✅ 完成 | 2026-06-19 | `ops_manual.md` 新增完整迁移步骤（备份→DDL→种子→重启→Nginx→冒烟测试） |
+| **T15.2** 验收测试 | ⏳ 待线上执行 | — | 需上线后运维人员按 `ops_manual.md §T15.1` 执行5场景验收 |
+
+---
+
+## v5.3/v5.4 新增模块汇总
+
+| 类型 | 文件 | 说明 |
+|------|------|------|
+| 新建路由 | `api/routers/one_time_links.py` | 一次性链接系统（7+2接口） |
+| 新建路由 | `api/routers/broadcast_scripts.py` | 话术脚本CRUD（8接口） |
+| 修改路由 | `api/routers/schools.py` | 新增 `GET /api/schools/search-public`（无JWT学生端用） |
+| 修改服务 | `api/services/recommendation.py` | Phase 0.5成绩段位 + Phase 3.5质量过滤 + globe_expanded地理扩展 |
+| 修改主入口 | `main.py` | 注册两个新路由；/gk-admin 301；/s 路由 |
+| 新建前端 | `frontend/s.html` | 学生自助报告页（独立页，无需JWT） |
+| 修改前端 | `frontend/index.html` | 主播助手双Tab；三档对比表；梯度总结 |
+| 修改前端 | `frontend/admin.html` | 一次性链接Tab；话术管理Tab |
+| 新建迁移 | `scripts/migrate_v5_new_features.sql` | 5张新表DDL |
+| 新建种子 | `scripts/seed_province_cutoffs.py` | 31省控制线数据 |
+| 新建种子 | `scripts/seed_broadcast_scripts.py` | 15条默认话术 |

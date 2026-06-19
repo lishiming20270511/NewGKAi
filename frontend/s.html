@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI高考志愿规划师 · 学生自助报告</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0F172A;--bg-card:#1E293B;--bg-card-hover:#334155;--bg-input:#1E293B;
+  --text:#F1F5F9;--text-secondary:#94A3B8;--text-muted:#64748B;
+  --accent:#818CF8;--danger:#EF4444;--info:#3B82F6;--success:#22C55E;
+  --c985:#F59E0B;--c211:#818CF8;--cdouble:#06B6D4;
+  --border:rgba(148,163,184,.08);--border-s:rgba(148,163,184,.15);
+  --r8:8px;--r12:12px;--r20:20px;
+  color-scheme:dark;
+}
+body{background:#080D1A;min-height:100vh;font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;color:var(--text);padding-top:52px}
+
+/* PC Banner */
+.pc-banner{position:fixed;top:0;left:0;right:0;z-index:999;background:linear-gradient(90deg,#B45309,#92400E);padding:10px 16px;display:flex;align-items:center;gap:10px;font-size:13px;color:#FEF3C7}
+.pc-banner strong{color:#FFF}
+
+/* Layout */
+.wrap{max-width:800px;margin:0 auto;padding:20px 16px 40px}
+
+/* Pages */
+.page{display:none}.page.active{display:block}
+
+/* Status Pages */
+.status-box{text-align:center;padding:60px 20px}
+.status-icon{font-size:64px;margin-bottom:16px}
+.status-title{font-size:22px;font-weight:700;margin-bottom:8px}
+.status-desc{font-size:14px;color:var(--text-secondary);line-height:1.7}
+
+/* Toast */
+.toast-el{position:fixed;top:60px;left:50%;transform:translateX(-50%);background:#334155;color:var(--text);padding:8px 20px;border-radius:20px;font-size:13px;white-space:nowrap;opacity:0;pointer-events:none;z-index:9999;transition:opacity .3s}
+.toast-el.show{opacity:1}
+
+/* Cards */
+.card{background:var(--bg-card);border:1px solid var(--border-s);border-radius:var(--r12);padding:14px 16px;margin-bottom:12px}
+.section-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px}
+.page-title{font-size:20px;font-weight:800;color:var(--text);margin-bottom:4px}
+.page-sub{font-size:13px;color:var(--text-secondary);margin-bottom:14px}
+.step-indicator{font-size:11px;background:rgba(129,140,248,.15);color:var(--accent);padding:3px 10px;border-radius:20px;font-weight:600;display:inline-block;margin-bottom:8px}
+
+/* Forms */
+.form-group{margin-bottom:12px}
+.form-label{font-size:13px;color:var(--text-secondary);display:block;margin-bottom:5px}
+.form-input,.form-select{width:100%;background:var(--bg-input);border:1px solid var(--border-s);border-radius:var(--r8);color:var(--text);font-size:14px;padding:10px 12px;outline:none;-webkit-appearance:none}
+.form-input:focus,.form-select:focus{border-color:var(--accent)}
+.input-wrap{position:relative;display:flex;align-items:center}
+.input-wrap .suffix{position:absolute;right:12px;font-size:13px;color:var(--text-muted);pointer-events:none}
+.form-error{font-size:11px;color:var(--danger);display:none;margin-top:3px}
+.form-error.show{display:block}
+
+/* Tags */
+.tag-group{display:flex;flex-wrap:wrap;gap:6px}
+.tag{padding:5px 12px;border-radius:20px;font-size:12px;background:var(--bg-card-hover);color:var(--text-secondary);cursor:pointer;border:1px solid var(--border-s);user-select:none}
+.tag.selected{background:rgba(129,140,248,.2);color:var(--accent);border-color:var(--accent)}
+.tag-radio{padding:5px 14px;border-radius:20px;font-size:13px;background:var(--bg-card-hover);color:var(--text-secondary);cursor:pointer;border:1px solid var(--border-s);user-select:none}
+.tag-radio.selected{background:rgba(239,68,68,.15);color:var(--danger);border-color:var(--danger)}
+
+/* School search */
+.search-wrap{position:relative}
+.search-dropdown{position:absolute;top:100%;left:0;right:0;background:var(--bg-card);border:1px solid var(--border-s);border-radius:var(--r8);z-index:50;max-height:200px;overflow-y:auto;display:none}
+.search-dropdown.open{display:block}
+.search-item{padding:8px 12px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:8px}
+.search-item:hover{background:var(--bg-card-hover)}
+.selected-schools{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.selected-school-tag{background:rgba(129,140,248,.15);border:1px solid rgba(129,140,248,.3);color:var(--accent);border-radius:20px;padding:4px 10px;font-size:12px;display:flex;align-items:center;gap:5px}
+.selected-school-tag .rm{cursor:pointer;color:var(--text-muted);font-size:14px;line-height:1}
+.selected-school-tag .rm:hover{color:var(--danger)}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;border:none;border-radius:var(--r8);font-size:14px;font-weight:600;cursor:pointer;padding:11px 20px;transition:all .2s}
+.btn-primary{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff}
+.btn-primary:hover{opacity:.9}
+.btn-danger{background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff}
+.btn-danger:hover{opacity:.9}
+.btn-ghost{background:var(--bg-card);border:1px solid var(--border-s);color:var(--text-secondary)}
+.btn-ghost:hover{background:var(--bg-card-hover)}
+.btn-block{width:100%}
+.btn-lg{padding:13px 20px;font-size:15px}
+.flex-row{display:flex;align-items:center;gap:8px}
+.btn-row{display:flex;gap:8px;margin-top:12px}
+
+/* Analyzing */
+.analyzing-bg{background:linear-gradient(135deg,#0F172A,#1E293B);border-radius:var(--r20);padding:24px;text-align:center;margin-bottom:16px}
+.analyzing-icon{font-size:52px;margin-bottom:12px;animation:bounce .8s ease-in-out infinite alternate}
+@keyframes bounce{from{transform:translateY(0)}to{transform:translateY(-6px)}}
+.analyzing-title{font-size:20px;font-weight:700}
+.analyzing-subtitle{font-size:13px;color:var(--text-secondary);margin-top:4px}
+.engine-badges{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:10px}
+.engine-badge{display:flex;align-items:center;gap:5px;background:var(--bg-card);border:1px solid var(--border-s);border-radius:20px;padding:4px 10px;font-size:12px}
+.dot{width:7px;height:7px;border-radius:50%}
+.dot.blue{background:#3B82F6;animation:blink 1.5s infinite}.dot.purple{background:#818CF8;animation:blink 1.5s .3s infinite}.dot.cyan{background:#22D3EE;animation:blink 1.5s .6s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.a-step{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r8);margin-bottom:8px}
+.a-step.done{background:rgba(34,197,94,.08);border-color:var(--success)}
+.a-step-icon{font-size:20px;flex-shrink:0}
+.a-step-label{font-size:13px;flex:1}
+.a-step-status{font-size:12px;color:var(--text-secondary)}
+
+/* Report */
+.tier-section{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+.tier-header{font-size:14px;font-weight:700;padding:6px 10px;border-radius:var(--r8);display:flex;align-items:center;gap:6px}
+.tier-header.rush{background:rgba(239,68,68,.12);color:var(--danger)}
+.tier-header.safe{background:rgba(59,130,246,.12);color:var(--info)}
+.tier-header.bottom{background:rgba(34,197,94,.12);color:var(--success)}
+.tier-count{font-size:12px;font-weight:400;opacity:.7}
+.school-card{background:var(--bg-card);border:1px solid var(--border-s);border-radius:var(--r12);overflow:hidden;margin-bottom:8px}
+.school-card-header{display:flex;align-items:center;gap:6px;padding:10px 12px;border-bottom:1px solid var(--border)}
+.school-name{flex:1;font-size:15px;font-weight:700;color:var(--text)}
+.school-prob{font-size:13px;font-weight:700}
+.school-prob.tier-rush{color:var(--danger)}.school-prob.tier-safe{color:var(--info)}.school-prob.tier-bottom{color:var(--success)}.school-prob.tier-special{color:var(--c985)}
+.school-card-body{padding:8px 12px;display:flex;flex-direction:column;gap:4px}
+.school-row{display:flex;align-items:flex-start;gap:6px;font-size:12px}
+.school-row .label{color:var(--text-muted);flex-shrink:0;min-width:70px}
+.school-row .value{color:var(--text-secondary);flex:1;word-break:break-all}
+.school-row-col{display:flex;flex-direction:column;gap:4px;font-size:12px}
+.school-ai-comment{padding:8px 12px;font-size:12px;color:var(--text-secondary);background:rgba(129,140,248,.06);border-top:1px solid var(--border);line-height:1.6}
+.school-ai-comment .speaker{color:var(--accent);font-weight:600}
+.badge{padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700}
+.badge-985{background:rgba(245,158,11,.15);color:var(--c985)}
+.badge-211{background:rgba(129,140,248,.15);color:var(--c211)}
+.badge-double-first{background:rgba(6,182,212,.15);color:var(--cdouble)}
+.data-est{font-size:10px;color:var(--text-muted);margin-left:3px}
+.eco-badge,.est-badge{font-size:10px;padding:1px 5px;border-radius:3px;margin-left:3px}
+.eco-badge{background:rgba(34,197,94,.15);color:var(--success)}
+.est-badge{background:rgba(148,163,184,.1);color:var(--text-muted)}
+.src-note{font-size:10px;color:var(--text-muted);margin-left:4px}
+.major-note-tag{font-size:10px;background:rgba(239,68,68,.12);color:var(--danger);padding:1px 5px;border-radius:3px;margin-left:4px}
+.city-toggle{display:flex;align-items:center;gap:6px;cursor:pointer;padding:4px 0}
+.city-toggle .label{color:var(--text-muted)}
+.city-toggle-icon{color:var(--text-muted);font-size:11px;margin-left:auto}
+.city-panel{display:none;padding:6px 0;border-top:1px solid var(--border)}
+.city-panel.open{display:block}
+.city-panel-row{font-size:11px;color:var(--text-secondary);padding:3px 0;line-height:1.6}
+.board-header{display:flex;align-items:center;gap:8px;padding:6px 0;margin-bottom:8px;border-bottom:1px solid var(--border-s)}
+.board-num{width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.board-title{font-size:14px;font-weight:700;color:var(--text)}
+.board-sub{font-size:12px;color:var(--text-secondary);margin-left:auto}
+.insights-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.insight-item{background:rgba(129,140,248,.08);border-radius:var(--r8);padding:10px;text-align:center}
+.insight-item .label{font-size:11px;color:var(--text-muted);margin-bottom:4px}
+.insight-item .value{font-size:18px;font-weight:800;color:var(--accent)}
+.special-attention-section{border:1px solid rgba(245,158,11,.3);background:rgba(245,158,11,.04)}
+.special-attention-label{font-size:12px;font-weight:600;color:var(--c985);margin-bottom:8px}
+.advice-card{display:flex;flex-direction:column;gap:6px}
+.advice-item{display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--text-secondary);line-height:1.6}
+.advice-num{flex-shrink:0;width:20px;height:20px;border-radius:50%;background:rgba(129,140,248,.2);color:var(--accent);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.skeleton{background:linear-gradient(90deg,var(--bg-card-hover) 25%,rgba(148,163,184,.1) 50%,var(--bg-card-hover) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:4px}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.data-source{font-size:11px;color:var(--text-muted);text-align:center;padding:12px;line-height:1.6}
+</style>
+</head>
+<body>
+
+<!-- PC Banner: always visible, non-dismissible -->
+<div class="pc-banner">
+  <span style="font-size:18px">⚠️</span>
+  <span><strong>建议在电脑端（PC）使用</strong> — 手机端可能无法正常下载PDF报告，界面也未针对手机优化。推荐使用 Chrome / Edge / Firefox 浏览器。</span>
+</div>
+
+<div class="wrap">
+
+  <!-- ====== Loading ====== -->
+  <div class="page active" id="page-loading">
+    <div class="status-box">
+      <div class="status-icon">⏳</div>
+      <div class="status-title">链接校验中…</div>
+      <div class="status-desc">请稍候</div>
+    </div>
+  </div>
+
+  <!-- ====== Invalid ====== -->
+  <div class="page" id="page-invalid">
+    <div class="status-box">
+      <div class="status-icon">❌</div>
+      <div class="status-title" style="color:var(--danger)">无效链接</div>
+      <div class="status-desc">此链接不存在或已损坏，请联系老师获取有效链接。</div>
+    </div>
+  </div>
+
+  <!-- ====== Used ====== -->
+  <div class="page" id="page-used">
+    <div class="status-box">
+      <div class="status-icon">✅</div>
+      <div class="status-title">此链接已被使用</div>
+      <div class="status-desc">每条链接仅限使用一次。如需再次查询，请联系老师获取新链接。</div>
+    </div>
+  </div>
+
+  <!-- ====== Revoked ====== -->
+  <div class="page" id="page-revoked">
+    <div class="status-box">
+      <div class="status-icon">🚫</div>
+      <div class="status-title" style="color:var(--text-secondary)">链接已作废</div>
+      <div class="status-desc">此链接已被管理员作废，请联系老师获取新链接。</div>
+    </div>
+  </div>
+
+  <!-- ====== STEP 1: 考生基本信息 ====== -->
+  <div class="page" id="page-step1">
+    <span class="step-indicator">STEP 1 / 2</span>
+    <div class="page-title">考生基本信息</div>
+    <div class="page-sub">录入成绩与选科信息</div>
+
+    <div class="card">
+      <div class="form-group">
+        <label class="form-label">姓名 <span style="font-size:11px;color:var(--text-muted)">（选填）</span></label>
+        <input class="form-input" id="stuName" placeholder="请输入姓名（可不填）" maxlength="32">
+      </div>
+      <div class="form-group">
+        <label class="form-label">省份 <span style="color:var(--danger)">*</span></label>
+        <select class="form-select" id="stuProvince" onchange="onProvinceChange()">
+          <option value="">请选择省份</option>
+          <optgroup label="3+3 模式（6省）">
+            <option value="浙江">浙江</option><option value="上海">上海</option>
+            <option value="北京">北京</option><option value="天津">天津</option>
+            <option value="山东">山东</option><option value="海南">海南</option>
+          </optgroup>
+          <optgroup label="3+1+2 模式（25省）">
+            <option value="河北">河北</option><option value="辽宁">辽宁</option>
+            <option value="江苏">江苏</option><option value="福建">福建</option>
+            <option value="湖北">湖北</option><option value="湖南">湖南</option>
+            <option value="广东">广东</option><option value="重庆">重庆</option>
+            <option value="吉林">吉林</option><option value="黑龙江">黑龙江</option>
+            <option value="安徽">安徽</option><option value="江西">江西</option>
+            <option value="广西">广西</option><option value="贵州">贵州</option>
+            <option value="甘肃">甘肃</option><option value="山西">山西</option>
+            <option value="内蒙古">内蒙古</option><option value="河南">河南</option>
+            <option value="四川">四川</option><option value="云南">云南</option>
+            <option value="陕西">陕西</option><option value="青海">青海</option>
+            <option value="宁夏">宁夏</option><option value="新疆">新疆</option>
+            <option value="西藏">西藏</option>
+          </optgroup>
+        </select>
+        <span class="form-error" id="errProvince">请选择省份</span>
+      </div>
+      <div class="form-group">
+        <label class="form-label">高考分数 <span style="color:var(--danger)">*</span></label>
+        <div class="input-wrap">
+          <input type="number" class="form-input" id="stuScore" placeholder="请输入分数" oninput="clampScore()" min="0" max="900" style="padding-right:44px">
+          <span class="suffix" id="scoreMax">/750</span>
+        </div>
+        <span class="form-error" id="errScore">请输入有效分数</span>
+      </div>
+      <div class="form-group">
+        <label class="form-label">省内位次 <span style="font-size:11px;color:var(--text-muted)">（选填，可留空自动估算）</span></label>
+        <input class="form-input" id="stuRank" type="number" placeholder="可留空自动估算" min="1">
+      </div>
+      <div class="form-group">
+        <label class="form-label">选科 <span style="color:var(--danger)">*</span></label>
+        <div id="subjectArea" style="margin-top:6px">
+          <span style="font-size:12px;color:var(--text-muted)">请先选择省份</span>
+        </div>
+        <span class="form-error" id="errSubject">请选择选科</span>
+      </div>
+      <div class="form-group">
+        <label class="form-label">服从调剂</label>
+        <div class="flex-row" style="gap:8px">
+          <div class="tag-radio selected" id="toggleObey" onclick="setObey(true)">服从</div>
+          <div class="tag-radio" id="toggleNotObey" onclick="setObey(false)">不服从</div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">家庭经济 <span style="font-size:11px;color:var(--text-muted)">（影响推荐）</span></label>
+        <select class="form-select" id="stuEconomy">
+          <option value="">请选择</option>
+          <option value="较为困难">较为困难</option>
+          <option value="一般" selected>一般</option>
+          <option value="良好">良好</option>
+          <option value="比较优越">比较优越</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn btn-danger btn-block btn-lg" onclick="goStep2()">下一步：意向偏好 →</button>
+  </div>
+
+  <!-- ====== STEP 2: 意向偏好 ====== -->
+  <div class="page" id="page-step2">
+    <span class="step-indicator">STEP 2 / 2</span>
+    <div class="page-title">意向偏好</div>
+    <div class="page-sub">选择越细致，推荐越精准</div>
+
+    <div class="card">
+      <div class="section-title">📚 专业方向（多选）</div>
+      <div class="tag-group" id="majorTags">
+        <span class="tag" data-val="计算机">计算机</span><span class="tag" data-val="软件工程">软件工程</span>
+        <span class="tag" data-val="人工智能">人工智能</span><span class="tag" data-val="数据科学">数据科学</span>
+        <span class="tag" data-val="电子信息">电子信息</span><span class="tag" data-val="通信工程">通信工程</span>
+        <span class="tag" data-val="电气工程">电气工程</span><span class="tag" data-val="自动化">自动化</span>
+        <span class="tag" data-val="机械工程">机械工程</span><span class="tag" data-val="土木工程">土木工程</span>
+        <span class="tag" data-val="建筑学">建筑学</span><span class="tag" data-val="临床医学">临床医学</span>
+        <span class="tag" data-val="口腔医学">口腔医学</span><span class="tag" data-val="药学">药学</span>
+        <span class="tag" data-val="护理学">护理学</span><span class="tag" data-val="金融学">金融学</span>
+        <span class="tag" data-val="会计学">会计学</span><span class="tag" data-val="法学">法学</span>
+        <span class="tag" data-val="汉语言文学">汉语言文学</span><span class="tag" data-val="英语">英语</span>
+        <span class="tag" data-val="新闻传播">新闻传播</span><span class="tag" data-val="数学">数学</span>
+        <span class="tag" data-val="物理学">物理学</span><span class="tag" data-val="化学">化学</span>
+        <span class="tag" data-val="生物学">生物学</span><span class="tag" data-val="环境工程">环境工程</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">🏙️ 意向城市（多选）</div>
+      <div class="tag-group" id="cityTags">
+        <span class="tag" data-val="北京">北京</span><span class="tag" data-val="上海">上海</span>
+        <span class="tag" data-val="广州">广州</span><span class="tag" data-val="深圳">深圳</span>
+        <span class="tag" data-val="杭州">杭州</span><span class="tag" data-val="南京">南京</span>
+        <span class="tag" data-val="武汉">武汉</span><span class="tag" data-val="成都">成都</span>
+        <span class="tag" data-val="西安">西安</span><span class="tag" data-val="郑州">郑州</span>
+        <span class="tag" data-val="长沙">长沙</span><span class="tag" data-val="合肥">合肥</span>
+        <span class="tag" data-val="重庆">重庆</span><span class="tag" data-val="天津">天津</span>
+        <span class="tag" data-val="苏州">苏州</span><span class="tag" data-val="青岛">青岛</span>
+      </div>
+      <input class="form-input" id="cityCustom" placeholder="其他城市（自填，如：郑州、洛阳）" style="margin-top:8px;font-size:13px">
+    </div>
+
+    <div class="card">
+      <div class="section-title">🏫 意向院校（最多3所）</div>
+      <div class="search-wrap">
+        <input class="form-input" id="schoolSearch" placeholder="🔍 输入学校名称搜索…" autocomplete="off" oninput="onSchoolSearch(this.value)" onblur="closeDropdown()">
+        <div class="search-dropdown" id="schoolDropdown"></div>
+      </div>
+      <div class="selected-schools" id="selectedSchools"></div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">🧠 性格/倾向（多选）</div>
+      <div class="tag-group" id="personalityTags" style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        <span class="tag" data-val="外向活泼">外向活泼</span>
+        <span class="tag" data-val="沉稳内敛">沉稳内敛</span>
+        <span class="tag" data-val="钻研学术">钻研学术</span>
+        <span class="tag" data-val="领导管理">领导管理</span>
+        <span class="tag" data-val="艺术创作">艺术创作</span>
+        <span class="tag" data-val="社交沟通">社交沟通</span>
+        <span class="tag" data-val="动手实践">动手实践</span>
+        <span class="tag" data-val="逻辑分析">逻辑分析</span>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="showPage('step1')" style="flex:1">← 返回</button>
+      <button class="btn btn-danger btn-lg" onclick="startAnalyze()" style="flex:2">🚀 开始AI分析</button>
+    </div>
+  </div>
+
+  <!-- ====== Analyzing ====== -->
+  <div class="page" id="page-analyzing">
+    <div class="analyzing-bg">
+      <div class="analyzing-icon">🧠</div>
+      <div class="analyzing-title">⚡ AI 深度分析中</div>
+      <div class="analyzing-subtitle">近6年 <strong>2200万+</strong> 历史录取记录 · 请稍候</div>
+      <div class="engine-badges">
+        <span class="engine-badge"><span class="dot blue"></span> Claude</span>
+        <span class="engine-badge"><span class="dot purple"></span> DeepSeek V4</span>
+        <span class="engine-badge"><span class="dot cyan"></span> GPT-5.5</span>
+      </div>
+    </div>
+    <div id="aSteps">
+      <div class="a-step" id="as0"><span class="a-step-icon">📊</span><span class="a-step-label">加载省份历年录取数据</span><span class="a-step-status" id="as0s">0%</span></div>
+      <div class="a-step" id="as1"><span class="a-step-icon">⚡</span><span class="a-step-label">AI 交叉验证分析中</span><span class="a-step-status" id="as1s">—</span></div>
+      <div class="a-step" id="as2"><span class="a-step-icon">📋</span><span class="a-step-label">生成个性化报告</span><span class="a-step-status" id="as2s">—</span></div>
+    </div>
+  </div>
+
+  <!-- ====== Report ====== -->
+  <div class="page" id="page-report">
+    <div id="reportContent"></div>
+    <div style="margin-top:12px;text-align:center">
+      <button class="btn btn-primary btn-lg" onclick="downloadPDF()" style="min-width:180px">📥 下载PDF报告</button>
+    </div>
+    <div class="data-source">数据来源：教育部官网 · 阳光高考 · 近6年2200万+录取记录</div>
+  </div>
+
+</div><!-- /wrap -->
+
+<div class="toast-el" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// State
+// ═══════════════════════════════════════════════════════════
+const S = {
+  token: new URLSearchParams(location.search).get('t') || '',
+  obey: true,
+  selectedSchools: [],
+  subjectCategory: '',
+  reportData: null,
+};
+
+// ═══════════════════════════════════════════════════════════
+// Utilities
+// ═══════════════════════════════════════════════════════════
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function showToast(msg, type) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.background = type === 'success' ? '#166534' : type === 'warning' ? '#92400E' : '#1E293B';
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const el = document.getElementById('page-' + name);
+  if (el) { el.classList.add('active'); window.scrollTo(0,0); }
+}
+
+// ═══════════════════════════════════════════════════════════
+// Init: validate token
+// ═══════════════════════════════════════════════════════════
+(async function init() {
+  if (!S.token) { showPage('invalid'); return; }
+  try {
+    const res = await fetch('/s/validate?t=' + encodeURIComponent(S.token));
+    const { status } = await res.json();
+    if (status === 'valid')   showPage('step1');
+    else if (status === 'used')    showPage('used');
+    else if (status === 'revoked') showPage('revoked');
+    else showPage('invalid');
+  } catch (e) {
+    showPage('invalid');
+  }
+})();
+
+// ═══════════════════════════════════════════════════════════
+// Form: STEP 1
+// ═══════════════════════════════════════════════════════════
+function onProvinceChange() {
+  const prov = document.getElementById('stuProvince').value;
+  const maxEl = document.getElementById('scoreMax');
+  maxEl.textContent = prov === '上海' ? '/660' : '/750';
+  const area = document.getElementById('subjectArea');
+  S.subjectCategory = '';
+
+  if (!prov) { area.innerHTML = '<span style="font-size:12px;color:var(--text-muted)">请先选择省份</span>'; return; }
+
+  const is33 = ['浙江','上海','北京','天津','山东','海南'].includes(prov);
+  if (is33) {
+    // 3+3: dropdown for combined
+    area.innerHTML = `<select class="form-select" id="subjectSelect" onchange="S.subjectCategory=this.value">
+      <option value="">请选择选科组合</option>
+      <option value="综合">综合（3+3通用）</option>
+    </select>`;
+  } else {
+    // 3+1+2: 首选科 radio + 再选科 checkbox
+    area.innerHTML = `
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px">首选科目（必选其一）</div>
+      <div class="flex-row" style="gap:8px;margin-bottom:10px">
+        <div class="tag-radio" id="r物理" onclick="setFirstSubject('物理')">物理</div>
+        <div class="tag-radio" id="r历史" onclick="setFirstSubject('历史')">历史</div>
+      </div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px">再选科目（选2门）</div>
+      <div class="tag-group" id="reSelectTags">
+        <span class="tag" data-val="化学">化学</span>
+        <span class="tag" data-val="生物">生物</span>
+        <span class="tag" data-val="政治">政治</span>
+        <span class="tag" data-val="地理">地理</span>
+      </div>`;
+    document.querySelectorAll('#reSelectTags .tag').forEach(t => {
+      t.addEventListener('click', () => { t.classList.toggle('selected'); updateSubjectCategory(); });
+    });
+  }
+}
+
+function setFirstSubject(sub) {
+  document.querySelectorAll('#r物理,#r历史').forEach(e => e && e.classList.remove('selected'));
+  const el = document.getElementById('r' + sub);
+  if (el) el.classList.add('selected');
+  updateSubjectCategory();
+}
+
+function updateSubjectCategory() {
+  const first = document.querySelector('#r物理.selected') ? '物理' : document.querySelector('#r历史.selected') ? '历史' : '';
+  const reSelected = [...document.querySelectorAll('#reSelectTags .tag.selected')].map(t => t.dataset.val);
+  if (first) S.subjectCategory = first + (reSelected.length ? '+' + reSelected.join('+') : '');
+  else S.subjectCategory = '';
+}
+
+function clampScore() {
+  const el = document.getElementById('stuScore');
+  const prov = document.getElementById('stuProvince').value;
+  const max = prov === '上海' ? 660 : 750;
+  if (el.value && parseInt(el.value) > max) el.value = max;
+}
+
+function setObey(val) {
+  S.obey = val;
+  document.getElementById('toggleObey').classList.toggle('selected', val);
+  document.getElementById('toggleNotObey').classList.toggle('selected', !val);
+}
+
+function goStep2() {
+  const province = document.getElementById('stuProvince').value;
+  const score    = parseInt(document.getElementById('stuScore').value);
+  let ok = true;
+  if (!province) { document.getElementById('errProvince').classList.add('show'); ok = false; } else document.getElementById('errProvince').classList.remove('show');
+  if (!score || score < 1) { document.getElementById('errScore').classList.add('show'); ok = false; } else document.getElementById('errScore').classList.remove('show');
+  const subj = S.subjectCategory || document.getElementById('subjectSelect')?.value || '';
+  if (!subj) { document.getElementById('errSubject').classList.add('show'); ok = false; } else document.getElementById('errSubject').classList.remove('show');
+  if (!ok) return;
+  S.subjectCategory = subj;
+  showPage('step2');
+}
+
+// ═══════════════════════════════════════════════════════════
+// Form: STEP 2 - Tags & School Search
+// ═══════════════════════════════════════════════════════════
+document.addEventListener('click', (e) => {
+  if (e.target.classList.contains('tag') && e.target.closest('#majorTags,#cityTags,#personalityTags')) {
+    e.target.classList.toggle('selected');
+  }
+});
+
+let searchTimer;
+function onSchoolSearch(q) {
+  clearTimeout(searchTimer);
+  if (!q.trim()) { document.getElementById('schoolDropdown').classList.remove('open'); return; }
+  searchTimer = setTimeout(async () => {
+    try {
+      const res = await fetch('/api/schools/search-public?q=' + encodeURIComponent(q) + '&limit=8');
+      const data = await res.json();
+      const dd = document.getElementById('schoolDropdown');
+      dd.replaceChildren();
+      (data.results || []).forEach(s => {
+        const item = document.createElement('div');
+        item.className = 'search-item';
+        const badge = s.tags.includes('985') ? '<span class="badge badge-985">985</span>' :
+                      s.tags.includes('211') ? '<span class="badge badge-211">211</span>' : '';
+        const nameEl = document.createElement('span');
+        nameEl.textContent = s.name;
+        item.innerHTML = badge;
+        item.appendChild(nameEl);
+        const loc = document.createElement('span');
+        loc.style.cssText = 'font-size:11px;color:var(--text-muted);margin-left:auto';
+        loc.textContent = s.province;
+        item.appendChild(loc);
+        item.addEventListener('mousedown', () => addSchool(s.name));
+        dd.appendChild(item);
+      });
+      dd.classList.toggle('open', data.results.length > 0);
+    } catch(e) {}
+  }, 300);
+}
+
+function closeDropdown() {
+  setTimeout(() => document.getElementById('schoolDropdown').classList.remove('open'), 200);
+}
+
+function addSchool(name) {
+  if (S.selectedSchools.length >= 3) { showToast('最多选3所院校', 'warning'); return; }
+  if (S.selectedSchools.includes(name)) return;
+  S.selectedSchools.push(name);
+  renderSelectedSchools();
+  document.getElementById('schoolSearch').value = '';
+  document.getElementById('schoolDropdown').classList.remove('open');
+}
+
+function removeSchool(name) {
+  S.selectedSchools = S.selectedSchools.filter(n => n !== name);
+  renderSelectedSchools();
+}
+
+function renderSelectedSchools() {
+  const wrap = document.getElementById('selectedSchools');
+  wrap.replaceChildren();
+  S.selectedSchools.forEach(name => {
+    const tag = document.createElement('div');
+    tag.className = 'selected-school-tag';
+    const nameEl = document.createElement('span');
+    nameEl.textContent = name;
+    const rm = document.createElement('span');
+    rm.className = 'rm';
+    rm.textContent = '×';
+    rm.onclick = () => removeSchool(name);
+    tag.appendChild(nameEl);
+    tag.appendChild(rm);
+    wrap.appendChild(tag);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// Analyze: fake progress + API call
+// ═══════════════════════════════════════════════════════════
+async function startAnalyze() {
+  showPage('analyzing');
+
+  // Fake progress animation
+  const step0 = document.getElementById('as0');
+  const step0s = document.getElementById('as0s');
+  let pct = 0;
+  const tick = setInterval(() => {
+    pct = Math.min(pct + Math.random() * 15, 90);
+    step0s.textContent = Math.round(pct) + '%';
+    if (pct >= 90) clearInterval(tick);
+  }, 300);
+
+  const cities = [
+    ...[...document.querySelectorAll('#cityTags .tag.selected')].map(t => t.dataset.val),
+    ...document.getElementById('cityCustom').value.split(/[,，、\s]+/).filter(Boolean),
+  ];
+
+  const body = {
+    token: S.token,
+    province: document.getElementById('stuProvince').value,
+    score: parseInt(document.getElementById('stuScore').value),
+    subject_category: S.subjectCategory,
+    rank: parseInt(document.getElementById('stuRank').value) || null,
+    city_preference: cities,
+    intended_schools: S.selectedSchools,
+    major_preference: [...document.querySelectorAll('#majorTags .tag.selected')].map(t => t.dataset.val),
+    personality:      [...document.querySelectorAll('#personalityTags .tag.selected')].map(t => t.dataset.val),
+    economic_level:   document.getElementById('stuEconomy').value || '一般',
+  };
+
+  try {
+    const res = await fetch('/s/recommend', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    clearInterval(tick);
+    step0s.textContent = '100%';
+    step0.classList.add('done');
+    document.getElementById('as1').classList.add('done');
+    document.getElementById('as1s').textContent = '✓';
+    document.getElementById('as2s').textContent = '生成中…';
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      const msg = err.detail || res.status === 409 ? '链接已被使用，无法重复获取报告' : '分析失败，请联系老师';
+      showPage('step1');
+      showToast(msg, 'warning');
+      if (res.status === 409) showPage('used');
+      return;
+    }
+
+    S.reportData = await res.json();
+    S.student = {
+      nickname: document.getElementById('stuName').value || '考生',
+      province: body.province,
+      score: body.score,
+      subjectStr: body.subject_category,
+      rank: body.rank,
+      obey: S.obey,
+      economy: body.economic_level,
+    };
+    S.pref = {
+      majors: body.major_preference,
+      personality: body.personality,
+      economy: body.economic_level,
+    };
+
+    document.getElementById('as2').classList.add('done');
+    document.getElementById('as2s').textContent = '✓';
+    await new Promise(r => setTimeout(r, 600));
+    renderReport();
+    showPage('report');
+  } catch (e) {
+    clearInterval(tick);
+    showPage('step1');
+    showToast('网络错误，请稍后重试', 'warning');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// Report Rendering
+// ═══════════════════════════════════════════════════════════
+function renderReport() {
+  if (!S.reportData) return;
+  const data = S.reportData;
+  const stu  = S.student;
+  const pref = S.pref || {};
+  const ts = data.tier_summary || {};
+  const boostCount = ts.boost?.count ?? 0;
+  const solidCount = ts.solid?.count ?? 0;
+  const safeCount  = ts.safe?.count  ?? 0;
+  const rush   = (data.schools || []).filter(s => s.tier === 0);
+  const safe   = (data.schools || []).filter(s => s.tier === 1);
+  const bottom = (data.schools || []).filter(s => s.tier === 2);
+  const special = data.special_attention || [];
+
+  let html = `<div class="card">
+    <div class="board-header"><span class="board-num">一</span><span class="board-title">考生信息 &amp; 数据权威说明</span></div>
+    <div style="text-align:center;margin-bottom:8px">
+      <div style="font-size:11px;color:var(--text-muted)">${esc(data._orderId||'—')} · 防伪</div>
+      <div class="flex-row" style="justify-content:center;flex-wrap:wrap;gap:6px;margin-top:4px">
+        <span class="badge badge-211">📌 ${esc(stu.nickname)}</span>
+        <span style="font-size:12px;color:var(--text-muted)">${esc(stu.province)} · ${stu.score}分 · ${esc(stu.subjectStr)} · 位次${data.student_rank||'估算中'}</span>
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--text-muted);line-height:1.6;text-align:center">
+      数据来源：教育部阳光高考 · 近6年2200万+录取记录<br>
+      AI引擎：Claude · DeepSeek V4 Pro · GPT-5.5 多模型交叉验证
+    </div>
+  </div>`;
+
+  html += `<div class="card">
+    <div class="board-header"><span class="board-num">二</span><span class="board-title">核心定位分析</span></div>
+    <div class="flex-row" style="justify-content:space-around;text-align:center;margin-bottom:8px">
+      <div><div style="font-size:22px;font-weight:800;color:var(--danger)">${boostCount}</div><div style="font-size:11px;color:var(--text-muted)">冲刺</div></div>
+      <div><div style="font-size:22px;font-weight:800;color:var(--info)">${solidCount}</div><div style="font-size:11px;color:var(--text-muted)">稳妥</div></div>
+      <div><div style="font-size:22px;font-weight:800;color:var(--success)">${safeCount}</div><div style="font-size:11px;color:var(--text-muted)">保底</div></div>
+    </div>
+    <div style="display:flex;gap:2px;height:6px;border-radius:4px;overflow:hidden">
+      <div style="flex:${boostCount||1};background:var(--danger)"></div>
+      <div style="flex:${solidCount||1};background:var(--info)"></div>
+      <div style="flex:${safeCount||1};background:var(--success)"></div>
+    </div>
+    ${stu.obey ? `<div style="font-size:11px;color:var(--success);margin-top:6px">✓ 已服从调剂，录取概率提升8%-12%</div>` : `<div style="font-size:11px;color:var(--danger);margin-top:6px">✗ 未服从调剂，需确保分数充分覆盖投档线</div>`}
+  </div>`;
+
+  html += `<div class="board-header"><span class="board-num">三</span><span class="board-title">分层院校明细</span><span class="board-sub">共${rush.length+safe.length+bottom.length}所推荐</span></div>`;
+
+  if (special.length > 0) {
+    html += `<div class="card special-attention-section"><div class="special-attention-label">⭐ 意向院校分析</div><div style="display:flex;flex-direction:column;gap:8px">${special.map(s=>renderSchoolCard(s,'special')).join('')}</div></div>`;
+  }
+  if (rush.length)   html += `<div class="tier-section"><div class="tier-header rush">🚀 冲刺 <span class="tier-count">（共${rush.length}所）</span></div><div style="display:flex;flex-direction:column;gap:10px">${rush.map(s=>renderSchoolCard(s,'rush')).join('')}</div></div>`;
+  if (safe.length)   html += `<div class="tier-section"><div class="tier-header safe">🎯 稳妥 <span class="tier-count">（共${safe.length}所）</span></div><div style="display:flex;flex-direction:column;gap:10px">${safe.map(s=>renderSchoolCard(s,'safe')).join('')}</div></div>`;
+  if (bottom.length) html += `<div class="tier-section"><div class="tier-header bottom">🟢 保底 <span class="tier-count">（共${bottom.length}所）</span></div><div style="display:flex;flex-direction:column;gap:10px">${bottom.map(s=>renderSchoolCard(s,'bottom')).join('')}</div></div>`;
+  if (!rush.length && !safe.length && !bottom.length) {
+    html += `<div class="card" style="text-align:center;color:var(--text-muted);padding:24px">暂无推荐数据，请检查输入信息后重试</div>`;
+  }
+
+  if (rush.length + safe.length + bottom.length > 0) {
+    html += buildComparisonTable(rush, safe, bottom);
+  }
+
+  html += `<div class="board-header" style="margin-top:12px"><span class="board-num">四</span><span class="board-title">AI个性化填报建议书</span></div>`;
+  html += buildAdviceSection(stu, pref, data);
+
+  html += `<div class="card" style="margin-top:4px;border:1px solid rgba(239,68,68,.15);background:rgba(239,68,68,.04)">
+    <div class="board-header"><span class="board-num" style="background:var(--danger)">五</span><span class="board-title">免责声明</span></div>
+    <div style="font-size:11px;color:var(--text-muted);line-height:1.8">
+      1、本报告仅供填报参考，不构成正式志愿填报建议<br>
+      2、数据来源：全国2000+所高校 · 近6年2200万+录取记录<br>
+      3、报告编号唯一，严禁倒卖转售，违者追责
+    </div>
+  </div>`;
+
+  document.getElementById('reportContent').innerHTML = html;
+}
+
+function renderSchoolCard(s, tierKey) {
+  const dim = s.dimensions || {};
+  const adm = s.admission_data || {};
+  const probVal = s.rank_prob || s.weighted_prob || 0;
+  const probClass = tierKey === 'rush' ? 'tier-rush' : tierKey === 'safe' ? 'tier-safe' : tierKey === 'bottom' ? 'tier-bottom' : 'tier-special';
+  const isEstimated = s.data_quality === 'estimated';
+  const isPendingCrawl = s.data_quality === 'pending_crawl';
+
+  const badgeHtml = (s.tags||[]).includes('985') ? '<span class="badge badge-985">985</span>' :
+                    (s.tags||[]).includes('211') ? '<span class="badge badge-211">211</span>' :
+                    (s.tags||[]).includes('双一流') ? '<span class="badge badge-double-first">双一流</span>' :
+                    `<span style="font-size:10px;color:var(--text-muted)">${esc((s.tags||['本科'])[0])}</span>`;
+
+  const scoreText = adm.latest_min_score
+    ? `约${adm.latest_min_score}分${isEstimated ? '<span class="data-est">(估算)</span>' : ''}` : '暂无数据';
+  const noteHtml = s.note ? `<div style="font-size:11px;color:var(--danger);margin-top:4px">⚠ ${esc(s.note)}</div>` : '';
+
+  if (isPendingCrawl) {
+    return `<div class="school-card"><div class="school-card-header">${badgeHtml}<span class="school-name">${esc(s.name)}</span>${probVal>0?`<span class="school-prob ${probClass}">${Math.round(probVal)}%</span>`:''}</div><div class="school-card-body"><div class="school-row"><span class="label">📍 城市</span><span class="value">${esc(s.city||s.province||'')}</span></div><div class="skeleton" style="height:13px;margin:4px 0;width:80%"></div><div style="font-size:11px;color:var(--text-muted);margin-top:6px">🔄 详细数据加载中…</div></div></div>`;
+  }
+
+  let majorHtml = '';
+  if (dim.recommended_major) {
+    const noteTag = dim.major_note ? `<span class="major-note-tag">${esc(dim.major_note)}</span>` : '';
+    majorHtml = `<div class="school-row"><span class="label">🎓 推荐专业</span><span class="value">${esc(dim.recommended_major)}${noteTag}</span></div>`;
+  }
+
+  const tuitionVal = dim.tuition || dim.tuition_per_year;
+  let tuitionHtml = '';
+  if (tuitionVal) {
+    const rawNum = parseInt(String(tuitionVal).replace(/[^0-9]/g, '')) || 0;
+    const ecoBadge = rawNum > 0 && rawNum <= 5000 ? '<span class="eco-badge">💚 经济友好</span>' : '';
+    tuitionHtml = `<div class="school-row"><span class="label">💰 学费</span><span class="value">${esc(tuitionVal)}${ecoBadge}</span></div>`;
+  }
+
+  let employHtml = '';
+  if (dim.employment_rate) {
+    const srcNote = dim.employment_source ? `<span class="src-note">${esc(dim.employment_source)}</span>` : '';
+    employHtml = `<div class="school-row"><span class="label">💼 就业率</span><span class="value">${esc(dim.employment_rate)}${srcNote}</span></div>`;
+  }
+
+  const salaryStart = dim.avg_salary_start || dim.avg_salary;
+  const salary3yr   = dim.avg_salary_3yr;
+  const salaryHtml  = salaryStart ? `<div class="school-row"><span class="label">💵 薪资</span><span class="value">${esc(salaryStart)}${salary3yr ? ` → ${esc(salary3yr)}(3年)` : ''}</span></div>` : '';
+
+  let cityHtml = '';
+  if (dim.city_analysis && typeof dim.city_analysis === 'object') {
+    const ca = dim.city_analysis;
+    const cid = 'c' + Math.random().toString(36).slice(2,9);
+    const rows = ca.summary ? `<div class="city-panel-row">${esc(ca.summary)}</div>` : [
+      ca.location     ? `<div class="city-panel-row">📍 ${esc(ca.location)}</div>` : '',
+      ca.advantage    ? `<div class="city-panel-row">✅ ${esc(ca.advantage)}</div>` : '',
+      ca.disadvantage ? `<div class="city-panel-row">⚠️ ${esc(ca.disadvantage)}</div>` : '',
+      ca.job_market   ? `<div class="city-panel-row">💼 ${esc(ca.job_market)}</div>` : '',
+    ].filter(Boolean).join('');
+    if (rows) {
+      cityHtml = `<div class="school-row-col"><div class="city-toggle" onclick="toggleCityPanel('${cid}')"><span class="label">🏙️ 城市分析</span><span id="${cid}_ic" class="city-toggle-icon">▼</span></div><div id="${cid}" class="city-panel">${rows}</div></div>`;
+    }
+  }
+
+  const aiComment = dim.ai_review ? `<div class="school-ai-comment"><span class="speaker">💡 点评：</span>${esc(dim.ai_review)}</div>` : '';
+
+  return `<div class="school-card">
+    <div class="school-card-header">${badgeHtml}<span class="school-name">${esc(s.name)}</span>${probVal>0?`<span class="school-prob ${probClass}">${Math.round(probVal)}%</span>`:''}</div>
+    <div class="school-card-body">
+      <div class="school-row"><span class="label">📍 城市</span><span class="value">${esc(s.city||s.province||'')}</span></div>
+      <div class="school-row"><span class="label">📊 近年线</span><span class="value">${scoreText}</span></div>
+      ${adm.trend_detail ? `<div class="school-row"><span class="label">📈 趋势</span><span class="value">${esc(adm.trend_detail)}</span></div>` : ''}
+      ${majorHtml}${tuitionHtml}${employHtml}${salaryHtml}${cityHtml}${noteHtml}
+    </div>${aiComment}</div>`;
+}
+
+function toggleCityPanel(cid) {
+  const panel = document.getElementById(cid);
+  const icon  = document.getElementById(cid + '_ic');
+  if (!panel) return;
+  panel.classList.toggle('open');
+  if (icon) icon.textContent = panel.classList.contains('open') ? '▲' : '▼';
+}
+
+function buildAdviceSection(stu, pref, data) {
+  const score = stu.score || 0;
+  const province = stu.province || '—';
+  const economy = stu.economy || '一般';
+  const personality = (pref.personality || []).join('、') || '未填写';
+  const majors = (pref.majors || []).join('、') || '综合类';
+  const ts = data.tier_summary || {};
+  const boostC = ts.boost?.count ?? 0;
+  const solidC = ts.solid?.count ?? 0;
+  const safeC  = ts.safe?.count  ?? 0;
+
+  let level, levelDesc;
+  if (score >= 600) { level = '高竞争力'; levelDesc = '达到优势段，可冲刺985/211重点高校，建议重点关注冲刺院校的录取分差走势。'; }
+  else if (score >= 500) { level = '中上竞争力'; levelDesc = '处于一本线以上，可稳妥选择211院校及优质一本高校，兼顾意向专业。'; }
+  else if (score >= 400) { level = '中段竞争力'; levelDesc = '建议以公办二本为主力，一本院校为冲刺，合理配置梯度防止滑档。'; }
+  else { level = '基础段'; levelDesc = '建议保底公办专科及二本院校，优先选择就业率高的专业方向。'; }
+
+  let econAdvice;
+  if (economy === '较为困难') econAdvice = '推荐优先选择学费≤5000元/年的公办院校，可申请国家助学金+助学贷款。';
+  else if (economy === '宽裕' || economy === '比较优越') econAdvice = '经济条件良好，可适当放宽院校范围，重点关注综合实力和城市发展前景。';
+  else econAdvice = '建议以公办院校为主，合理规划预算，关注奖助学金政策。';
+
+  const obeyText = stu.obey
+    ? '已勾选服从调剂，可提升录取概率8%-12%。建议冲刺院校可不服从（防冷门录取），稳妥/保底院校务必服从（防滑档）。'
+    : '未勾选服从调剂，录取风险略高。若投档线刚过，有约5%-10%退档风险，建议稳妥和保底院校改为服从调剂。';
+
+  const personalityMap = {
+    '外向活泼': '适合管理、传媒、法学等互动性强的专业。',
+    '沉稳内敛': '适合理工科、医学、计算机等专注钻研的方向。',
+    '钻研学术': '适合数学、物理等基础学科及研究生深造路径。',
+    '领导管理': '适合工商管理、金融学、法学等组织型专业。',
+    '艺术创作': '适合设计、广告、建筑等创意类专业。',
+    '社交沟通': '适合新闻传播、市场营销、外语等交际型专业。',
+    '动手实践': '适合工程技术、建筑、机械制造等实践性强的专业。',
+    '逻辑分析': '适合计算机科学、数学、统计学等数理密集方向。',
+  };
+  const personalityAdvice = (pref.personality||[]).map(t => personalityMap[t]).filter(Boolean).join(' ') || '建议结合意向专业深入了解各校培养方案再做决策。';
+
+  return `<div class="card">
+    <div class="section-title">📊 4.1 成绩定位</div>
+    <div style="font-size:12px;color:var(--text-secondary);line-height:1.7">
+      ${esc(province)}考生 ${score}分，意向方向：${esc(majors)}。<br>
+      综合竞争力：<strong style="color:var(--accent)">${level}</strong>——${levelDesc}
+    </div>
+  </div>
+  <div class="card">
+    <div class="section-title">📐 4.2 梯度策略</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;text-align:center;font-size:12px;margin-bottom:8px">
+      <div style="background:rgba(239,68,68,.1);border-radius:var(--r8);padding:8px"><div style="color:var(--danger);font-weight:800;font-size:18px">${boostC}</div><div style="color:var(--text-muted)">冲刺</div></div>
+      <div style="background:rgba(59,130,246,.1);border-radius:var(--r8);padding:8px"><div style="color:var(--info);font-weight:800;font-size:18px">${solidC}</div><div style="color:var(--text-muted)">稳妥</div></div>
+      <div style="background:rgba(34,197,94,.1);border-radius:var(--r8);padding:8px"><div style="color:var(--success);font-weight:800;font-size:18px">${safeC}</div><div style="color:var(--text-muted)">保底</div></div>
+    </div>
+    <div style="font-size:11px;color:var(--text-muted);line-height:1.6">梯度建议：冲刺不超过3所，稳妥5所，保底5-7所（最后一志愿必须有把握）。</div>
+  </div>
+  <div class="card">
+    <div class="section-title">⚠️ 4.3 调剂风险提示</div>
+    <div style="font-size:12px;color:var(--text-secondary);line-height:1.7">${obeyText}</div>
+  </div>
+  <div class="card">
+    <div class="section-title">💰 4.4 家庭经济适配</div>
+    <div style="font-size:12px;color:var(--text-secondary);line-height:1.7">家庭经济：<strong style="color:var(--text)">${esc(economy)}</strong>。${econAdvice}</div>
+  </div>
+  <div class="card">
+    <div class="section-title">🧠 4.5 性格匹配</div>
+    <div style="font-size:12px;color:var(--text-secondary);line-height:1.7">
+      性格标签：<strong style="color:var(--text)">${esc(personality)}</strong>。${personalityAdvice}
+    </div>
+  </div>
+  <div class="card">
+    <div class="section-title">📌 4.6 四大填报原则</div>
+    <div class="advice-card">
+      <div class="advice-item"><span class="advice-num">①</span><span><strong>冲刺为辅</strong>——1-3个高风险冲刺，不超过3个，防止全军覆没。</span></div>
+      <div class="advice-item"><span class="advice-num">②</span><span><strong>梯度合理</strong>——冲/稳/保比例建议3:5:7，确保有稳妥院校兜底。</span></div>
+      <div class="advice-item"><span class="advice-num">③</span><span><strong>保底兜底</strong>——最后一个志愿必须选有绝对把握的保底院校，防止落榜。</span></div>
+      <div class="advice-item"><span class="advice-num">④</span><span><strong>以官为准</strong>——AI推荐仅供参考，最终以官方招生计划和投档线为准。</span></div>
+    </div>
+  </div>
+  ${buildGradientSummary(boostC, solidC, safeC, stu.obey)}`;
+}
+
+function buildGradientSummary(boostC, solidC, safeC, obey) {
+  const total = boostC + solidC + safeC;
+  const boostAdvice = boostC <= 2 ? '✓ 数量适当' : boostC <= 4 ? '⚠ 略多，风险较高' : '❌ 过多，建议减少到3所以内';
+  const solidAdvice = solidC >= 3 && solidC <= 6 ? '✓ 梯度合理' : solidC < 3 ? '⚠ 偏少，建议补充稳妥院校' : '✓ 充足';
+  const safeAdvice  = safeC  >= 2 ? '✓ 保底充足' : '⚠ 建议至少选2所保底院校';
+  return `<div class="card" style="border:1px solid rgba(129,140,248,.2);background:rgba(129,140,248,.04)">
+    <div class="section-title" style="margin-bottom:10px">🎯 4.7 整体梯度搭配策略总结</div>
+    <div style="font-size:13px;color:var(--text-secondary);margin-bottom:10px;line-height:1.8">
+      综合推荐：<strong style="color:var(--danger)">冲刺${boostC}所</strong>（建议2-3所）
+      + <strong style="color:var(--info)">稳妥${solidC}所</strong>（建议3-5所）
+      + <strong style="color:var(--success)">保底${safeC}所</strong>（建议2-3所）= 共${total}所
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;font-size:12px">
+      <div><span style="color:var(--danger);font-weight:600;display:inline-block;width:60px">冲刺档</span>${boostAdvice}</div>
+      <div><span style="color:var(--info);font-weight:600;display:inline-block;width:60px">稳妥档</span>${solidAdvice}</div>
+      <div><span style="color:var(--success);font-weight:600;display:inline-block;width:60px">保底档</span>${safeAdvice}</div>
+    </div>
+    <div style="margin-top:10px;font-size:11px;color:var(--text-muted);line-height:1.8;border-top:1px solid rgba(148,163,184,.1);padding-top:8px">
+      ⚠ 注意：①最后一个志愿必须是有绝对把握的保底院校；②${obey ? '已服从调剂，可适当冲高' : '未服从调剂，需确保分数覆盖投档线'}；③AI推荐仅供参考，最终以官方招生计划和投档线为准。
+    </div>
+  </div>`;
+}
+
+function buildComparisonTable(rush, safe, bottom) {
+  const groups = [
+    { label: '🚀 冲刺', color: 'var(--danger)', schools: rush },
+    { label: '🎯 稳妥', color: 'var(--info)',   schools: safe },
+    { label: '🟢 保底', color: 'var(--success)', schools: bottom },
+  ].filter(g => g.schools.length > 0);
+  if (groups.length === 0) return '';
+  let rows = '';
+  groups.forEach(g => {
+    rows += `<tr><td colspan="8" style="background:rgba(148,163,184,.08);font-size:11px;font-weight:700;color:${g.color};padding:5px 8px">${g.label}</td></tr>`;
+    g.schools.forEach(s => {
+      const dim = s.dimensions || {};
+      const adm = s.admission_data || {};
+      const prob = s.rank_prob || s.weighted_prob || 0;
+      const level = (s.tags||[]).includes('985') ? '985' : (s.tags||[]).includes('211') ? '211' : (s.tags||[]).includes('双一流') ? '双一流' : s.tags?.[0] || '本科';
+      rows += `<tr style="border-bottom:1px solid rgba(148,163,184,.06)">
+        <td style="padding:5px 8px;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(s.name)}</td>
+        <td style="padding:5px 8px;color:${g.color}">${esc(level)}</td>
+        <td style="padding:5px 8px">${adm.latest_min_score ? adm.latest_min_score + '分' : '—'}</td>
+        <td style="padding:5px 8px;color:${g.color};font-weight:600">${prob > 0 ? Math.round(prob) + '%' : '—'}</td>
+        <td style="padding:5px 8px">${esc(String(dim.employment_rate || '—'))}</td>
+        <td style="padding:5px 8px">${esc(String(dim.avg_salary_start || dim.avg_salary || '—'))}</td>
+        <td style="padding:5px 8px">${esc(String(dim.tuition || dim.tuition_per_year || '—'))}</td>
+        <td style="padding:5px 8px">${esc(String(dim.risk_level || '—'))}</td>
+      </tr>`;
+    });
+  });
+  return `<div class="card" style="overflow-x:auto">
+    <div style="font-weight:700;font-size:13px;color:var(--text);margin-bottom:10px">📊 三档院校综合横向对比表</div>
+    <table style="width:100%;border-collapse:collapse;font-size:11px;color:var(--text-secondary)">
+      <thead><tr style="border-bottom:1px solid rgba(148,163,184,.2);color:var(--text-muted)">
+        <th style="text-align:left;padding:5px 8px">院校名称</th>
+        <th style="text-align:left;padding:5px 8px">层次</th>
+        <th style="text-align:left;padding:5px 8px">近年录取分</th>
+        <th style="text-align:left;padding:5px 8px">录取概率</th>
+        <th style="text-align:left;padding:5px 8px">就业率</th>
+        <th style="text-align:left;padding:5px 8px">均薪(月)</th>
+        <th style="text-align:left;padding:5px 8px">年学费</th>
+        <th style="text-align:left;padding:5px 8px">风险等级</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div style="font-size:10px;color:var(--text-muted);margin-top:6px">* 部分数据为AI估算，以官方招生计划为准</div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+// PDF Download
+// ═══════════════════════════════════════════════════════════
+async function downloadPDF() {
+  if (!window.jspdf || !window.html2canvas) {
+    showToast('PDF库加载中，请稍候重试', 'warning'); return;
+  }
+  showToast('正在生成PDF，请稍候…', 'success');
+  try {
+    const el = document.getElementById('reportContent');
+    const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: '#080D1A' });
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
+    const imgW = pageW;
+    const imgH = (canvas.height / canvas.width) * imgW;
+    let y = 0;
+    while (y < imgH) {
+      if (y > 0) pdf.addPage();
+      pdf.addImage(canvas, 'PNG', 0, -y, imgW, imgH);
+      y += pageH;
+    }
+    const name = S.student?.nickname || '学生';
+    pdf.save(`AI志愿报告_${name}_${new Date().toLocaleDateString('zh-CN')}.pdf`);
+  } catch (e) {
+    showToast('PDF生成失败，请截图保存', 'warning');
+  }
+}
+</script>
+</body>
+</html>

@@ -10,6 +10,7 @@ from sqlalchemy import text
 from api.database import engine
 from api.redis_client import get_redis, close_redis
 from api.routers import auth, schools, recommendation, qa, report, admin, crawler
+from api.routers import one_time_links, broadcast_scripts
 
 
 @asynccontextmanager
@@ -57,6 +58,8 @@ app.include_router(qa.router)
 app.include_router(report.router)
 app.include_router(admin.router)
 app.include_router(crawler.router)
+app.include_router(one_time_links.router)
+app.include_router(broadcast_scripts.router)
 
 
 # ─── Frontend ────────────────────────────────────────────────────────────────
@@ -79,6 +82,19 @@ async def serve_admin_redirect():
 @app.get("/admin.html", include_in_schema=False)
 async def serve_admin():
     return FileResponse(os.path.join(_FRONTEND, "admin.html"))
+
+# Bug #7: /gk-admin → 301 → /admin.html
+@app.get("/gk-admin", include_in_schema=False)
+@app.get("/gk-admin/", include_in_schema=False)
+async def serve_gk_admin_redirect():
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/admin.html", status_code=301)
+
+# PRD v5.4: 学生自助报告页
+@app.get("/s", include_in_schema=False)
+@app.get("/s/", include_in_schema=False)
+async def serve_student_page():
+    return FileResponse(os.path.join(_FRONTEND, "s.html"))
 
 if os.path.isdir(_FRONTEND):
     app.mount("/static", StaticFiles(directory=_FRONTEND), name="static")
