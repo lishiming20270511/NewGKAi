@@ -475,7 +475,43 @@ async def build_candidate_pool(
             if len(pool) >= 105:
                 break
 
-    return special_attention, pool[:105]
+    # L5 精英补充：无论候选池大小，确保 ≥15 所 985/211 校（适用于成绩≥400 的考生）
+    if req.score >= 400:
+        elite_in_pool = sum(1 for s in pool if s.is_985 or s.is_211)
+        if elite_in_pool < 15:
+            needed_elite = 15 - elite_in_pool
+            elite_rows = await db.execute(
+                text("""
+                    SELECT school_id, name, province, level, school_type,
+                           is_985, is_211, is_double_first
+                    FROM schools
+                    WHERE (is_985 = 1 OR is_211 = 1)
+                    ORDER BY is_985 DESC, is_211 DESC
+                    LIMIT :lim
+                """),
+                {"lim": needed_elite + len(seen_ids) + 50},
+            )
+            for r in elite_rows.mappings():
+                if r["school_id"] in seen_ids:
+                    continue
+                pool.append(SchoolRecord(
+                    school_id=r["school_id"],
+                    name=r["name"],
+                    province=r["province"],
+                    city=_extract_city(r["name"]) or r["province"],
+                    level=r["level"] or "",
+                    school_type=r["school_type"] or "",
+                    is_985=bool(r["is_985"]),
+                    is_211=bool(r["is_211"]),
+                    is_double_first=bool(r["is_double_first"]),
+                    globe_expanded=True,
+                ))
+                seen_ids.add(r["school_id"])
+                elite_in_pool += 1
+                if elite_in_pool >= 15:
+                    break
+
+    return special_attention, pool[:120]
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -641,22 +677,25 @@ def _tier_score_prior(
 
     if is_985:
         # 985 schools: extremely competitive
-        if score >= 660: return 85.0
-        elif score >= 630: return 70.0
-        elif score >= 600: return 50.0
-        elif score >= 570: return 30.0
-        elif score >= 540: return 18.0
-        elif score >= 510: return 10.0
-        else: return 4.0
+        # Prior represents expected probability for an AVERAGE 985 school at this score level.
+        # Old values (85/70/50/30...) were too high and blended mid-tier 985s into 稳妥 tier
+        # when data-driven probability was already in 冲刺 range (30-50%).
+        if score >= 660: return 45.0   # was 85.0 — blended too high, killed 冲刺 tier
+        elif score >= 630: return 38.0  # was 70.0
+        elif score >= 600: return 25.0  # was 50.0
+        elif score >= 570: return 15.0  # was 30.0
+        elif score >= 540: return 8.0   # was 18.0
+        elif score >= 510: return 4.0   # was 10.0
+        else: return 2.0               # was 4.0
     elif is_211 or is_double_first:
         # 211/双一流: competitive
-        if score >= 640: return 90.0
-        elif score >= 610: return 75.0
-        elif score >= 580: return 55.0
-        elif score >= 550: return 35.0
-        elif score >= 520: return 20.0
-        elif score >= 490: return 10.0
-        else: return 5.0
+        if score >= 640: return 60.0   # was 90.0
+        elif score >= 610: return 50.0  # was 75.0
+        elif score >= 580: return 38.0  # was 55.0
+        elif score >= 550: return 25.0  # was 35.0
+        elif score >= 520: return 12.0  # was 20.0
+        elif score >= 490: return 6.0   # was 10.0
+        else: return 3.0               # was 5.0
     else:
         stype = (school_type or "").lower()
         if "专科" in stype or "职业" in stype:
@@ -803,7 +842,43 @@ async def classify_score_segment(
 ) -> str:
     """查询 province_cutoffs 判断成绩段位。
     返回: 'high'（≥一本线）/ 'mid'（专科线≤x<一本线）/ 'low'（<专科线）/ 'unknown'（无数据）
+    DB 无数据时回退到内置近似分数线，确保质量过滤始终生效。
     """
+    # 内置兜底分数线 (一本线, 专科线) — 与 seed_province_cutoffs.py 同源
+    _FALLBACK_CUTOFFS: dict[str, dict[str, tuple[int, int]]] = {
+        "河南": {"物理": (519, 150), "历史": (490, 150)},
+        "山东": {"物理": (449, 150), "历史": (449, 150)},
+        "湖北": {"物理": (424, 200), "历史": (424, 200)},
+        "湖南": {"物理": (428, 200), "历史": (428, 200)},
+        "广东": {"物理": (439, 150), "历史": (439, 150)},
+        "重庆": {"物理": (406, 180), "历史": (406, 180)},
+        "辽宁": {"物理": (360, 150), "历史": (360, 150)},
+        "福建": {"物理": (431, 180), "历史": (431, 180)},
+        "江西": {"物理": (430, 180), "历史": (430, 180)},
+        "广西": {"物理": (346, 180), "历史": (346, 180)},
+        "安徽": {"物理": (482, 150), "历史": (482, 150)},
+        "四川": {"物理": (469, 150), "历史": (469, 150)},
+        "山西": {"物理": (463, 130), "历史": (463, 130)},
+        "陕西": {"物理": (450, 150), "历史": (430, 150)},
+        "甘肃": {"物理": (427, 150), "历史": (370, 150)},
+        "云南": {"物理": (470, 150), "历史": (430, 150)},
+        "贵州": {"物理": (380, 150), "历史": (350, 150)},
+        "内蒙古": {"物理": (352, 150), "历史": (352, 150)},
+        "新疆": {"物理": (390, 150), "历史": (330, 150)},
+        "西藏": {"物理": (320, 150), "历史": (260, 150)},
+        "青海": {"物理": (330, 150), "历史": (280, 150)},
+        "宁夏": {"物理": (397, 150), "历史": (370, 150)},
+        "黑龙江": {"物理": (395, 150), "历史": (355, 150)},
+        "吉林": {"物理": (388, 150), "历史": (355, 150)},
+        "河北": {"物理": (434, 150), "历史": (434, 150)},
+        "浙江": {"综合": (488, 200)},
+        "上海": {"综合": (405, 220)},
+        "北京": {"综合": (448, 200)},
+        "天津": {"综合": (472, 200)},
+        "江苏": {"物理": (448, 180), "历史": (474, 180)},
+        "海南": {"综合": (483, 200)},
+    }
+
     # 科类别名：旧高考科类 → 统一字段
     _CAT_ALIAS = {"理科": "物理", "文科": "历史"}
     cats_to_try = [subject_category, _CAT_ALIAS.get(subject_category, ""), "综合"]
@@ -828,7 +903,24 @@ async def classify_score_segment(
                 return "low"
         except Exception:
             pass
-    return "unknown"
+
+    # DB 无数据 → 回退内置分数线
+    prov_map = _FALLBACK_CUTOFFS.get(province, {})
+    for cat in cats_to_try:
+        if cat in prov_map:
+            yiben, zhuanke = prov_map[cat]
+            if score >= yiben:
+                return "high"
+            if score >= zhuanke:
+                return "mid"
+            return "low"
+
+    # 全国通用兜底：750满分, 450以上视为高分段
+    if score >= 500:
+        return "high"
+    if score >= 300:
+        return "mid"
+    return "low"
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -950,8 +1042,8 @@ def sort_and_slice(
     tiers: dict[int, list[SchoolRecord]] = {0: [], 1: [], 2: []}
     for s in eligible:
         t = s.tier if s.tier in tiers else 0
-        if s.globe_expanded and t != 0:
-            continue  # L4全国扩展只出现在冲刺档
+        if s.globe_expanded and t == 2:
+            continue  # L4/L5全国扩展不出现在保底档
         tiers[t].append(s)
 
     # Sort within each tier by preference, then cap at 5
