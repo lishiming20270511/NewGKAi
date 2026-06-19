@@ -1013,19 +1013,16 @@ def sort_and_slice(
     personality: list[str],
     score_segment: str = "unknown",
 ) -> list[SchoolRecord]:
-    """Selects schools by actual tier, max 5 per tier, in order 冲刺→稳妥→保底.
+    """Selects 5 schools per tier (冲刺/稳妥/保底), guaranteed.
 
-    globe_expanded schools only appear in 冲刺 tier (L4全国扩展).
-    quality_threshold is applied via apply_quality_threshold_filter() before this call.
+    Primary: schools stay in their natural probability tier.
+    Backfill: if any tier has < 5 schools, fill from remaining eligible pool
+              to guarantee 5 per tier (PRD requirement).
 
-    Rules (per product spec):
-      冲刺  : TIER_BOOST_MIN ≤ rank_prob < TIER_SOLID_MIN  (30–50%)
-      稳妥  : TIER_SOLID_MIN ≤ rank_prob < TIER_SAFE_MIN   (50–85%)
-      保底  : rank_prob ≥ TIER_SAFE_MIN                    (≥85%)
-      排除  : tier == -1 (rank_prob below minimum threshold)
-
-    No cross-tier relabeling. Each school stays in its natural tier.
-    A tier may have 0–5 schools depending on what the algorithm produces.
+    Backfill rules:
+      保底 < 5 → add highest-prob remaining (easiest schools, no globe_expanded)
+      稳妥 < 5 → add mid-prob remaining
+      冲刺 < 5 → add lowest-prob remaining (hardest schools)
     """
     def sort_key(s: SchoolRecord):
         intended_city_flag = 0 if s.is_intended_city else 1
@@ -1035,10 +1032,9 @@ def sort_and_slice(
         weighted_neg = -(s.weighted_prob or 0)
         return (intended_city_flag, rank_prob_neg, personality_neg, ranking, weighted_neg)
 
-    # Drop schools below the minimum probability threshold
-    # globe_expanded schools only go into boost tier (冲刺)
     eligible = [s for s in schools if (s.tier is not None and s.tier >= 0)]
 
+    # Primary bucketing: schools go into their natural tier
     tiers: dict[int, list[SchoolRecord]] = {0: [], 1: [], 2: []}
     for s in eligible:
         t = s.tier if s.tier in tiers else 0
@@ -1046,12 +1042,67 @@ def sort_and_slice(
             continue  # L4/L5全国扩展不出现在保底档
         tiers[t].append(s)
 
-    # Sort within each tier by preference, then cap at 5
+    # Sort each tier, cap at 5
+    result_by_tier: dict[int, list[SchoolRecord]] = {}
+    for t in [0, 1, 2]:
+        result_by_tier[t] = sorted(tiers[t], key=sort_key)[:5]
+
+    # Backfill: guarantee 5 per tier
+    used_ids = {s.school_id for t in result_by_tier.values() for s in t}
+
+    # Remaining eligible pool sorted by probability ascending (easiest last)
+    remaining = [s for s in eligible if s.school_id not in used_ids and not (s.globe_expanded)]
+    remaining_by_prob_desc = sorted(remaining, key=lambda s: -(s.rank_prob or 0))
+    remaining_by_prob_asc  = list(reversed(remaining_by_prob_desc))
+
+    # 保底 backfill: take highest-prob schools (safest bets)
+    if len(result_by_tier[2]) < 5:
+        needed = 5 - len(result_by_tier[2])
+        fill_ids = {s.school_id for s in result_by_tier[2]}
+        for s in remaining_by_prob_desc:
+            if s.school_id not in fill_ids and s.school_id not in used_ids:
+                result_by_tier[2].append(s)
+                used_ids.add(s.school_id)
+                needed -= 1
+                if needed == 0:
+                    break
+
+    # 冲刺 backfill: take lowest-prob schools (most ambitious)
+    if len(result_by_tier[0]) < 5:
+        needed = 5 - len(result_by_tier[0])
+        fill_ids = {s.school_id for s in result_by_tier[0]}
+        # Also allow globe_expanded for 冲刺 backfill
+        remaining_asc = sorted(
+            [s for s in eligible if s.school_id not in used_ids],
+            key=lambda s: (s.rank_prob or 0),
+        )
+        for s in remaining_asc:
+            if s.school_id not in fill_ids:
+                result_by_tier[0].append(s)
+                used_ids.add(s.school_id)
+                needed -= 1
+                if needed == 0:
+                    break
+
+    # 稳妥 backfill: fill from whatever is left
+    if len(result_by_tier[1]) < 5:
+        needed = 5 - len(result_by_tier[1])
+        fill_ids = {s.school_id for s in result_by_tier[1]}
+        remaining_mid = sorted(
+            [s for s in eligible if s.school_id not in used_ids],
+            key=sort_key,
+        )
+        for s in remaining_mid:
+            if s.school_id not in fill_ids:
+                result_by_tier[1].append(s)
+                used_ids.add(s.school_id)
+                needed -= 1
+                if needed == 0:
+                    break
+
     result: list[SchoolRecord] = []
     for t in [0, 1, 2]:
-        bucket = sorted(tiers[t], key=sort_key)[:5]
-        result.extend(bucket)
-
+        result.extend(result_by_tier[t])
     return result
 
 
