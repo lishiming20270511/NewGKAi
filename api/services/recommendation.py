@@ -1999,7 +1999,20 @@ async def generate_recommendation(req: RecommendRequest, db: AsyncSession) -> di
                 rp = _estimate_from_peers(s, scored, req.score)
             s.rank_prob = rp
         else:
-            s.rank_prob = 50.0  # No rank available
+            # No rank available — use tier score prior as base probability
+            prior = _tier_score_prior(req.score, s.is_985, s.is_211, s.is_double_first, s.school_type)
+            if prior is not None:
+                s.rank_prob = prior
+            else:
+                # 公办本科: use score heuristic
+                if req.score >= 600:
+                    s.rank_prob = 20.0
+                elif req.score >= 450:
+                    s.rank_prob = 40.0
+                elif req.score >= 300:
+                    s.rank_prob = 55.0
+                else:
+                    s.rank_prob = 70.0
         s.weighted_prob = calc_weighted_prob(req, s.rank_prob, s)
         s.tier, s.tier_label = assign_tier(s.rank_prob, req.score)
         s.data_quality = await detect_data_gaps(s.school_id, req.province, history, db)
