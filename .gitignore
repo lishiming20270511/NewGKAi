@@ -38,3 +38,4 @@ logs/
 # Backup files
 *.bak
 *.bak_*
+.aider*
