@@ -1057,12 +1057,14 @@ def sort_and_slice(
     remaining_by_prob_desc = sorted(remaining, key=lambda s: -(s.rank_prob or 0))
     remaining_by_prob_asc  = list(reversed(remaining_by_prob_desc))
 
-    # 保底 backfill: take highest-prob schools (safest bets)
+    # 保底 backfill: take highest-prob schools (safest bets, 排除 globe_expanded)
     if len(result_by_tier[2]) < 5:
         needed = 5 - len(result_by_tier[2])
         fill_ids = {s.school_id for s in result_by_tier[2]}
         for s in remaining_by_prob_desc:
             if s.school_id not in fill_ids and s.school_id not in used_ids:
+                if s.globe_expanded:
+                    continue  # L4/L5全国扩展不出现在保底档
                 if score_segment in ("high", "mid") and _is_vocational(s):
                     continue
                 s.tier = 2
@@ -1077,27 +1079,44 @@ def sort_and_slice(
     if len(result_by_tier[0]) < 5:
         needed = 5 - len(result_by_tier[0])
         fill_ids = {s.school_id for s in result_by_tier[0]}
-        # Also allow globe_expanded for 冲刺 backfill
-        remaining_asc = sorted(
-            [s for s in eligible if s.school_id not in used_ids],
+        # 冲刺档回填：优先使用 globe_expanded 学校，但最多 2 所
+        globe_candidates = sorted(
+            [s for s in eligible if s.school_id not in used_ids and s.globe_expanded],
             key=lambda s: (s.rank_prob or 0),
         )
-        for s in remaining_asc:
+        globe_used = 0
+        for s in globe_candidates:
             if s.school_id not in fill_ids:
                 s.tier = 0
                 s.tier_label = "冲刺"
                 result_by_tier[0].append(s)
                 used_ids.add(s.school_id)
+                globe_used += 1
                 needed -= 1
-                if needed == 0:
+                if needed == 0 or globe_used >= 2:
                     break
+        # 如果还不够，从非 globe_expanded 中补充
+        if needed > 0:
+            remaining_asc = sorted(
+                [s for s in eligible if s.school_id not in used_ids and not s.globe_expanded],
+                key=lambda s: (s.rank_prob or 0),
+            )
+            for s in remaining_asc:
+                if s.school_id not in fill_ids:
+                    s.tier = 0
+                    s.tier_label = "冲刺"
+                    result_by_tier[0].append(s)
+                    used_ids.add(s.school_id)
+                    needed -= 1
+                    if needed == 0:
+                        break
 
-    # 稳妥 backfill: fill from whatever is left
+    # 稳妥 backfill: fill from whatever is left (排除 globe_expanded)
     if len(result_by_tier[1]) < 5:
         needed = 5 - len(result_by_tier[1])
         fill_ids = {s.school_id for s in result_by_tier[1]}
         remaining_mid = sorted(
-            [s for s in eligible if s.school_id not in used_ids],
+            [s for s in eligible if s.school_id not in used_ids and not s.globe_expanded],
             key=sort_key,
         )
         for s in remaining_mid:
