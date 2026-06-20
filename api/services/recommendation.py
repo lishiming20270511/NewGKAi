@@ -652,9 +652,9 @@ def calc_rank_prob(
     if student_score is not None:
         prior = _tier_score_prior(student_score, is_985, is_211, is_double_first, school_type)
         if prior is not None:
-            # Blend: 65% data-driven, 35% tier prior
-            # Good data dominates; prior only corrects severe outliers
-            prob = prob * 0.65 + prior * 0.35
+            # Blend: 90% data-driven, 10% tier prior
+            # Data dominates heavily; prior only corrects extreme outliers
+            prob = prob * 0.90 + prior * 0.10
 
     return max(1.0, min(99.0, prob))
 
@@ -678,24 +678,23 @@ def _tier_score_prior(
     if is_985:
         # 985 schools: extremely competitive
         # Prior represents expected probability for an AVERAGE 985 school at this score level.
-        # Old values (85/70/50/30...) were too high and blended mid-tier 985s into 稳妥 tier
-        # when data-driven probability was already in 冲刺 range (30-50%).
-        if score >= 660: return 45.0   # was 85.0 — blended too high, killed 冲刺 tier
-        elif score >= 630: return 38.0  # was 70.0
-        elif score >= 600: return 25.0  # was 50.0
-        elif score >= 570: return 15.0  # was 30.0
-        elif score >= 540: return 8.0   # was 18.0
-        elif score >= 510: return 4.0   # was 10.0
-        else: return 2.0               # was 4.0
+        # Values reduced by ~40% from previous version to prevent drowning 冲刺 tier.
+        if score >= 660: return 25.0   # was 45.0
+        elif score >= 630: return 20.0  # was 38.0
+        elif score >= 600: return 12.0  # was 25.0
+        elif score >= 570: return 7.0   # was 15.0
+        elif score >= 540: return 4.0   # was 8.0
+        elif score >= 510: return 2.0   # was 4.0
+        else: return 1.0               # was 2.0
     elif is_211 or is_double_first:
         # 211/双一流: competitive
-        if score >= 640: return 60.0   # was 90.0
-        elif score >= 610: return 50.0  # was 75.0
-        elif score >= 580: return 38.0  # was 55.0
-        elif score >= 550: return 25.0  # was 35.0
-        elif score >= 520: return 12.0  # was 20.0
-        elif score >= 490: return 6.0   # was 10.0
-        else: return 3.0               # was 5.0
+        if score >= 640: return 35.0   # was 60.0
+        elif score >= 610: return 28.0  # was 50.0
+        elif score >= 580: return 20.0  # was 38.0
+        elif score >= 550: return 12.0  # was 25.0
+        elif score >= 520: return 6.0   # was 12.0
+        elif score >= 490: return 3.0   # was 6.0
+        else: return 1.5               # was 3.0
     else:
         stype = (school_type or "").lower()
         if "专科" in stype or "职业" in stype:
