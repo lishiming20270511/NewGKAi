@@ -1950,8 +1950,8 @@ async def generate_recommendation(req: RecommendRequest, db: AsyncSession) -> di
         "city_pref": sorted(req.city_preference),
         "intended": sorted(req.intended_schools),
         "major": sorted(req.major_preference),
-        "personality": sorted(req.personality),
-        "economic": req.economic_level,
+        "personality": req.personality,          # 完整值，不排序
+        "economic": req.economic_level,          # 完整值
     }, sort_keys=True, ensure_ascii=False)
     cache_key = f"recommend:v2:{hashlib.md5(cache_payload.encode()).hexdigest()}"
 
