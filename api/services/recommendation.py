@@ -1065,8 +1065,16 @@ def sort_and_slice(
             if s.school_id not in fill_ids and s.school_id not in used_ids:
                 if s.globe_expanded:
                     continue  # L4/L5全国扩展不出现在保底档
-                if score_segment in ("high", "mid") and _is_vocational(s):
-                    continue
+                # 回填时应用质量过滤（与 apply_quality_threshold_filter 一致）
+                if score_segment == "high":
+                    # 高分段保底回填：排除专科/职业技术
+                    if _is_vocational(s):
+                        continue
+                elif score_segment == "mid":
+                    # 中分段保底回填：排除专科/职业技术
+                    if _is_vocational(s):
+                        continue
+                # low/unknown 段位不过滤
                 s.tier = 2
                 s.tier_label = "保底"
                 result_by_tier[2].append(s)
@@ -1087,6 +1095,9 @@ def sort_and_slice(
         globe_used = 0
         for s in globe_candidates:
             if s.school_id not in fill_ids:
+                # 冲刺档回填：高分段仅保留 985/211/双一流
+                if score_segment == "high" and not _is_elite(s):
+                    continue
                 s.tier = 0
                 s.tier_label = "冲刺"
                 result_by_tier[0].append(s)
@@ -1103,6 +1114,9 @@ def sort_and_slice(
             )
             for s in remaining_asc:
                 if s.school_id not in fill_ids:
+                    # 冲刺档回填：高分段仅保留 985/211/双一流
+                    if score_segment == "high" and not _is_elite(s):
+                        continue
                     s.tier = 0
                     s.tier_label = "冲刺"
                     result_by_tier[0].append(s)
@@ -1121,7 +1135,10 @@ def sort_and_slice(
         )
         for s in remaining_mid:
             if s.school_id not in fill_ids:
-                if score_segment in ("high", "mid") and _is_vocational(s):
+                # 稳妥档回填：高分段仅保留公办本科及以上
+                if score_segment == "high" and _is_vocational(s):
+                    continue
+                if score_segment == "mid" and _is_vocational(s):
                     continue
                 s.tier = 1
                 s.tier_label = "稳妥"
