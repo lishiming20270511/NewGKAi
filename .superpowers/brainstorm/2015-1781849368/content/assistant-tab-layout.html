@@ -1,0 +1,79 @@
+<h2>Page⑧ 主播助手 — Tab 布局方案</h2>
+<p class="subtitle">原「直播答疑」升级为双Tab：Tab A 直播话术 + Tab B AI问答。选择 Tab 分区的视觉风格：</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>分段控件式 Tab（推荐）</h3>
+      <p>顶部两个等宽分段按钮，选中态 Indigo 实心底 + 白字，未选中态暗色底 + 灰字。紧凑、直播场景一目了然。</p>
+      <div class="mockup" style="margin-top:12px">
+        <div class="mockup-header">主播助手</div>
+        <div class="mockup-body" style="background:#0F172A;padding:12px;font-family:monospace;font-size:12px;color:#F1F5F9">
+          <div style="display:flex;gap:4px;margin-bottom:12px">
+            <div style="flex:1;background:#818CF8;color:#fff;padding:8px;text-align:center;border-radius:8px;font-size:13px">💬 直播话术</div>
+            <div style="flex:1;background:#334155;color:#94A3B8;padding:8px;text-align:center;border-radius:8px;font-size:13px">🤖 AI问答</div>
+          </div>
+          <div style="background:#1E293B;border-radius:8px;padding:10px;margin-bottom:6px">
+            <div style="color:#F59E0B;font-size:11px;margin-bottom:6px">📂 开播话术</div>
+            <div style="background:#0F172A;border-radius:6px;padding:8px;font-size:11px;color:#F1F5F9">
+              大家好，欢迎来到直播间！今天…
+              <span style="float:right;color:#818CF8">复制</span>
+            </div>
+          </div>
+          <div style="background:#1E293B;border-radius:8px;padding:10px">
+            <div style="color:#F59E0B;font-size:11px;margin-bottom:6px">📂 产品介绍 ▶</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>侧边图标 Tab</h3>
+      <p>左侧竖向图标导航，点击切换内容区。节省顶部空间，内容区更宽，适合话术文字较多的场景。</p>
+      <div class="mockup" style="margin-top:12px">
+        <div class="mockup-header">主播助手</div>
+        <div class="mockup-body" style="background:#0F172A;padding:12px;font-family:monospace;font-size:12px;color:#F1F5F9;display:flex;gap:8px">
+          <div style="display:flex;flex-direction:column;gap:6px;min-width:40px">
+            <div style="background:#818CF8;color:#fff;padding:8px 6px;text-align:center;border-radius:8px;font-size:10px">💬<br>话术</div>
+            <div style="background:#334155;color:#94A3B8;padding:8px 6px;text-align:center;border-radius:8px;font-size:10px">🤖<br>AI</div>
+          </div>
+          <div style="flex:1;background:#1E293B;border-radius:8px;padding:10px">
+            <div style="color:#F59E0B;font-size:11px;margin-bottom:6px">📂 开播话术</div>
+            <div style="background:#0F172A;border-radius:6px;padding:6px;font-size:10px">大家好，欢迎来到直播间！…<span style="float:right;color:#818CF8">复制</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>下划线式 Tab</h3>
+      <p>轻量下划线指示当前Tab，与现有页面顶部导航风格一致，视觉层级更清晰，不会与主导航混淆。</p>
+      <div class="mockup" style="margin-top:12px">
+        <div class="mockup-header">主播助手</div>
+        <div class="mockup-body" style="background:#0F172A;padding:12px;font-family:monospace;font-size:12px;color:#F1F5F9">
+          <div style="display:flex;gap:16px;margin-bottom:12px;border-bottom:1px solid #334155;padding-bottom:8px">
+            <div style="color:#818CF8;border-bottom:2px solid #818CF8;padding-bottom:6px;font-size:13px">💬 直播话术</div>
+            <div style="color:#64748B;font-size:13px">🤖 AI问答</div>
+          </div>
+          <div style="background:#1E293B;border-radius:8px;padding:10px;margin-bottom:6px">
+            <div style="color:#F59E0B;font-size:11px;margin-bottom:6px">📂 开播话术 ▼</div>
+            <div style="background:#0F172A;border-radius:6px;padding:8px;font-size:11px">大家好，欢迎来到直播间！…<span style="float:right;color:#818CF8">复制</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:20px;padding:16px;background:rgba(129,140,248,0.1);border-radius:8px;border-left:3px solid #818CF8">
+  <p class="label">背景说明</p>
+  <p>Tab A 直播话术：管理员后台维护话术脚本库，按分类折叠展开，每条话术有一键复制。<br>
+  Tab B AI问答：保留原10个快捷问题 + 自由输入 + 对话历史（固定犀利直接风格）。</p>
+</div>

@@ -1,0 +1,133 @@
+<h2>Page⑧ 主播助手 — 完整线框图</h2>
+<p class="subtitle">升级后双Tab布局：Tab A 直播话术 + Tab B AI问答。确认后写入 UI_Spec。</p>
+
+<div class="split">
+  <!-- Tab A -->
+  <div class="mockup">
+    <div class="mockup-header">Tab A · 直播话术（选中态）</div>
+    <div class="mockup-body" style="background:#0F172A;padding:10px;font-family:monospace;font-size:11px;color:#F1F5F9;min-height:520px">
+
+      <!-- Tab切换 -->
+      <div style="display:flex;gap:4px;margin-bottom:10px">
+        <div style="flex:1;background:#818CF8;color:#fff;padding:7px;text-align:center;border-radius:8px;font-size:12px;font-weight:600">💬 直播话术</div>
+        <div style="flex:1;background:#334155;color:#64748B;padding:7px;text-align:center;border-radius:8px;font-size:12px">🤖 AI问答</div>
+      </div>
+
+      <!-- 分类折叠：开播话术（展开） -->
+      <div style="background:#1E293B;border-radius:8px;margin-bottom:6px;overflow:hidden">
+        <div style="padding:9px 10px;display:flex;justify-content:space-between;align-items:center;cursor:pointer">
+          <span style="color:#F59E0B;font-size:11px;font-weight:600">📂 开播话术</span>
+          <span style="color:#94A3B8;font-size:10px">▼ 2条</span>
+        </div>
+        <!-- 话术条目1 -->
+        <div style="background:#0F172A;margin:0 8px 6px;border-radius:6px;padding:8px">
+          <div style="color:#94A3B8;font-size:10px;margin-bottom:4px">欢迎语</div>
+          <div style="color:#F1F5F9;font-size:11px;line-height:1.5;margin-bottom:6px">大家好！欢迎来到直播间，我是xx，今天帮大家做高考志愿规划，有什么问题尽管问！</div>
+          <div style="text-align:right">
+            <span style="background:#1E293B;color:#818CF8;font-size:10px;padding:3px 8px;border-radius:4px;cursor:pointer;border:1px solid #334155">📋 一键复制</span>
+          </div>
+        </div>
+        <!-- 话术条目2 -->
+        <div style="background:#0F172A;margin:0 8px 8px;border-radius:6px;padding:8px">
+          <div style="color:#94A3B8;font-size:10px;margin-bottom:4px">引流话术</div>
+          <div style="color:#F1F5F9;font-size:11px;line-height:1.5;margin-bottom:6px">今天给前50名报名的朋友，提供免费志愿分析，现在赶紧扣1领取资格！</div>
+          <div style="text-align:right">
+            <span style="background:#1E293B;color:#818CF8;font-size:10px;padding:3px 8px;border-radius:4px;cursor:pointer;border:1px solid #334155">📋 一键复制</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 分类：产品介绍（折叠） -->
+      <div style="background:#1E293B;border-radius:8px;margin-bottom:6px">
+        <div style="padding:9px 10px;display:flex;justify-content:space-between;align-items:center">
+          <span style="color:#F59E0B;font-size:11px;font-weight:600">📂 产品介绍</span>
+          <span style="color:#94A3B8;font-size:10px">▶ 3条</span>
+        </div>
+      </div>
+
+      <!-- 分类：收单话术（折叠） -->
+      <div style="background:#1E293B;border-radius:8px;margin-bottom:6px">
+        <div style="padding:9px 10px;display:flex;justify-content:space-between;align-items:center">
+          <span style="color:#F59E0B;font-size:11px;font-weight:600">📂 收单话术</span>
+          <span style="color:#94A3B8;font-size:10px">▶ 4条</span>
+        </div>
+      </div>
+
+      <!-- 分类：常见异议（折叠） -->
+      <div style="background:#1E293B;border-radius:8px;margin-bottom:6px">
+        <div style="padding:9px 10px;display:flex;justify-content:space-between;align-items:center">
+          <span style="color:#F59E0B;font-size:11px;font-weight:600">📂 常见异议处理</span>
+          <span style="color:#94A3B8;font-size:10px">▶ 5条</span>
+        </div>
+      </div>
+
+      <div style="text-align:center;color:#64748B;font-size:10px;margin-top:8px">话术由管理员后台维护，实时同步</div>
+    </div>
+  </div>
+
+  <!-- Tab B -->
+  <div class="mockup">
+    <div class="mockup-header">Tab B · AI问答（选中态）</div>
+    <div class="mockup-body" style="background:#0F172A;padding:10px;font-family:monospace;font-size:11px;color:#F1F5F9;min-height:520px">
+
+      <!-- Tab切换 -->
+      <div style="display:flex;gap:4px;margin-bottom:10px">
+        <div style="flex:1;background:#334155;color:#64748B;padding:7px;text-align:center;border-radius:8px;font-size:12px">💬 直播话术</div>
+        <div style="flex:1;background:#818CF8;color:#fff;padding:7px;text-align:center;border-radius:8px;font-size:12px;font-weight:600">🤖 AI问答</div>
+      </div>
+
+      <!-- 快捷问题 2×5 网格 -->
+      <div style="background:#1E293B;border-radius:8px;padding:8px;margin-bottom:8px">
+        <div style="color:#94A3B8;font-size:10px;margin-bottom:6px">⚡ 快捷提问</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">
+          <div style="background:#0F172A;color:#F1F5F9;font-size:10px;padding:5px 6px;border-radius:5px;border:1px solid #334155;cursor:pointer">这个专业好就业吗？</div>
+          <div style="background:#0F172A;color:#F1F5F9;font-size:10px;padding:5px 6px;border-radius:5px;border:1px solid #334155;cursor:pointer">这所学校值得报吗？</div>
+          <div style="background:#0F172A;color:#F1F5F9;font-size:10px;padding:5px 6px;border-radius:5px;border:1px solid #334155;cursor:pointer">这个专业薪资怎样？</div>
+          <div style="background:#0F172A;color:#F1F5F9;font-size:10px;padding:5px 6px;border-radius:5px;border:1px solid #334155;cursor:pointer">冲这所学校风险大？</div>
+          <div style="background:#0F172A;color:#F1F5F9;font-size:10px;padding:5px 6px;border-radius:5px;border:1px solid #334155;cursor:pointer">要不要服从调剂？</div>
+          <div style="background:#0F172A;color:#F1F5F9;font-size:10px;padding:5px 6px;border-radius:5px;border:1px solid #334155;cursor:pointer">这所学校省内认可度？</div>
+          <div style="background:#0F172A;color:#F1F5F9;font-size:10px;padding:5px 6px;border-radius:5px;border:1px solid #334155;cursor:pointer">这城市适合留下来吗？</div>
+          <div style="background:#0F172A;color:#F1F5F9;font-size:10px;padding:5px 6px;border-radius:5px;border:1px solid #334155;cursor:pointer">这专业考研好考吗？</div>
+          <div style="background:#0F172A;color:#F1F5F9;font-size:10px;padding:5px 6px;border-radius:5px;border:1px solid #334155;cursor:pointer">文理科哪个就业好？</div>
+          <div style="background:#0F172A;color:#F1F5F9;font-size:10px;padding:5px 6px;border-radius:5px;border:1px solid #334155;cursor:pointer">这个分数能上哪些好校？</div>
+        </div>
+      </div>
+
+      <!-- 自由输入 -->
+      <div style="background:#1E293B;border-radius:6px;padding:8px;margin-bottom:6px;color:#64748B;font-size:11px;min-height:40px">
+        观众问啥，你就输啥，最多100字… <span style="float:right">0/100</span>
+      </div>
+      <div style="background:#818CF8;color:#fff;text-align:center;padding:7px;border-radius:8px;margin-bottom:10px;font-size:12px;font-weight:600">发送 →</div>
+
+      <!-- 对话历史 -->
+      <div style="color:#64748B;font-size:10px;margin-bottom:6px">—— 对话历史 ——</div>
+      <div style="text-align:right;margin-bottom:4px">
+        <span style="background:#818CF8;color:#fff;font-size:10px;padding:4px 8px;border-radius:6px;display:inline-block;max-width:80%">计算机专业好就业吗？</span>
+      </div>
+      <div style="text-align:left;margin-bottom:8px">
+        <span style="background:#1E293B;color:#F1F5F9;font-size:10px;padding:5px 8px;border-radius:6px;display:inline-block;max-width:85%;line-height:1.5">计算机就业率92%+，2025届平均起薪1.2万/月，头部岗位互联网大厂，AI方向缺口大。短期内不会凉，选对方向很关键。</span>
+      </div>
+
+      <!-- 底部操作 -->
+      <div style="display:flex;gap:6px">
+        <div style="background:#1E293B;color:#94A3B8;font-size:10px;padding:5px 10px;border-radius:6px;border:1px solid #334155">清空输入</div>
+        <div style="background:#1E293B;color:#94A3B8;font-size:10px;padding:5px 10px;border-radius:6px;border:1px solid #334155">清空历史</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:20px;padding:14px;background:rgba(129,140,248,0.08);border-radius:8px;border-left:3px solid #818CF8">
+  <p class="label">关键交互说明</p>
+  <ul style="margin:6px 0;padding-left:20px;font-size:13px;line-height:1.8">
+    <li>分类折叠展开：点击分类标题行展开/收起，展开时显示话术条目列表</li>
+    <li>一键复制：复制成功后按钮文字短暂变为「✓ 已复制」(1.5s)，再恢复</li>
+    <li>快捷问题：点击后自动填入输入框（不自动发送，允许主播二次编辑）</li>
+    <li>AI问答风格：固定犀利直接（张雪峰式），200字以内，无切换开关</li>
+    <li>导航栏：「直播答疑 💬」改为「助手 🎙️」，路由 #qa → #assistant</li>
+  </ul>
+</div>
+
+<div style="text-align:center;margin-top:16px;color:#64748B;font-size:12px">
+  ↑ 这个设计没问题吗？请确认后我们进入 Page⑨ 学生自助报告页的设计
+</div>

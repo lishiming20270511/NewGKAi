@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Page⑨ 学生自助报告页 — 全屏网页设计预览</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: #F0F4F8;
+  color: #1E293B;
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ===== PC 横幅 ===== */
+.pc-banner {
+  background: #FEF3C7;
+  border-bottom: 2px solid #F59E0B;
+  padding: 10px 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.pc-banner-icon { font-size: 18px; flex-shrink: 0; }
+.pc-banner-text { font-size: 13px; color: #92400E; line-height: 1.5; }
+.pc-banner-text strong { font-weight: 700; }
+
+/* ===== 顶部品牌 Header ===== */
+.site-header {
+  background: #fff;
+  border-bottom: 1px solid #E2E8F0;
+  padding: 14px 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand-icon { font-size: 28px; }
+.brand-name { font-size: 18px; font-weight: 700; color: #1E293B; }
+.brand-sub { font-size: 12px; color: #64748B; margin-top: 1px; }
+.header-badge {
+  background: #EEF2FF;
+  color: #3B82F6;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid #BFDBFE;
+}
+
+/* ===== 主体布局 ===== */
+.main-layout {
+  max-width: 1100px;
+  margin: 32px auto;
+  padding: 0 24px;
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+/* ===== 左侧：信任背书卡 ===== */
+.trust-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: sticky;
+  top: 80px;
+}
+.trust-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.trust-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1E293B;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #F1F5F9;
+}
+.trust-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.trust-item:last-child { margin-bottom: 0; }
+.trust-item-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+.trust-item-text { font-size: 12px; color: #475569; line-height: 1.5; }
+.trust-item-text strong { color: #1E293B; display: block; font-size: 13px; margin-bottom: 1px; }
+
+.stat-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 4px;
+}
+.stat-box {
+  background: #F8FAFC;
+  border-radius: 8px;
+  padding: 10px;
+  text-align: center;
+  border: 1px solid #F1F5F9;
+}
+.stat-num { font-size: 18px; font-weight: 800; color: #3B82F6; }
+.stat-label { font-size: 10px; color: #94A3B8; margin-top: 2px; }
+
+/* ===== 右侧：表单区 ===== */
+.form-area { display: flex; flex-direction: column; gap: 16px; }
+
+.step-bar {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px 20px;
+  border: 1px solid #E2E8F0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.step-dot {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700;
+  flex-shrink: 0;
+}
+.step-dot.active { background: #3B82F6; color: #fff; }
+.step-dot.done { background: #22C55E; color: #fff; }
+.step-dot.pending { background: #E2E8F0; color: #94A3B8; border: 2px solid #CBD5E1; }
+.step-line { flex: 1; height: 2px; background: #E2E8F0; border-radius: 2px; }
+.step-line.done { background: #22C55E; }
+.step-info { font-size: 14px; font-weight: 600; color: #1E293B; }
+.step-sub { font-size: 12px; color: #64748B; margin-top: 1px; }
+
+.form-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.form-card-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1E293B;
+  margin-bottom: 18px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #F1F5F9;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.form-group { display: flex; flex-direction: column; gap: 5px; }
+.form-group.full { grid-column: 1 / -1; }
+.form-label { font-size: 13px; font-weight: 600; color: #374151; }
+.required { color: #EF4444; margin-left: 2px; }
+.hint { font-size: 11px; color: #94A3B8; font-weight: 400; margin-left: 4px; }
+.form-input, .form-select {
+  padding: 10px 14px;
+  border: 1.5px solid #E2E8F0;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #94A3B8;
+  background: #fff;
+  transition: border-color .15s;
+}
+.form-input:focus, .form-select:focus { outline: none; border-color: #3B82F6; }
+
+.subject-area {
+  background: #F8FAFC;
+  border-radius: 8px;
+  padding: 12px;
+  border: 1.5px solid #E2E8F0;
+  color: #94A3B8;
+  font-size: 13px;
+}
+
+.toggle-row { display: flex; gap: 8px; }
+.toggle-btn {
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1.5px solid #E2E8F0;
+  color: #64748B;
+  background: #fff;
+}
+.toggle-btn.active { background: #3B82F6; color: #fff; border-color: #3B82F6; }
+
+.cta-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-top: 8px;
+}
+.btn-next {
+  flex: 1;
+  background: #3B82F6;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 14px 20px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(59,130,246,0.3);
+}
+.btn-back {
+  background: #fff;
+  color: #64748B;
+  border: 1.5px solid #E2E8F0;
+  border-radius: 10px;
+  padding: 14px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* ===== Footer ===== */
+.page-footer {
+  text-align: center;
+  padding: 24px;
+  font-size: 12px;
+  color: #94A3B8;
+}
+</style>
+</head>
+<body>
+
+<!-- PC专用横幅（强制显示，不可关闭） -->
+<div class="pc-banner">
+  <div class="pc-banner-icon">⚠️</div>
+  <div class="pc-banner-text">
+    <strong>请在电脑端浏览器中使用本页面</strong>
+    手机端打开将无法正常下载PDF报告，且操作界面不适配手机屏幕。建议使用 Chrome / Edge / Firefox 浏览器在电脑上打开。
+  </div>
+</div>
+
+<!-- 品牌 Header -->
+<div class="site-header">
+  <div class="brand">
+    <div class="brand-icon">🎓</div>
+    <div>
+      <div class="brand-name">AI高考志愿规划师</div>
+      <div class="brand-sub">AI 智能报考分析系统</div>
+    </div>
+  </div>
+  <div class="header-badge">学生专属报告 · 一次性链接</div>
+</div>
+
+<!-- 主体 -->
+<div class="main-layout">
+
+  <!-- 左侧：信任背书 -->
+  <div class="trust-sidebar">
+    <div class="trust-card">
+      <div class="trust-title">📊 数据与技术支撑</div>
+      <div class="stat-row">
+        <div class="stat-box">
+          <div class="stat-num">2200万+</div>
+          <div class="stat-label">真实录取记录</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num">2000+</div>
+          <div class="stat-label">全国高校</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num">6年</div>
+          <div class="stat-label">历史数据积累</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num">18</div>
+          <div class="stat-label">院校分析维度</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="trust-card">
+      <div class="trust-title">🤖 AI 分析引擎</div>
+      <div class="trust-item">
+        <div class="trust-item-icon">🔵</div>
+        <div class="trust-item-text"><strong>ChatGPT / Claude / DeepSeek V4 Pro</strong>三大顶尖模型交叉综合分析，拒绝单一算法偏见</div>
+      </div>
+      <div class="trust-item">
+        <div class="trust-item-icon">📍</div>
+        <div class="trust-item-text"><strong>2026年最新一分一段</strong>精准定位省内位次，规避滑档风险</div>
+      </div>
+      <div class="trust-item">
+        <div class="trust-item-icon">❤️</div>
+        <div class="trust-item-text"><strong>个性化深度定制</strong>结合兴趣爱好、性格特质与家庭背景</div>
+      </div>
+    </div>
+
+    <div class="trust-card" style="background:#FFFBEB;border-color:#FCD34D">
+      <div class="trust-title" style="color:#92400E;border-bottom-color:#FDE68A">⚠️ 使用须知</div>
+      <div style="font-size:12px;color:#78350F;line-height:1.7">
+        · 本链接仅限使用 <strong>1次</strong>，生成报告后立即失效<br>
+        · 报告生成后请及时 <strong>下载PDF</strong> 保存<br>
+        · 本报告仅供参考，请结合实际情况填报<br>
+        · 请勿截图传播，报告含个人信息水印
+      </div>
+    </div>
+  </div>
+
+  <!-- 右侧：表单 -->
+  <div class="form-area">
+
+    <!-- 步骤条 -->
+    <div class="step-bar">
+      <div class="step-dot active">1</div>
+      <div class="step-line"></div>
+      <div class="step-dot pending">2</div>
+      <div style="margin-left:8px">
+        <div class="step-info">STEP 1/2 · 考生基本信息</div>
+        <div class="step-sub">录入考生成绩与选科信息，约1分钟完成</div>
+      </div>
+    </div>
+
+    <!-- 表单卡片 -->
+    <div class="form-card">
+      <div class="form-card-title">📋 基本信息</div>
+      <div class="form-grid">
+
+        <div class="form-group full">
+          <div class="form-label">姓名/昵称<span class="required">*</span><span class="hint">考虑隐私，建议用网名代替</span></div>
+          <input class="form-input" placeholder="请输入昵称或网名">
+        </div>
+
+        <div class="form-group">
+          <div class="form-label">省份<span class="required">*</span></div>
+          <select class="form-select"><option value="">请选择省份</option></select>
+        </div>
+
+        <div class="form-group">
+          <div class="form-label">高考分数<span class="required">*</span><span class="hint">/750</span></div>
+          <input class="form-input" type="number" placeholder="请输入分数">
+        </div>
+
+        <div class="form-group">
+          <div class="form-label">省内位次<span class="hint">（选填，可自动估算）</span></div>
+          <input class="form-input" type="number" placeholder="可留空自动估算">
+        </div>
+
+        <div class="form-group">
+          <div class="form-label">家庭经济<span class="hint">（影响院校推荐）</span></div>
+          <select class="form-select">
+            <option value="">请选择</option>
+            <option>较为困难</option>
+            <option>一般</option>
+            <option>良好</option>
+            <option>比较优越</option>
+          </select>
+        </div>
+
+        <div class="form-group full">
+          <div class="form-label">选科<span class="required">*</span><span class="hint">（选择省份后自动渲染对应选科组件）</span></div>
+          <div class="subject-area">请先选择省份，系统将自动显示对应的选科方式（3+3 或 3+1+2）</div>
+        </div>
+
+        <div class="form-group full">
+          <div class="form-label">服从调剂</div>
+          <div class="toggle-row">
+            <div class="toggle-btn active">服从</div>
+            <div class="toggle-btn">不服从</div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="cta-row" style="margin-top:24px">
+        <button class="btn-next">下一步：意向偏好 →</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Footer -->
+<div class="page-footer">
+  数据来源：教育部官网 · 阳光高考 · 近6年2200万+录取记录 &nbsp;|&nbsp; 本报告仅供参考，严禁倒卖
+</div>
+
+</body>
+</html>

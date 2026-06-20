@@ -1,0 +1,135 @@
+<h2>Page⑨ 学生自助页 — 页面宽度方案</h2>
+<p class="subtitle">PC端打开，但内容适合窄列居中。选择哪种比例：</p>
+
+<div class="options">
+
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>复用手机框（推荐）</h3>
+      <p>与主播端完全一致：375px 手机模拟框居中，深色页面背景，顶部状态栏 + Home Bar。视觉语言统一，零额外设计成本。</p>
+      <div class="mockup" style="margin-top:10px">
+        <div class="mockup-body" style="background:#1a1a2e;padding:20px;display:flex;justify-content:center;min-height:240px">
+          <div style="width:160px;background:#0F172A;border-radius:16px;border:1px solid rgba(148,163,184,0.12);overflow:hidden;display:flex;flex-direction:column">
+            <!-- status bar -->
+            <div style="background:#0F172A;padding:5px 10px;font-size:8px;color:#94A3B8;display:flex;justify-content:space-between;flex-shrink:0">
+              <span>📶 9:41</span><span>🔋</span>
+            </div>
+            <!-- banner -->
+            <div style="background:#FEF3C7;border-bottom:1px solid #F59E0B;padding:4px 6px;font-size:7px;color:#92400E;flex-shrink:0">
+              <div style="font-weight:700">⚠️ 请在电脑端使用本页面</div>
+              <div style="opacity:0.8">手机端无法下载PDF报告…</div>
+            </div>
+            <!-- content -->
+            <div style="flex:1;padding:6px;overflow:hidden">
+              <div style="text-align:center;padding:4px 0;border-bottom:1px solid #1E293B;margin-bottom:6px">
+                <div style="font-size:9px;font-weight:700;color:#F1F5F9">🎓 AI高考志愿规划师</div>
+                <div style="font-size:7px;color:#94A3B8">学生专属报告</div>
+              </div>
+              <div style="background:#1E293B;border-radius:5px;padding:5px;margin-bottom:4px">
+                <div style="font-size:7px;color:#94A3B8;margin-bottom:3px">姓名/昵称 *</div>
+                <div style="background:#0F172A;border-radius:3px;padding:3px 4px;font-size:7px;color:#64748B">建议用网名…</div>
+              </div>
+              <div style="background:#818CF8;border-radius:5px;padding:5px;text-align:center;font-size:8px;color:#fff;font-weight:600">下一步 →</div>
+            </div>
+            <!-- home bar -->
+            <div style="padding:4px;text-align:center;flex-shrink:0">
+              <div style="width:30px;height:2px;background:#334155;border-radius:2px;margin:0 auto"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>窄卡片居中（480px）</h3>
+      <p>去掉手机框外壳，480px 内容卡片居中于暗色背景。比手机框略宽，PC端体验更舒适，保持窄列不失控。</p>
+      <div class="mockup" style="margin-top:10px">
+        <div class="mockup-body" style="background:#1a1a2e;padding:20px;display:flex;justify-content:center;min-height:240px">
+          <div style="width:220px;background:#0F172A;min-height:200px;display:flex;flex-direction:column">
+            <!-- banner -->
+            <div style="background:#FEF3C7;border-bottom:2px solid #F59E0B;padding:5px 8px;font-size:7px;color:#92400E;flex-shrink:0">
+              <div style="font-weight:700">⚠️ 请在电脑端使用本页面</div>
+              <div style="opacity:0.8">手机端无法下载PDF报告…</div>
+            </div>
+            <div style="padding:10px;flex:1">
+              <div style="text-align:center;padding:6px 0 8px;border-bottom:1px solid #1E293B;margin-bottom:8px">
+                <div style="font-size:10px;font-weight:700;color:#F1F5F9">🎓 AI高考志愿规划师</div>
+                <div style="font-size:7px;color:#94A3B8">学生专属报告 · 一次性链接</div>
+              </div>
+              <div style="background:#1E293B;border-radius:6px;padding:6px;margin-bottom:5px">
+                <div style="font-size:7px;color:#94A3B8;margin-bottom:3px">姓名/昵称 *</div>
+                <div style="background:#0F172A;border-radius:4px;padding:4px 5px;font-size:7px;color:#64748B">建议用网名…</div>
+              </div>
+              <div style="background:#1E293B;border-radius:6px;padding:6px;margin-bottom:8px">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">
+                  <div>
+                    <div style="font-size:7px;color:#94A3B8;margin-bottom:2px">省份 *</div>
+                    <div style="background:#0F172A;border-radius:3px;padding:3px 4px;font-size:7px;color:#64748B">选择 ▾</div>
+                  </div>
+                  <div>
+                    <div style="font-size:7px;color:#94A3B8;margin-bottom:2px">分数 *</div>
+                    <div style="background:#0F172A;border-radius:3px;padding:3px 4px;font-size:7px;color:#64748B">输入</div>
+                  </div>
+                </div>
+              </div>
+              <div style="background:#818CF8;border-radius:6px;padding:6px;text-align:center;font-size:8px;color:#fff;font-weight:600">下一步：意向偏好 →</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>双栏 PC 布局（600px）</h3>
+      <p>左侧固定品牌信息 + PC横幅说明，右侧表单区域。充分利用 PC 屏幕宽度，体验更像网页。略偏离原设计语言。</p>
+      <div class="mockup" style="margin-top:10px">
+        <div class="mockup-body" style="background:#1a1a2e;padding:20px;display:flex;justify-content:center;min-height:240px">
+          <div style="width:280px;background:#0F172A;min-height:200px">
+            <!-- banner -->
+            <div style="background:#FEF3C7;border-bottom:2px solid #F59E0B;padding:5px 8px;font-size:7px;color:#92400E">
+              <div style="font-weight:700">⚠️ 请在电脑端使用本页面</div>
+            </div>
+            <div style="display:grid;grid-template-columns:100px 1fr;gap:0;height:calc(100% - 24px)">
+              <!-- 左栏 -->
+              <div style="padding:10px;border-right:1px solid #1E293B;display:flex;flex-direction:column;gap:6px">
+                <div style="font-size:9px;font-weight:700;color:#F1F5F9">🎓 AI高考志愿规划师</div>
+                <div style="font-size:7px;color:#94A3B8;line-height:1.5">学生专属报告<br>一次性链接</div>
+                <div style="margin-top:6px;font-size:7px;color:#64748B;background:#1E293B;border-radius:4px;padding:4px">
+                  📊 2200万+录取数据<br>📍 一分一段精准定位<br>🤖 三大AI交叉验证
+                </div>
+              </div>
+              <!-- 右栏 -->
+              <div style="padding:8px">
+                <div style="background:#1E293B;border-radius:5px;padding:5px;margin-bottom:4px">
+                  <div style="font-size:7px;color:#94A3B8;margin-bottom:2px">姓名/昵称</div>
+                  <div style="background:#0F172A;border-radius:3px;padding:3px 5px;font-size:7px;color:#64748B">建议用网名</div>
+                </div>
+                <div style="background:#1E293B;border-radius:5px;padding:5px;margin-bottom:4px">
+                  <div style="font-size:7px;color:#94A3B8;margin-bottom:2px">省份 / 分数 / 位次</div>
+                  <div style="background:#0F172A;border-radius:3px;padding:3px 5px;font-size:7px;color:#64748B">…</div>
+                </div>
+                <div style="background:#818CF8;border-radius:5px;padding:5px;text-align:center;font-size:8px;color:#fff;font-weight:600;margin-top:6px">下一步 →</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:20px;padding:14px;background:rgba(245,158,11,0.08);border-radius:8px;border-left:3px solid #F59E0B">
+  <p class="label">设计背景</p>
+  <p style="font-size:13px;line-height:1.7">
+    方案A复用手机框，开发成本最低，设计语言一致，但PC端会有大量空白背景（主播端本来就是这样设计的）。<br>
+    方案B去掉外壳，稍宽一点，PC感更强，内容区不浪费。<br>
+    方案C最"像网页"，适合长内容，但偏离现有设计体系较多。
+  </p>
+</div>

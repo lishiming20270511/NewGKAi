@@ -1,0 +1,185 @@
+<h2>Page⑨ 学生自助报告页 — 最终线框图</h2>
+<p class="subtitle">沿用 prototype.html 风格：375×800px 手机框 + 浅色主题 + 灰色背景。4个状态完整展示。</p>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">
+
+  <!-- 状态①②：错误状态 -->
+  <div>
+    <p class="label" style="margin-bottom:8px">状态① 链接已使用 &nbsp;/&nbsp; 状态② 链接无效</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+
+      <!-- 已使用 -->
+      <div style="background:#E2E8F0;padding:10px;border-radius:12px;display:flex;justify-content:center">
+        <div style="width:140px;height:220px;background:#F5F7FA;border-radius:16px;overflow:hidden;box-shadow:0 10px 25px rgba(0,0,0,0.1),0 0 0 2px #1E293B,0 0 0 4px #334155;display:flex;flex-direction:column">
+          <div style="height:18px;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 8px;font-size:7px;color:#1E293B;font-weight:600;flex-shrink:0">
+            <span>📶 9:41</span><span>🔋</span>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:6px;padding:10px;text-align:center">
+            <div style="font-size:24px">🔒</div>
+            <div style="font-size:10px;font-weight:700;color:#EF4444">此链接已被使用</div>
+            <div style="font-size:8px;color:#64748B;line-height:1.5">每个链接仅限使用1次。<br>如需重新生成，请<br>联系提供链接的老师。</div>
+          </div>
+          <div style="height:16px;background:#fff;border-top:1px solid #E2E8F0;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <div style="width:28px;height:3px;background:#CBD5E1;border-radius:99px"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 链接无效 -->
+      <div style="background:#E2E8F0;padding:10px;border-radius:12px;display:flex;justify-content:center">
+        <div style="width:140px;height:220px;background:#F5F7FA;border-radius:16px;overflow:hidden;box-shadow:0 10px 25px rgba(0,0,0,0.1),0 0 0 2px #1E293B,0 0 0 4px #334155;display:flex;flex-direction:column">
+          <div style="height:18px;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 8px;font-size:7px;color:#1E293B;font-weight:600;flex-shrink:0">
+            <span>📶 9:41</span><span>🔋</span>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:6px;padding:10px;text-align:center">
+            <div style="font-size:24px">❌</div>
+            <div style="font-size:10px;font-weight:700;color:#EF4444">无效链接</div>
+            <div style="font-size:8px;color:#64748B;line-height:1.5">请确认链接是否完整，<br>或联系老师重新<br>获取有效链接。</div>
+          </div>
+          <div style="height:16px;background:#fff;border-top:1px solid #E2E8F0;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <div style="width:28px;height:3px;background:#CBD5E1;border-radius:99px"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 状态③：填写信息 -->
+  <div>
+    <p class="label" style="margin-bottom:8px">状态③ 链接有效 — STEP 1/2 考生信息</p>
+    <div style="background:#E2E8F0;padding:10px;border-radius:12px;display:flex;justify-content:center">
+      <div style="width:180px;height:380px;background:#F5F7FA;border-radius:16px;overflow:hidden;box-shadow:0 10px 25px rgba(0,0,0,0.1),0 0 0 2px #1E293B,0 0 0 4px #334155;display:flex;flex-direction:column">
+        <!-- status bar -->
+        <div style="height:18px;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 8px;font-size:7px;color:#1E293B;font-weight:600;flex-shrink:0">
+          <span>📶 9:41</span><span>🔋</span>
+        </div>
+        <!-- PC banner（琥珀，强制） -->
+        <div style="background:#FEF3C7;border-bottom:1.5px solid #F59E0B;padding:4px 6px;font-size:6.5px;color:#92400E;flex-shrink:0;line-height:1.4">
+          <span style="font-weight:700">⚠️ 请在电脑端浏览器中使用本页面</span><br>
+          <span style="opacity:0.85">手机端无法下载PDF，建议用Chrome/Edge/Firefox在电脑上打开。</span>
+        </div>
+        <!-- 品牌区（无导航栏） -->
+        <div style="background:#fff;border-bottom:1px solid #E2E8F0;padding:5px 8px;text-align:center;flex-shrink:0">
+          <div style="font-size:9px;font-weight:700;color:#1E293B">🎓 AI高考志愿规划师</div>
+          <div style="font-size:7px;color:#64748B">学生专属报告 · 一次性链接</div>
+        </div>
+        <!-- 内容区（可滚动） -->
+        <div style="flex:1;overflow:hidden;padding:6px;display:flex;flex-direction:column;gap:4px">
+          <!-- 步骤指示 -->
+          <div style="background:#EEF2FF;border-radius:6px;padding:4px 6px;display:flex;align-items:center;gap:4px">
+            <div style="width:12px;height:12px;border-radius:50%;background:#3B82F6;display:flex;align-items:center;justify-content:center;color:#fff;font-size:6px;font-weight:700;flex-shrink:0">1</div>
+            <div style="width:16px;height:1.5px;background:#CBD5E1"></div>
+            <div style="width:12px;height:12px;border-radius:50%;background:#E2E8F0;border:1.5px solid #CBD5E1;display:flex;align-items:center;justify-content:center;color:#94A3B8;font-size:6px;flex-shrink:0">2</div>
+            <div style="font-size:7px;font-weight:600;color:#1E293B;margin-left:2px">STEP 1/2 · 考生基本信息</div>
+          </div>
+          <!-- 表单卡片 -->
+          <div style="background:#fff;border-radius:6px;padding:6px;border:1px solid #E2E8F0;flex:1;display:flex;flex-direction:column;gap:4px">
+            <div>
+              <div style="font-size:7px;font-weight:600;color:#1E293B;margin-bottom:2px">姓名/昵称 *</div>
+              <div style="border:1px solid #E2E8F0;border-radius:4px;padding:3px 5px;font-size:7px;color:#94A3B8">建议录入网名</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">
+              <div>
+                <div style="font-size:7px;font-weight:600;color:#1E293B;margin-bottom:2px">省份 *</div>
+                <div style="border:1px solid #E2E8F0;border-radius:4px;padding:3px 5px;font-size:7px;color:#94A3B8">选择 ▾</div>
+              </div>
+              <div>
+                <div style="font-size:7px;font-weight:600;color:#1E293B;margin-bottom:2px">分数 * <span style="color:#94A3B8">/750</span></div>
+                <div style="border:1px solid #E2E8F0;border-radius:4px;padding:3px 5px;font-size:7px;color:#94A3B8">输入</div>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:7px;font-weight:600;color:#1E293B;margin-bottom:2px">选科 *</div>
+              <div style="border:1px solid #E2E8F0;border-radius:4px;padding:3px 5px;font-size:7px;color:#94A3B8">选省份后自动渲染</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">
+              <div>
+                <div style="font-size:7px;font-weight:600;color:#1E293B;margin-bottom:2px">服从调剂</div>
+                <div style="display:flex;gap:2px">
+                  <div style="background:#3B82F6;color:#fff;padding:2px 4px;border-radius:3px;font-size:6px">服从</div>
+                  <div style="border:1px solid #E2E8F0;color:#64748B;padding:2px 4px;border-radius:3px;font-size:6px">不服从</div>
+                </div>
+              </div>
+              <div>
+                <div style="font-size:7px;font-weight:600;color:#1E293B;margin-bottom:2px">家庭经济</div>
+                <div style="border:1px solid #E2E8F0;border-radius:4px;padding:2px 4px;font-size:6.5px;color:#94A3B8">选择 ▾</div>
+              </div>
+            </div>
+          </div>
+          <!-- CTA -->
+          <div style="background:#3B82F6;color:#fff;text-align:center;padding:6px;border-radius:6px;font-size:8px;font-weight:600;flex-shrink:0">
+            下一步：意向偏好 →
+          </div>
+        </div>
+        <!-- home bar -->
+        <div style="height:16px;background:#fff;border-top:1px solid #E2E8F0;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <div style="width:28px;height:3px;background:#CBD5E1;border-radius:99px"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 状态④：完整报告 -->
+<div>
+  <p class="label" style="margin-bottom:8px">状态④ 完整报告（分析完成后，跳过付款墙，仅「下载PDF」）</p>
+  <div style="background:#E2E8F0;padding:10px;border-radius:12px;display:flex;justify-content:center">
+    <div style="width:280px;background:#F5F7FA;border-radius:16px;overflow:hidden;box-shadow:0 10px 25px rgba(0,0,0,0.1),0 0 0 2px #1E293B,0 0 0 4px #334155">
+      <!-- status bar -->
+      <div style="height:20px;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 10px;font-size:8px;color:#1E293B;font-weight:600">
+        <span>📶 9:41</span><span>🔋</span>
+      </div>
+      <!-- PC banner（持续显示，报告页也不消失） -->
+      <div style="background:#FEF3C7;border-bottom:1.5px solid #F59E0B;padding:5px 8px;font-size:7.5px;color:#92400E;line-height:1.4">
+        <span style="font-weight:700">⚠️ 请在电脑端下载PDF报告</span>&nbsp;
+        <span style="opacity:0.85">手机端无法正常下载PDF文件。</span>
+      </div>
+      <!-- 品牌区 -->
+      <div style="background:#fff;border-bottom:1px solid #E2E8F0;padding:6px 10px;text-align:center">
+        <div style="font-size:10px;font-weight:700;color:#1E293B">🎓 AI高考志愿规划师 · 学生专属报告</div>
+      </div>
+      <!-- 报告内容区 -->
+      <div style="padding:8px;display:flex;flex-direction:column;gap:6px">
+        <!-- 报告头 -->
+        <div style="background:#fff;border-radius:8px;padding:8px;border:1px solid #E2E8F0">
+          <div style="font-size:9px;font-weight:700;color:#1E293B;margin-bottom:2px">报告 GK260619-7821</div>
+          <div style="font-size:8px;color:#64748B">📌 小明 · 河南 · 560分 · 物+化+政 · 位次48230</div>
+        </div>
+        <!-- Tier分布 -->
+        <div style="background:#fff;border-radius:8px;padding:8px;border:1px solid #E2E8F0;display:flex;gap:6px;justify-content:space-around;text-align:center">
+          <div><div style="font-size:8px;color:#EF4444;font-weight:700">🚀 冲刺</div><div style="font-size:9px;font-weight:700;color:#1E293B">5所</div></div>
+          <div><div style="font-size:8px;color:#3B82F6;font-weight:700">🎯 稳妥</div><div style="font-size:9px;font-weight:700;color:#1E293B">5所</div></div>
+          <div><div style="font-size:8px;color:#22C55E;font-weight:700">🟢 保底</div><div style="font-size:9px;font-weight:700;color:#1E293B">5所</div></div>
+        </div>
+        <!-- 报告内容省略提示 -->
+        <div style="background:#EEF2FF;border-radius:6px;padding:8px;text-align:center">
+          <div style="font-size:8px;color:#3B82F6">↕ 完整报告内容（5大板块·15所院校·18维度）</div>
+          <div style="font-size:7px;color:#94A3B8;margin-top:2px">与主播端完整报告完全一致</div>
+        </div>
+        <!-- 底部：仅下载PDF，无其他按钮 -->
+        <div style="background:#3B82F6;color:#fff;text-align:center;padding:9px;border-radius:8px;font-size:10px;font-weight:700">
+          📥 下载PDF报告
+        </div>
+        <div style="text-align:center;font-size:7.5px;color:#94A3B8">
+          链接已使用 · 如需重新分析请联系老师
+        </div>
+      </div>
+      <!-- home bar -->
+      <div style="height:18px;background:#fff;border-top:1px solid #E2E8F0;display:flex;align-items:center;justify-content:center">
+        <div style="width:36px;height:3px;background:#CBD5E1;border-radius:99px"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:20px;padding:14px;background:rgba(59,130,246,0.08);border-radius:8px;border-left:3px solid #3B82F6">
+  <p class="label">与 prototype.html 一致的设计规格</p>
+  <ul style="margin:6px 0;padding-left:20px;font-size:13px;line-height:1.8">
+    <li>手机框 375×800px，深色边框双环（box-shadow: 0 0 0 3px #1E293B, 0 0 0 6px #334155）</li>
+    <li>浅色主题：背景 #F5F7FA，卡片 #FFFFFF，边框 #E2E8F0，主文字 #1E293B</li>
+    <li>按钮主色改为蓝色 #3B82F6（与 prototype.html 一致），非 Indigo #818CF8</li>
+    <li>步骤指示器：EEF2FF 蓝底胶囊，与 prototype.html 相同样式</li>
+    <li>无主导航栏（替换为品牌区），PC横幅全程固定显示</li>
+    <li>外层页面背景：#E2E8F0 灰色（与 prototype.html 的 body 背景一致）</li>
+  </ul>
+</div>

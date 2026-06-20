@@ -1,0 +1,140 @@
+<h2>Page⑨ 学生自助报告页 — 完整线框图</h2>
+<p class="subtitle">一次性链接专属页面（/s?t=...），无主导航，无付款墙，直出完整报告。展示4个关键状态：</p>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+
+  <!-- 状态1：链接已使用 -->
+  <div class="mockup">
+    <div class="mockup-header" style="background:#450A0A;color:#FCA5A5">状态① 链接已被使用</div>
+    <div class="mockup-body" style="background:#0F172A;padding:10px;font-family:monospace;font-size:11px;color:#F1F5F9;min-height:200px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:10px">
+      <div style="font-size:32px">🔒</div>
+      <div style="color:#EF4444;font-size:13px;font-weight:700;text-align:center">此链接已被使用</div>
+      <div style="color:#94A3B8;font-size:11px;text-align:center;line-height:1.6">每个链接仅限使用1次。<br>如需重新生成报告，请联系<br>提供链接的老师。</div>
+    </div>
+  </div>
+
+  <!-- 状态2：链接无效 -->
+  <div class="mockup">
+    <div class="mockup-header" style="background:#450A0A;color:#FCA5A5">状态② 链接无效</div>
+    <div class="mockup-body" style="background:#0F172A;padding:10px;font-family:monospace;font-size:11px;color:#F1F5F9;min-height:200px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:10px">
+      <div style="font-size:32px">❌</div>
+      <div style="color:#EF4444;font-size:13px;font-weight:700;text-align:center">无效链接</div>
+      <div style="color:#94A3B8;font-size:11px;text-align:center;line-height:1.6">请确认链接是否完整，<br>或联系提供链接的老师<br>重新获取有效链接。</div>
+    </div>
+  </div>
+</div>
+
+<!-- 状态3：链接有效 — 填写信息 -->
+<div class="mockup" style="margin-bottom:16px">
+  <div class="mockup-header" style="background:#064E3B;color:#6EE7B7">状态③ 链接有效 — 填写考生信息（完整页面）</div>
+  <div class="mockup-body" style="background:#0F172A;padding:10px;font-family:monospace;font-size:11px;color:#F1F5F9">
+
+    <!-- PC端专用横幅（琥珀色，不可关闭） -->
+    <div style="background:#FEF3C7;border-bottom:2px solid #F59E0B;padding:8px 10px;color:#92400E;font-size:10px;border-radius:6px;margin-bottom:10px">
+      <div style="font-weight:700;margin-bottom:2px">⚠️ 请在电脑端浏览器中使用本页面</div>
+      <div style="opacity:0.85">手机端打开将无法正常下载PDF报告，且操作界面不适配手机屏幕。建议使用 Chrome / Edge / Firefox 浏览器在电脑上打开。</div>
+    </div>
+
+    <!-- 品牌区（无主导航） -->
+    <div style="text-align:center;padding:8px 0 10px;border-bottom:1px solid #1E293B;margin-bottom:10px">
+      <div style="font-size:14px;font-weight:700;color:#F1F5F9">🎓 AI高考志愿规划师</div>
+      <div style="font-size:10px;color:#94A3B8">学生专属报告 · 一次性链接</div>
+    </div>
+
+    <!-- 步骤指示 -->
+    <div style="background:#1E293B;border-radius:8px;padding:8px 10px;margin-bottom:8px">
+      <div style="display:flex;align-items:center;gap:6px">
+        <div style="width:18px;height:18px;border-radius:50%;background:#818CF8;display:flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:700;flex-shrink:0">1</div>
+        <div style="width:40px;height:2px;background:#334155"></div>
+        <div style="width:18px;height:18px;border-radius:50%;background:#334155;border:2px solid #475569;display:flex;align-items:center;justify-content:center;color:#64748B;font-size:9px;flex-shrink:0">2</div>
+        <div style="margin-left:6px">
+          <div style="font-size:11px;font-weight:600">STEP 1/2 · 考生基本信息</div>
+          <div style="font-size:9px;color:#94A3B8">录入考生成绩与选科信息</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 表单（与主播端相同7字段） -->
+    <div style="background:#1E293B;border-radius:8px;padding:10px;margin-bottom:8px">
+      <div style="color:#94A3B8;font-size:10px;margin-bottom:4px">姓名/昵称 *</div>
+      <div style="background:#0F172A;border:1px solid #334155;border-radius:6px;padding:6px 8px;color:#64748B;font-size:10px;margin-bottom:8px">考虑用户隐私，建议用网名代替</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+        <div>
+          <div style="color:#94A3B8;font-size:10px;margin-bottom:4px">省份 *</div>
+          <div style="background:#0F172A;border:1px solid #334155;border-radius:6px;padding:6px 8px;color:#64748B;font-size:10px">请选择 ▾</div>
+        </div>
+        <div>
+          <div style="color:#94A3B8;font-size:10px;margin-bottom:4px">高考分数 * <span style="color:#475569">/750</span></div>
+          <div style="background:#0F172A;border:1px solid #334155;border-radius:6px;padding:6px 8px;color:#64748B;font-size:10px">请输入</div>
+        </div>
+      </div>
+
+      <div style="color:#94A3B8;font-size:10px;margin-bottom:4px">省内位次（选填）</div>
+      <div style="background:#0F172A;border:1px solid #334155;border-radius:6px;padding:6px 8px;color:#64748B;font-size:10px;margin-bottom:8px">可留空自动估算</div>
+
+      <div style="color:#94A3B8;font-size:10px;margin-bottom:4px">选科 *（选省份后动态渲染）</div>
+      <div style="background:#0F172A;border:1px solid #334155;border-radius:6px;padding:8px;color:#64748B;font-size:10px;margin-bottom:8px">首选：[物理] [历史]　再选：[化学] [生物] [政治] [地理]</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div>
+          <div style="color:#94A3B8;font-size:10px;margin-bottom:4px">服从调剂</div>
+          <div style="display:flex;gap:4px">
+            <div style="background:#818CF8;color:#fff;padding:4px 8px;border-radius:5px;font-size:10px">服从</div>
+            <div style="background:#1E293B;color:#94A3B8;padding:4px 8px;border-radius:5px;font-size:10px;border:1px solid #334155">不服从</div>
+          </div>
+        </div>
+        <div>
+          <div style="color:#94A3B8;font-size:10px;margin-bottom:4px">家庭经济</div>
+          <div style="background:#0F172A;border:1px solid #334155;border-radius:6px;padding:5px 8px;color:#64748B;font-size:10px">请选择 ▾</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:#818CF8;color:#fff;text-align:center;padding:9px;border-radius:10px;font-size:12px;font-weight:600;box-shadow:0 2px 8px rgba(129,140,248,0.3)">
+      下一步：意向偏好 →
+    </div>
+  </div>
+</div>
+
+<!-- 状态4：生成报告后 -->
+<div class="mockup">
+  <div class="mockup-header" style="background:#064E3B;color:#6EE7B7">状态④ 完整报告（跳过付款墙，仅「下载PDF」按钮）</div>
+  <div class="mockup-body" style="background:#0F172A;padding:10px;font-family:monospace;font-size:11px;color:#F1F5F9">
+
+    <!-- PC端横幅持续显示 -->
+    <div style="background:#FEF3C7;border-bottom:2px solid #F59E0B;padding:6px 10px;color:#92400E;font-size:10px;border-radius:6px;margin-bottom:8px">
+      <span style="font-weight:700">⚠️ 请在电脑端下载PDF报告</span>
+    </div>
+
+    <div style="background:#1E293B;border-radius:8px;padding:8px;margin-bottom:6px">
+      <div style="font-size:11px;font-weight:600">报告 GK260619-7821</div>
+      <div style="font-size:10px;color:#94A3B8">📌 小明 · 河南 · 560分 · 物+化+政</div>
+    </div>
+
+    <div style="color:#64748B;font-size:10px;text-align:center;margin:6px 0">↕ 完整报告内容（5大板块，同主播端）</div>
+
+    <div style="background:#1E293B;border-radius:6px;padding:8px;margin-bottom:6px;color:#94A3B8;font-size:10px;text-align:center">
+      … 板块一～五完整内容 …
+    </div>
+
+    <!-- 底部：仅下载PDF，无「测下一个」「直播答疑」 -->
+    <div style="background:#818CF8;color:#fff;text-align:center;padding:9px;border-radius:10px;font-size:12px;font-weight:600;box-shadow:0 2px 8px rgba(129,140,248,0.3)">
+      📥 下载PDF报告
+    </div>
+    <div style="text-align:center;color:#64748B;font-size:10px;margin-top:6px">链接已使用 · 如需重新分析请联系老师</div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:16px;padding:14px;background:rgba(129,140,248,0.08);border-radius:8px;border-left:3px solid #818CF8">
+  <p class="label">关键设计说明</p>
+  <ul style="margin:6px 0;padding-left:20px;font-size:13px;line-height:1.8">
+    <li>无主导航栏：学生自助页不显示主播端导航，仅有品牌区 Logo</li>
+    <li>PC横幅全程显示：填写信息、查看报告全程固定在内容区顶部</li>
+    <li>跳过付款墙：分析完成后直接跳转完整报告，不经过 #paywall</li>
+    <li>token 在报告渲染完成时标记为「已使用」，并发请求以行锁保证唯一性</li>
+    <li>底部仅一个按钮「📥 下载PDF」，无「测下一个」和「直播答疑」</li>
+    <li>报告底部提示「链接已使用 · 如需重新分析请联系老师」</li>
+    <li>STEP1/STEP2 表单与主播端完全一致，复用同一套组件</li>
+  </ul>
+</div>

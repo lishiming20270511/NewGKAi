@@ -1,0 +1,103 @@
+<h2>Page⑨ 学生自助页 — 响应式自适应布局</h2>
+<p class="subtitle">无固定尺寸，窄列居中自适应屏幕宽度，prototype.html 浅色风格。</p>
+
+<!-- 模拟不同屏幕宽度下的效果 -->
+<div style="display:flex;flex-direction:column;gap:20px">
+
+  <!-- 说明 -->
+  <div style="padding:14px;background:rgba(59,130,246,0.08);border-radius:8px;border-left:3px solid #3B82F6;font-size:13px;line-height:1.8">
+    <strong>布局规则：</strong>内容区 <code>max-width: 520px</code>，水平居中（<code>margin: 0 auto</code>），左右 padding 16px。<br>
+    不设 height 限制，内容多长页面就多高，浏览器原生滚动。无手机框外壳，无状态栏。<br>
+    背景：<code>#F0F4F8</code>（浅蓝灰，与 prototype.html body 背景接近）。
+  </div>
+
+  <!-- PC宽屏模拟 -->
+  <div>
+    <p class="label" style="margin-bottom:8px">PC 宽屏（1200px+）— 内容居中 520px 窄列</p>
+    <div style="background:#E2E8F0;border-radius:12px;padding:20px 0;position:relative;min-height:400px;display:flex;justify-content:center">
+      <!-- 两侧留白暗示 -->
+      <div style="position:absolute;left:0;top:0;bottom:0;width:calc(50% - 260px);background:rgba(0,0,0,0.03);border-right:1px dashed #CBD5E1"></div>
+      <div style="position:absolute;right:0;top:0;bottom:0;width:calc(50% - 260px);background:rgba(0,0,0,0.03);border-left:1px dashed #CBD5E1"></div>
+
+      <!-- 内容列 -->
+      <div style="width:520px;display:flex;flex-direction:column;gap:0;z-index:1">
+        <!-- PC横幅 -->
+        <div style="background:#FEF3C7;border-bottom:2px solid #F59E0B;padding:10px 16px;font-size:12px;color:#92400E;border-radius:8px 8px 0 0">
+          <div style="font-weight:700;margin-bottom:2px">⚠️ 请在电脑端浏览器中使用本页面</div>
+          <div style="opacity:0.85;font-size:11px">手机端打开将无法正常下载PDF报告，且操作界面不适配手机屏幕。建议使用 Chrome / Edge / Firefox 浏览器在电脑上打开。</div>
+        </div>
+        <!-- 品牌区 -->
+        <div style="background:#fff;border:1px solid #E2E8F0;border-top:none;padding:14px 16px;text-align:center">
+          <div style="font-size:16px;font-weight:700;color:#1E293B">🎓 AI高考志愿规划师</div>
+          <div style="font-size:12px;color:#64748B;margin-top:2px">学生专属报告 · 一次性链接</div>
+        </div>
+        <!-- 步骤指示 -->
+        <div style="background:#EEF2FF;border:1px solid #E2E8F0;border-top:none;padding:10px 16px;display:flex;align-items:center;gap:8px">
+          <div style="width:20px;height:20px;border-radius:50%;background:#3B82F6;display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:700;flex-shrink:0">1</div>
+          <div style="flex:1;height:2px;background:#CBD5E1;border-radius:2px"></div>
+          <div style="width:20px;height:20px;border-radius:50%;background:#E2E8F0;border:2px solid #CBD5E1;display:flex;align-items:center;justify-content:center;color:#94A3B8;font-size:10px;flex-shrink:0">2</div>
+          <div style="font-size:12px;font-weight:600;color:#3B82F6;margin-left:4px">STEP 1/2 · 考生基本信息</div>
+        </div>
+        <!-- 表单区 -->
+        <div style="background:#fff;border:1px solid #E2E8F0;border-top:none;padding:16px;display:flex;flex-direction:column;gap:12px;border-radius:0 0 8px 8px">
+          <div>
+            <div style="font-size:13px;font-weight:600;color:#1E293B;margin-bottom:4px">姓名/昵称 <span style="color:#EF4444">*</span></div>
+            <div style="border:1.5px solid #E2E8F0;border-radius:6px;padding:9px 12px;font-size:13px;color:#94A3B8">考虑用户隐私，建议用网名代替</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div>
+              <div style="font-size:13px;font-weight:600;color:#1E293B;margin-bottom:4px">省份 <span style="color:#EF4444">*</span></div>
+              <div style="border:1.5px solid #E2E8F0;border-radius:6px;padding:9px 12px;font-size:13px;color:#94A3B8">请选择 ▾</div>
+            </div>
+            <div>
+              <div style="font-size:13px;font-weight:600;color:#1E293B;margin-bottom:4px">高考分数 <span style="color:#EF4444">*</span> <span style="color:#94A3B8;font-weight:400">/750</span></div>
+              <div style="border:1.5px solid #E2E8F0;border-radius:6px;padding:9px 12px;font-size:13px;color:#94A3B8">请输入</div>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:#1E293B;margin-bottom:4px">选科 <span style="color:#EF4444">*</span> <span style="font-size:11px;color:#64748B;font-weight:400">（选择省份后自动渲染）</span></div>
+            <div style="border:1.5px solid #E2E8F0;border-radius:6px;padding:9px 12px;font-size:13px;color:#94A3B8">请先选择省份</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div>
+              <div style="font-size:13px;font-weight:600;color:#1E293B;margin-bottom:4px">服从调剂</div>
+              <div style="display:flex;gap:6px">
+                <div style="background:#3B82F6;color:#fff;padding:7px 14px;border-radius:6px;font-size:13px;font-weight:600">服从</div>
+                <div style="border:1.5px solid #E2E8F0;color:#64748B;padding:7px 14px;border-radius:6px;font-size:13px">不服从</div>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:13px;font-weight:600;color:#1E293B;margin-bottom:4px">家庭经济</div>
+              <div style="border:1.5px solid #E2E8F0;border-radius:6px;padding:9px 12px;font-size:13px;color:#94A3B8">请选择 ▾</div>
+            </div>
+          </div>
+          <!-- CTA -->
+          <div style="background:#3B82F6;color:#fff;text-align:center;padding:13px;border-radius:8px;font-size:15px;font-weight:700;margin-top:4px;box-shadow:0 2px 8px rgba(59,130,246,0.3)">
+            下一步：意向偏好 →
+          </div>
+        </div>
+        <!-- 底部说明 -->
+        <div style="text-align:center;font-size:11px;color:#94A3B8;margin-top:10px">数据来源：教育部 · 阳光高考 · 近6年2200万+录取记录</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 报告页底部按钮区（仅PDF） -->
+  <div>
+    <p class="label" style="margin-bottom:8px">状态④ 报告页底部操作区（仅「下载PDF」，无其他按钮）</p>
+    <div style="background:#E2E8F0;border-radius:12px;padding:16px;display:flex;justify-content:center">
+      <div style="width:520px;background:#fff;border-radius:8px;padding:16px;border:1px solid #E2E8F0;display:flex;flex-direction:column;gap:10px">
+        <div style="background:#EEF2FF;border-radius:6px;padding:12px;text-align:center;color:#3B82F6;font-size:13px">
+          ↕ 完整报告内容（5大板块 · 15所院校 · 18维度）与主播端一致
+        </div>
+        <div style="background:#3B82F6;color:#fff;text-align:center;padding:14px;border-radius:8px;font-size:15px;font-weight:700;box-shadow:0 2px 8px rgba(59,130,246,0.3)">
+          📥 下载PDF报告
+        </div>
+        <div style="text-align:center;font-size:12px;color:#94A3B8">
+          链接已使用 · 如需重新分析请联系老师
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>

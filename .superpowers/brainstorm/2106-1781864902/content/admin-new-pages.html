@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>管理后台新子页面设计</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif;
+  background: #0F172A;
+  color: #F1F5F9;
+  font-size: 13px;
+  padding: 24px;
+  -webkit-font-smoothing: antialiased;
+}
+h2 { font-size: 20px; font-weight: 700; color: #F1F5F9; margin-bottom: 6px; }
+.subtitle { font-size: 13px; color: #64748B; margin-bottom: 24px; }
+.label { font-size: 11px; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 10px; }
+
+.section-wrap { display: flex; flex-direction: column; gap: 32px; }
+
+/* Admin shell */
+.admin-shell {
+  background: #0F172A;
+  border: 1px solid rgba(148,163,184,0.1);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.admin-topbar {
+  background: #1E293B;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(148,163,184,0.08);
+}
+.admin-brand { font-size: 14px; font-weight: 700; color: #F1F5F9; }
+.admin-tabs { display: flex; gap: 2px; }
+.admin-tab {
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #64748B;
+  cursor: pointer;
+}
+.admin-tab.active { background: #818CF8; color: #fff; font-weight: 600; }
+.admin-body { padding: 20px; }
+
+/* Table */
+.data-table { width: 100%; border-collapse: collapse; }
+.data-table th {
+  background: #1E293B;
+  color: #94A3B8;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid rgba(148,163,184,0.08);
+}
+.data-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(148,163,184,0.06);
+  color: #F1F5F9;
+  font-size: 12px;
+}
+.data-table tr:hover td { background: rgba(30,41,59,0.6); }
+
+/* Badge */
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.badge-green { background: rgba(34,197,94,0.15); color: #22C55E; }
+.badge-gray { background: rgba(148,163,184,0.15); color: #94A3B8; }
+.badge-amber { background: rgba(245,158,11,0.15); color: #F59E0B; }
+.badge-red { background: rgba(239,68,68,0.15); color: #EF4444; }
+.badge-blue { background: rgba(59,130,246,0.15); color: #3B82F6; }
+
+/* Buttons */
+.btn-xs {
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+}
+.btn-indigo { background: rgba(129,140,248,0.15); color: #818CF8; }
+.btn-danger { background: rgba(239,68,68,0.12); color: #EF4444; }
+.btn-ghost { background: rgba(148,163,184,0.1); color: #94A3B8; }
+
+/* Toolbar */
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  gap: 12px;
+}
+.toolbar-left { display: flex; align-items: center; gap: 8px; }
+.btn-primary {
+  background: #818CF8;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.search-input {
+  background: #1E293B;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-size: 12px;
+  color: #F1F5F9;
+  width: 180px;
+}
+
+/* Script card */
+.script-category {
+  background: #1E293B;
+  border-radius: 10px;
+  margin-bottom: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(148,163,184,0.06);
+}
+.category-header {
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(148,163,184,0.06);
+}
+.category-title { font-size: 13px; font-weight: 600; color: #F59E0B; display: flex; align-items: center; gap: 6px; }
+.category-meta { display: flex; align-items: center; gap: 8px; }
+.script-item {
+  padding: 10px 14px;
+  background: #0F172A;
+  margin: 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(148,163,184,0.06);
+}
+.script-title { font-size: 12px; font-weight: 600; color: #F1F5F9; margin-bottom: 4px; }
+.script-content { font-size: 12px; color: #94A3B8; line-height: 1.6; margin-bottom: 8px; }
+.script-actions { display: flex; gap: 6px; justify-content: flex-end; }
+
+/* Stats row */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.stat-card {
+  background: #1E293B;
+  border-radius: 10px;
+  padding: 14px 16px;
+  border: 1px solid rgba(148,163,184,0.08);
+}
+.stat-num { font-size: 22px; font-weight: 800; color: #818CF8; }
+.stat-label { font-size: 11px; color: #64748B; margin-top: 3px; }
+
+/* Link batch card */
+.batch-card {
+  background: #1E293B;
+  border-radius: 10px;
+  padding: 14px 16px;
+  border: 1px solid rgba(148,163,184,0.08);
+  margin-bottom: 10px;
+}
+.batch-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.batch-title { font-size: 13px; font-weight: 600; color: #F1F5F9; }
+.batch-time { font-size: 11px; color: #64748B; }
+.batch-stats { display: flex; gap: 16px; }
+.batch-stat { text-align: center; }
+.batch-stat-num { font-size: 16px; font-weight: 700; color: #F1F5F9; }
+.batch-stat-label { font-size: 10px; color: #64748B; }
+.divider { width: 1px; background: rgba(148,163,184,0.1); align-self: stretch; }
+
+/* Generate form */
+.gen-form {
+  background: #1E293B;
+  border-radius: 10px;
+  padding: 16px;
+  border: 1px solid rgba(148,163,184,0.08);
+  margin-bottom: 20px;
+  display: grid;
+  grid-template-columns: 1fr 140px 140px;
+  gap: 12px;
+  align-items: end;
+}
+.gen-label { font-size: 11px; color: #94A3B8; margin-bottom: 5px; }
+.gen-input {
+  background: #0F172A;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 12px;
+  color: #F1F5F9;
+  width: 100%;
+}
+</style>
+</head>
+<body>
+
+<h2>管理后台 — 两个新子页面设计</h2>
+<p class="subtitle">暗色主题，与现有管理后台风格一致（Bento Grid 暗色）</p>
+
+<div class="section-wrap">
+
+  <!-- ① 话术管理 -->
+  <div>
+    <div class="label">① 话术管理</div>
+    <div class="admin-shell">
+      <div class="admin-topbar">
+        <div class="admin-brand">AI高考志愿规划师 · 管理后台</div>
+        <div class="admin-tabs">
+          <div class="admin-tab">主播管理</div>
+          <div class="admin-tab">订单查看</div>
+          <div class="admin-tab active">话术管理</div>
+          <div class="admin-tab">一次性链接</div>
+          <div class="admin-tab">爬虫看板</div>
+          <div class="admin-tab">系统配置</div>
+        </div>
+      </div>
+      <div class="admin-body">
+
+        <!-- 统计 -->
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="stat-num">5</div>
+            <div class="stat-label">话术分类</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num">23</div>
+            <div class="stat-label">话术总数</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num">↑</div>
+            <div class="stat-label">前端实时同步</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num">—</div>
+            <div class="stat-label">最后更新</div>
+          </div>
+        </div>
+
+        <!-- 工具栏 -->
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <button class="btn-primary">＋ 新增话术</button>
+            <button class="btn-primary" style="background:#334155;color:#94A3B8">＋ 新增分类</button>
+          </div>
+          <input class="search-input" placeholder="🔍 搜索话术内容…">
+        </div>
+
+        <!-- 分类1：开播话术（展开） -->
+        <div class="script-category">
+          <div class="category-header">
+            <div class="category-title">📂 开播话术 <span style="font-size:11px;color:#64748B;font-weight:400">2条</span></div>
+            <div class="category-meta">
+              <span class="btn-xs btn-indigo">编辑分类</span>
+              <span style="color:#64748B;font-size:12px">▼</span>
+            </div>
+          </div>
+          <div style="padding:0 8px 8px">
+            <div class="script-item">
+              <div class="script-title">欢迎语</div>
+              <div class="script-content">大家好！欢迎来到直播间，我是xx，今天帮大家做高考志愿规划，有什么问题尽管问！</div>
+              <div class="script-actions">
+                <span class="btn-xs btn-ghost">↕ 排序</span>
+                <span class="btn-xs btn-indigo">编辑</span>
+                <span class="btn-xs btn-danger">删除</span>
+              </div>
+            </div>
+            <div class="script-item">
+              <div class="script-title">引流话术</div>
+              <div class="script-content">今天给前50名报名的朋友，提供免费志愿分析，现在赶紧扣1领取资格！</div>
+              <div class="script-actions">
+                <span class="btn-xs btn-ghost">↕ 排序</span>
+                <span class="btn-xs btn-indigo">编辑</span>
+                <span class="btn-xs btn-danger">删除</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 分类2：产品介绍（折叠） -->
+        <div class="script-category">
+          <div class="category-header">
+            <div class="category-title">📂 产品介绍 <span style="font-size:11px;color:#64748B;font-weight:400">3条</span></div>
+            <div class="category-meta">
+              <span class="btn-xs btn-indigo">编辑分类</span>
+              <span style="color:#64748B;font-size:12px">▶</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 分类3：收单话术（折叠） -->
+        <div class="script-category">
+          <div class="category-header">
+            <div class="category-title">📂 收单话术 <span style="font-size:11px;color:#64748B;font-weight:400">4条</span></div>
+            <div class="category-meta">
+              <span class="btn-xs btn-indigo">编辑分类</span>
+              <span style="color:#64748B;font-size:12px">▶</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 分类4：常见异议（折叠） -->
+        <div class="script-category">
+          <div class="category-header">
+            <div class="category-title">📂 常见异议处理 <span style="font-size:11px;color:#64748B;font-weight:400">5条</span></div>
+            <div class="category-meta">
+              <span class="btn-xs btn-indigo">编辑分类</span>
+              <span style="color:#64748B;font-size:12px">▶</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ② 一次性链接管理 -->
+  <div>
+    <div class="label">② 一次性链接管理</div>
+    <div class="admin-shell">
+      <div class="admin-topbar">
+        <div class="admin-brand">AI高考志愿规划师 · 管理后台</div>
+        <div class="admin-tabs">
+          <div class="admin-tab">主播管理</div>
+          <div class="admin-tab">订单查看</div>
+          <div class="admin-tab">话术管理</div>
+          <div class="admin-tab active">一次性链接</div>
+          <div class="admin-tab">爬虫看板</div>
+          <div class="admin-tab">系统配置</div>
+        </div>
+      </div>
+      <div class="admin-body">
+
+        <!-- 统计 -->
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="stat-num">47</div>
+            <div class="stat-label">累计生成链接</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num" style="color:#22C55E">31</div>
+            <div class="stat-label">已使用</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num" style="color:#F59E0B">16</div>
+            <div class="stat-label">未使用</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num">4</div>
+            <div class="stat-label">批次数</div>
+          </div>
+        </div>
+
+        <!-- 生成表单 -->
+        <div style="margin-bottom:8px;font-size:12px;font-weight:600;color:#94A3B8">批量生成新链接</div>
+        <div class="gen-form">
+          <div>
+            <div class="gen-label">批次备注（选填）</div>
+            <input class="gen-input" placeholder="如：6月19日10人团购">
+          </div>
+          <div>
+            <div class="gen-label">生成数量</div>
+            <input class="gen-input" type="number" placeholder="如：10" style="width:100%">
+          </div>
+          <button class="btn-primary" style="height:36px">⚡ 立即生成</button>
+        </div>
+
+        <!-- 批次列表 -->
+        <div style="margin-bottom:8px;font-size:12px;font-weight:600;color:#94A3B8">批次记录</div>
+
+        <!-- 批次1 -->
+        <div class="batch-card">
+          <div class="batch-header">
+            <div>
+              <div class="batch-title">6月19日10人团购</div>
+              <div class="batch-time">2026-06-19 14:32 生成</div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <span class="btn-xs btn-indigo">查看详情</span>
+              <span class="btn-xs btn-ghost">一键复制全部</span>
+              <span class="btn-xs btn-ghost">下载TXT</span>
+              <span class="btn-xs btn-danger">作废整批</span>
+            </div>
+          </div>
+          <div class="batch-stats">
+            <div class="batch-stat">
+              <div class="batch-stat-num">10</div>
+              <div class="batch-stat-label">总链接</div>
+            </div>
+            <div class="divider"></div>
+            <div class="batch-stat">
+              <div class="batch-stat-num" style="color:#22C55E">8</div>
+              <div class="batch-stat-label">已使用</div>
+            </div>
+            <div class="divider"></div>
+            <div class="batch-stat">
+              <div class="batch-stat-num" style="color:#F59E0B">2</div>
+              <div class="batch-stat-label">未使用</div>
+            </div>
+            <div class="divider"></div>
+            <div style="flex:1;padding-left:12px">
+              <div style="height:6px;background:#334155;border-radius:3px;overflow:hidden">
+                <div style="width:80%;height:100%;background:linear-gradient(90deg,#22C55E,#16A34A);border-radius:3px"></div>
+              </div>
+              <div style="font-size:10px;color:#64748B;margin-top:3px">使用率 80%</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 批次2 -->
+        <div class="batch-card">
+          <div class="batch-header">
+            <div>
+              <div class="batch-title">6月18日5人团购</div>
+              <div class="batch-time">2026-06-18 10:15 生成</div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <span class="btn-xs btn-indigo">查看详情</span>
+              <span class="btn-xs btn-ghost">一键复制全部</span>
+              <span class="btn-xs btn-ghost">下载TXT</span>
+              <span class="btn-xs btn-danger">作废整批</span>
+            </div>
+          </div>
+          <div class="batch-stats">
+            <div class="batch-stat">
+              <div class="batch-stat-num">5</div>
+              <div class="batch-stat-label">总链接</div>
+            </div>
+            <div class="divider"></div>
+            <div class="batch-stat">
+              <div class="batch-stat-num" style="color:#22C55E">5</div>
+              <div class="batch-stat-label">已使用</div>
+            </div>
+            <div class="divider"></div>
+            <div class="batch-stat">
+              <div class="batch-stat-num" style="color:#64748B">0</div>
+              <div class="batch-stat-label">未使用</div>
+            </div>
+            <div class="divider"></div>
+            <div style="flex:1;padding-left:12px">
+              <div style="height:6px;background:#334155;border-radius:3px;overflow:hidden">
+                <div style="width:100%;height:100%;background:linear-gradient(90deg,#22C55E,#16A34A);border-radius:3px"></div>
+              </div>
+              <div style="font-size:10px;color:#64748B;margin-top:3px">使用率 100% · 全部已用</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 链接详情展开示例 -->
+        <div style="margin:12px 0 8px;font-size:12px;font-weight:600;color:#94A3B8">↓ 查看详情展开后的单条链接状态</div>
+        <div style="background:#1E293B;border-radius:10px;padding:12px;border:1px solid rgba(148,163,184,0.08)">
+          <table class="data-table" style="width:100%">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>链接（截断显示）</th>
+                <th>状态</th>
+                <th>使用时间</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="color:#64748B">1</td>
+                <td style="font-family:monospace;font-size:11px;color:#94A3B8">…/s?t=a3f8c2d1…XkJ9mQ</td>
+                <td><span class="badge badge-green">已使用</span></td>
+                <td style="color:#64748B;font-size:11px">06-19 15:42</td>
+                <td><span class="btn-xs btn-ghost">复制</span></td>
+              </tr>
+              <tr>
+                <td style="color:#64748B">2</td>
+                <td style="font-family:monospace;font-size:11px;color:#94A3B8">…/s?t=b7e1f4a2…Lp3rZm</td>
+                <td><span class="badge badge-amber">未使用</span></td>
+                <td style="color:#64748B;font-size:11px">—</td>
+                <td><span class="btn-xs btn-indigo">复制</span> <span class="btn-xs btn-danger">作废</span></td>
+              </tr>
+              <tr>
+                <td style="color:#64748B">3</td>
+                <td style="font-family:monospace;font-size:11px;color:#94A3B8">…/s?t=c9d3e8b5…Nt7wQx</td>
+                <td><span class="badge badge-amber">未使用</span></td>
+                <td style="color:#64748B;font-size:11px">—</td>
+                <td><span class="btn-xs btn-indigo">复制</span> <span class="btn-xs btn-danger">作废</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

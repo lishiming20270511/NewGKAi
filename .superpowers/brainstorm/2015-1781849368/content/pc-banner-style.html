@@ -1,0 +1,73 @@
+<h2>Page⑨ 学生自助报告页 — PC端专用强制横幅</h2>
+<p class="subtitle">PRD 要求：常驻顶部、不可关闭、提示用电脑打开。选择横幅视觉风格：</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>警告条（推荐）</h3>
+      <p>琥珀色背景，全宽粘性横条，⚠️ 图标 + 两行说明文字。与报告页特别关注区用色呼应，传递"请注意"感。</p>
+      <div class="mockup" style="margin-top:12px">
+        <div class="mockup-body" style="background:#0F172A;padding:0;font-family:monospace;font-size:12px;color:#F1F5F9;overflow:hidden;border-radius:8px">
+          <div style="background:#FEF3C7;border-bottom:2px solid #F59E0B;padding:10px 14px;color:#92400E;font-size:11px">
+            <div style="font-weight:700;margin-bottom:3px">⚠️ 请在电脑端浏览器中使用本页面</div>
+            <div style="opacity:0.85">手机端打开将无法正常下载PDF报告，且操作界面不适配手机屏幕。建议使用 Chrome / Edge / Firefox 浏览器在电脑上打开。</div>
+          </div>
+          <div style="padding:16px">
+            <div style="background:#1E293B;border-radius:8px;padding:12px;color:#94A3B8;font-size:11px;text-align:center">
+              📋 填写考生信息…
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>蓝色信息条</h3>
+      <p>蓝色信息风格，与 Toast 信息色 #3B82F6 一致。传递"提示"而非"警告"，视觉上更柔和。</p>
+      <div class="mockup" style="margin-top:12px">
+        <div class="mockup-body" style="background:#0F172A;padding:0;font-family:monospace;font-size:12px;color:#F1F5F9;overflow:hidden;border-radius:8px">
+          <div style="background:#1E3A5F;border-bottom:2px solid #3B82F6;padding:10px 14px;color:#93C5FD;font-size:11px">
+            <div style="font-weight:700;margin-bottom:3px">ℹ️ 请在电脑端浏览器中使用本页面</div>
+            <div style="opacity:0.85">手机端打开将无法正常下载PDF报告，且操作界面不适配手机屏幕。建议使用 Chrome / Edge / Firefox 浏览器在电脑上打开。</div>
+          </div>
+          <div style="padding:16px">
+            <div style="background:#1E293B;border-radius:8px;padding:12px;color:#94A3B8;font-size:11px;text-align:center">
+              📋 填写考生信息…
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>红色强提示条</h3>
+      <p>红色背景，最强视觉冲击力，确保学生不忽视。与 PRD"强制展示"要求语气一致。</p>
+      <div class="mockup" style="margin-top:12px">
+        <div class="mockup-body" style="background:#0F172A;padding:0;font-family:monospace;font-size:12px;color:#F1F5F9;overflow:hidden;border-radius:8px">
+          <div style="background:#450A0A;border-bottom:2px solid #EF4444;padding:10px 14px;color:#FCA5A5;font-size:11px">
+            <div style="font-weight:700;margin-bottom:3px">🚫 请在电脑端浏览器中使用本页面</div>
+            <div style="opacity:0.85">手机端打开将无法正常下载PDF报告，且操作界面不适配手机屏幕。建议使用 Chrome / Edge / Firefox 浏览器在电脑上打开。</div>
+          </div>
+          <div style="padding:16px">
+            <div style="background:#1E293B;border-radius:8px;padding:12px;color:#94A3B8;font-size:11px;text-align:center">
+              📋 填写考生信息…
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:20px;padding:16px;background:rgba(129,140,248,0.1);border-radius:8px;border-left:3px solid #818CF8">
+  <p class="label">设计说明</p>
+  <p>此横幅对所有访问者强制展示（不区分设备），不可关闭，粘性固定在页面顶部内容区最上方。<br>
+  Page⑨ 是独立页面（一次性链接 /s?t=...），不含主导航栏，横幅是进入该页的第一屏视觉元素。</p>
+</div>
