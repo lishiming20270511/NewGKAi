@@ -158,6 +158,7 @@ CITY_NEARBY_BY_LEVEL: dict[str, list[str]] = {
 TIER_BOOST_MIN = 25.0   # 冲刺下界（含）
 TIER_SOLID_MIN = 50.0   # 稳妥下界（含）；冲刺上界（不含）
 TIER_SAFE_MIN  = 85.0   # 保底下界（含）
+TIER_SPRINT_PROB_CAP = TIER_SOLID_MIN + 5  # 冲刺回填概率上界（防止高概率稳妥学校进入冲刺）
 LOW_SCORE_BOUNDARY = 400
 LOW_SCORE_TIER_MIN = 5.0  # 低分段（<400分）冲刺下界
 
@@ -180,6 +181,7 @@ class SchoolRecord:
     is_intended: bool = False
     is_intended_city: bool = False
     globe_expanded: bool = False        # True = L4全国扩展推荐，仅冲刺档使用
+    is_neighbor_province: bool = False  # True = L3邻省学校（非意向城市，非本省）
 
     # 填充于 PHASE 2
     rank_prob: Optional[float] = None
@@ -458,6 +460,8 @@ async def build_candidate_pool(
         # Fallback: use province expand table
         neighbor_provs = [p for p in PROVINCE_EXPAND.get(req.province, []) if p not in city_provinces]
     l3_schools = await _fetch_schools_by_provinces(neighbor_provs[:4], db, seen_ids)
+    for s in l3_schools:
+        s.is_neighbor_province = True
     pool.extend(l3_schools)
     for s in l3_schools:
         seen_ids.add(s.school_id)
@@ -990,6 +994,21 @@ def _is_public_yiben(school: SchoolRecord) -> bool:
     return is_public and is_benke
 
 
+def _is_provincial_key(school: SchoolRecord) -> bool:
+    """判断是否为省属重点本科（公办一本/重点本科，非985/211/双一流）。
+    用于邻省冲刺回填：比普通公办本科严格，比精英院校宽松。
+    """
+    if _is_vocational(school):
+        return False
+    if _is_elite(school):  # 精英院校由 _is_elite 单独处理
+        return False
+    stype = (school.school_type or "").lower()
+    level = school.level or ""
+    is_public = "民办" not in stype and "独立" not in stype and "职业" not in stype
+    is_yiben = level in ("一本", "重点本科") or "重点" in level
+    return is_public and is_yiben
+
+
 def apply_quality_threshold_filter(
     schools: list[SchoolRecord], score_segment: str
 ) -> list[SchoolRecord]:
@@ -1012,8 +1031,8 @@ def apply_quality_threshold_filter(
         tier = s.tier if s.tier is not None else -1
 
         if score_segment == "high":
-            if tier == 0:    # 冲刺档：仅 985/211/双一流
-                if _is_elite(s):
+            if tier == 0:    # 冲刺档：985/211/双一流，或邻省省重点公办一本
+                if _is_elite(s) or (s.is_neighbor_province and _is_provincial_key(s)):
                     result.append(s)
             elif tier == 1:  # 稳妥档：公办本科
                 if not _is_vocational(s):
@@ -1094,7 +1113,8 @@ def sort_and_slice(
         fill_ids = {s.school_id for s in result_by_tier[0]}
         # 优先使用 globe_expanded 学校，但最多 2 所
         globe_candidates = sorted(
-            [s for s in eligible if s.school_id not in used_ids and s.globe_expanded],
+            [s for s in eligible if s.school_id not in used_ids and s.globe_expanded
+             and (s.rank_prob or 0) < TIER_SPRINT_PROB_CAP],  # 排除高概率稳妥学校进入冲刺
             key=lambda s: (s.rank_prob or 0),
         )
         globe_used = 0
@@ -1130,7 +1150,9 @@ def sort_and_slice(
             # (closest to the 冲刺 threshold = most ambitious of what's available)
             if needed > 0:
                 remaining_asc = sorted(
-                    [s for s in eligible if s.school_id not in used_ids and not s.globe_expanded and s.tier != 2],
+                    [s for s in eligible if s.school_id not in used_ids
+                     and not s.globe_expanded and s.tier != 2
+                     and (s.rank_prob or 0) < TIER_SPRINT_PROB_CAP],  # 禁止高概率稳妥学校进入冲刺
                     key=lambda s: (s.rank_prob or 0),
                 )
                 for s in remaining_asc:
