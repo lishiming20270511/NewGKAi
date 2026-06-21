@@ -155,7 +155,7 @@ CITY_NEARBY_BY_LEVEL: dict[str, list[str]] = {
 }
 
 # Tier 阈值
-TIER_BOOST_MIN = 30.0   # 冲刺下界（含）
+TIER_BOOST_MIN = 25.0   # 冲刺下界（含）
 TIER_SOLID_MIN = 50.0   # 稳妥下界（含）；冲刺上界（不含）
 TIER_SAFE_MIN  = 85.0   # 保底下界（含）
 LOW_SCORE_BOUNDARY = 400
@@ -612,6 +612,7 @@ def calc_rank_prob(
     is_985: bool = False, is_211: bool = False, is_double_first: bool = False,
     school_type: str = "",
     student_score: int | None = None,
+    apply_tier_adjustment: bool = True,
 ) -> Optional[float]:
     """Calculate admission probability based on rank comparison + school tier adjustment.
 
@@ -626,7 +627,15 @@ def calc_rank_prob(
     if not history or student_rank is None:
         return None
 
-    years = sorted(history, key=lambda x: x["year"], reverse=True)[:3]
+    # Deduplicate by year: keep the most permissive batch (highest min_rank = easiest to enter).
+    # Prevents 提前批/专项计划 with very low min_rank from corrupting probability estimates.
+    year_map: dict = {}
+    for y in history:
+        yr = y.get("year")
+        mr = y.get("min_rank") or 0
+        if yr and (yr not in year_map or mr > (year_map[yr].get("min_rank") or 0)):
+            year_map[yr] = y
+    years = sorted(year_map.values(), key=lambda x: x["year"], reverse=True)[:3]
     ranks = [y["min_rank"] for y in years if y.get("min_rank") and y["min_rank"] > 0]
     if not ranks:
         return None
@@ -650,33 +659,32 @@ def calc_rank_prob(
         if latest and oldest and latest < oldest:
             prob *= 0.95  # Tightening trend → -5%
 
-    # ── School Tier Adjustment ──
-    # Ensures schools of different prestige levels produce meaningfully
-    # different probabilities even when admission data is noisy or missing.
-    stype = (school_type or "").lower()
-    if is_985:
-        tier_mult = 0.82   # 985 — extremely competitive, harder to get in
-    elif is_211 or is_double_first:
-        tier_mult = 0.88   # 211/双一流 — competitive
-    elif "专科" in stype or "职业" in stype:
-        tier_mult = 1.18   # 专科/职业 — much easier admission bar
-    elif "民办" in stype or "独立" in stype:
-        tier_mult = 1.10   # 民办/独立学院 — easier
-    else:
-        tier_mult = 1.00   # 公办本科 — neutral
+    if apply_tier_adjustment:
+        # ── School Tier Adjustment ──
+        # Ensures schools of different prestige levels produce meaningfully
+        # different probabilities even when admission data is noisy or missing.
+        stype = (school_type or "").lower()
+        if is_985:
+            tier_mult = 0.82   # 985 — extremely competitive, harder to get in
+        elif is_211 or is_double_first:
+            tier_mult = 0.88   # 211/双一流 — competitive
+        elif "专科" in stype or "职业" in stype:
+            tier_mult = 1.18   # 专科/职业 — much easier admission bar
+        elif "民办" in stype or "独立" in stype:
+            tier_mult = 1.10   # 民办/独立学院 — easier
+        else:
+            tier_mult = 1.00   # 公办本科 — neutral
 
-    prob = max(1.0, min(99.0, prob * tier_mult))
+        prob = max(1.0, min(99.0, prob * tier_mult))
 
-    # ── Score-Tier Alignment Check ──
-    # Blends the data-driven probability with a "tier prior" to prevent
-    # bad admission data from producing nonsensical results.
-    # E.g., a 985 school should never show 80%+ for a 500-score student.
-    if student_score is not None:
-        prior = _tier_score_prior(student_score, is_985, is_211, is_double_first, school_type)
-        if prior is not None:
-            # Blend: 90% data-driven, 10% tier prior
-            # Data dominates heavily; prior only corrects extreme outliers
-            prob = prob * 0.90 + prior * 0.10
+        # ── Score-Tier Alignment Check ──
+        # Blends the data-driven probability with a "tier prior" to prevent
+        # bad admission data from producing nonsensical results.
+        if student_score is not None:
+            prior = _tier_score_prior(student_score, is_985, is_211, is_double_first, school_type)
+            if prior is not None:
+                # Blend: 90% data-driven, 10% tier prior
+                prob = prob * 0.90 + prior * 0.10
 
     return max(1.0, min(99.0, prob))
 
@@ -1103,13 +1111,30 @@ def sort_and_slice(
                 if needed == 0 or globe_used >= 2:
                     break
         if needed > 0:
-            remaining_asc = sorted(
-                [s for s in eligible if s.school_id not in used_ids and not s.globe_expanded],
-                key=lambda s: (s.rank_prob or 0),
+            # First pass: sub-threshold elite schools (tier -1, highest prob = most realistic reach)
+            # These genuinely belong in 冲刺 — too ambitious for the student but still aspirational
+            sub_threshold = sorted(
+                [s for s in schools if s.tier == -1 and _is_elite(s)
+                 and not s.globe_expanded and s.school_id not in used_ids],
+                key=lambda s: -(s.rank_prob or 0),
             )
-            for s in remaining_asc:
-                if s.school_id not in fill_ids:
-                    if score_segment == "high" and not _is_elite(s):
+            for s in sub_threshold:
+                s.tier = 0
+                s.tier_label = "冲刺"
+                result_by_tier[0].append(s)
+                used_ids.add(s.school_id)
+                needed -= 1
+                if needed == 0:
+                    break
+            # Second pass: last resort — borrow lowest-prob schools from tier 1/2 pool
+            # (closest to the 冲刺 threshold = most ambitious of what's available)
+            if needed > 0:
+                remaining_asc = sorted(
+                    [s for s in eligible if s.school_id not in used_ids and not s.globe_expanded],
+                    key=lambda s: (s.rank_prob or 0),
+                )
+                for s in remaining_asc:
+                    if _is_vocational(s):
                         continue
                     s.tier = 0
                     s.tier_label = "冲刺"
@@ -2002,12 +2027,14 @@ async def generate_recommendation(req: RecommendRequest, db: AsyncSession) -> di
     admission_map = await batch_query_admission(all_ids, req.province, db)
 
     # PHASE 2: 概率计算 (special_attention)
+    # 意向学校不应用 tier_mult 和 prior 调整，直接展示基于位次的原始录取可能性
     for s in special_attention:
         history = admission_map.get(s.school_id, [])
         if rank:
             rp = calc_rank_prob(rank, history,
                 is_985=s.is_985, is_211=s.is_211, is_double_first=s.is_double_first,
-                school_type=s.school_type, student_score=req.score)
+                school_type=s.school_type, student_score=req.score,
+                apply_tier_adjustment=False)
             s.rank_prob = rp if rp is not None else 0.0
             s.weighted_prob = calc_weighted_prob(req, s.rank_prob, s) if s.rank_prob else 0.0
         else:
