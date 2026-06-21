@@ -19,24 +19,24 @@
 | L1-03 | 登录顺序：先验密码正确→再检查 status，status=disabled 返回 403 | TC-06验证通过 |
 | L1-04 | 无效/过期 Token 返回 401 `{"detail":"未登录或Token已过期"}` | TC-05验证通过 |
 
-### L2：推荐引擎核心逻辑
+### L2：推荐引擎核心逻辑（Python后端，`api/services/recommendation.py`）
+
+> ⚠️ **修改此模块须事先获得用户审批**（见本文末"审批要求"节）。
 
 | 编号 | 锁定内容 | 来源 |
 |------|---------|------|
-| L2-01 | `calcRankProb` 6档离散值：>5000→95%，2000-5000→80%，0-2000→65%，-2000-0→45%，-5000- -2000→25%，<-5000→8% | Architecture.md |
-| L2-02 | Tier阈值：冲刺 [30, 50) / 稳妥 [50, 85) / 保底 [85, 100]（**冲刺上界是50%不是60%**） | v5.10修复，BUG |
-| L2-03 | 低概率过滤：非意向学校 rankProb < 30% 必须移除（低分段<400分阈值降至5%） | BUG-006/BUG-013 |
-| L2-04 | 意向学校匹配必须是严格精确 `===`，**禁止**模糊匹配/子串匹配 | BUG-005 |
-| L2-05 | `_merge_must_diag` 实现为 `diag_recs + recs`，不限数量，强制置顶 | BUG-004 |
-| L2-06 | 排序三级优先级：`_intended(★)` → `_intended_city(●)` → rankProb 降序 | BUG-014 |
-| L2-07 | 城市→省份映射含60+城市，跨省宽口径查询 | BUG-003 |
-| L2-08 | 当 `city` 字段为空时，必须先调 `getCityFromSchoolName()`，再走 `CITY_PROV` 映射 | BUG-015 |
-| L2-09 | `SCHOOL_POOL` 构建时：city为空→ `getCityFromSchoolName()` 提取；prov为空→ `CITY_PROV[city]` 映射 | BUG-015 |
-| L2-10 | 城市池**不设** rp>=30 概率门槛，标记 `_intended_city` 强制保留 | BUG-013 |
-| L2-11 | 空池时必须回退到分数接近度排序（兜底池不可全空） | BUG-013 |
-| L2-12 | `_is_vocational` 职业院校检测须包含"技术学院"关键词，精英院校豁免（985/211/TOP100） | v5.13修复 |
-| L2-13 | backfill逻辑执行后，**必须**同步更新 `s.tier`，保证前端计数器准确 | v5.13修复 |
-| L2-14 | 高分段（高一分一段位次），候选池须过4层：prior不可过高/L4门槛不可屏蔽高校/globe_expanded不过滤/segment兜底存在 | v5.12修复 |
+| L2-01 | Tier阈值：冲刺 [25%, 50%) / 稳妥 [50%, 85%) / 保底 [85%, 100%] | v5.10修复+BUG-012 |
+| L2-02 | 回填顺序：**冲刺→稳妥→保底**，禁止颠倒（防保底>稳妥倒挂） | BUG-009 |
+| L2-03 | 冲刺回填优先级：tier=-1精英院校（最高概率优先）→ 最后才借用tier1/2剩余学校 | BUG-012/BUG-011 |
+| L2-04 | 意向学校（`apply_tier_adjustment=False`）：**跳过** tier_mult 和先验混合，直接基于位次展示原始录取概率 | BUG-013 |
+| L2-05 | `calc_rank_prob` 年份去重：同年多批（提前批+普通批）保留 min_rank 最高（最易入学）的批次 | BUG-013 |
+| L2-06 | `tier_mult` 折减因子：985→0.82，211/双一流→0.88，专科/职业→1.18，民办/独立→1.10 | BUG-001 |
+| L2-07 | 先验混合比例：90% 数据驱动 + 10% 先验；意向学校不使用先验 | BUG-001/BUG-013 |
+| L2-08 | `is_intended_city` 学校**不豁免**质量过滤（仅 `is_intended` 明确意向校豁免） | BUG-008 |
+| L2-09 | 冲刺档 globe_expanded（全国扩展）学校上限 2 所 | BUG-002 |
+| L2-10 | `_is_vocational` 须包含"技术学院"关键词，985/211/双一流豁免职业院校判定 | v5.13修复 |
+| L2-11 | 省会映射（`_PROVINCE_CAPITAL`）：省份名回退省会城市，禁止直接用省份名作城市 | BUG-010 |
+| L2-12 | 缓存键须包含 personality 和 economic_level 的**完整值**，不得使用排序值 | BUG-005 |
 
 ### L3：付费墙与报告
 
@@ -122,22 +122,24 @@
 
 ### 推荐算法
 
-状态：OPEN
+状态：**REVIEW_REQUIRED**
 
-允许修改：
+> 算法已通过多轮测试验证，推荐结果符合预期。后续任何修改须事先获得用户审批。
 
-- rankProb
-- tier
-- candidate_pool
-- city_pool
-- 意向学校逻辑
-- 排序逻辑
+可讨论优化（须审批后实施）：
 
-原因：
+- Tier 阈值边界调整
+- tier_mult 折减因子数值
+- 先验混合比例
+- 冲刺回填策略
+- 意向学校概率计算方式
 
-当前存在严重推荐错误。
+禁止未经审批直接修改：
 
-允许优化。
+- `TIER_BOOST_MIN` / `TIER_SOLID_MIN` / `TIER_SAFE_MIN`
+- `calc_rank_prob` 核心逻辑
+- `sort_and_slice` 分层与回填逻辑
+- `apply_tier_adjustment` 开关的触发条件
 
 ---
 
@@ -170,14 +172,14 @@
 
 ## 三、稳定模块（改动需极度谨慎）
 
-### 🔴 高风险（禁止改动，除非有明确Bug报告）
+### 🔴 高风险（禁止改动，除非有明确Bug报告 + 用户审批）
 
 | 模块 | 路径 | 原因 |
 |------|------|------|
-| 推荐引擎主函数 `generateSchools()` | `index.html` | 历次最复杂Bug来源，26个Bug已修复，修改风险极高 |
-| PDF生成 `buildPDFWrap()` | `index.html` | 水印/页码/QR码/_tierTotals独立计算，多处紧耦合 |
-| 扣费原子逻辑 | `api/auth.py` | SELECT FOR UPDATE + 幂等 + Redis锁，任何简化都可能造成重复扣费 |
-| JWT认证中间件 | `api/auth.py` | 黑名单 + 过期校验链路，修改可能造成安全漏洞 |
+| 推荐引擎 `generate_recommendation()` / `sort_and_slice()` / `calc_rank_prob()` | `api/services/recommendation.py` | 历经12+ Bug修复方才稳定，参数高度耦合，修改须审批 |
+| PDF生成 `buildPDFWrap()` | `frontend/index.html` | 水印/页码/QR码/_tierTotals独立计算，多处紧耦合 |
+| 扣费原子逻辑 | `api/routers/auth.py` | SELECT FOR UPDATE + 幂等 + Redis锁，任何简化都可能造成重复扣费 |
+| JWT认证中间件 | `api/deps.py` | 黑名单 + 过期校验链路，修改可能造成安全漏洞 |
 
 ### 🟡 中风险（需测试验证后才可修改）
 
@@ -223,4 +225,20 @@
 
 ---
 
-*本文档由 Claude Code 于 2026-06-20 基于 PROJECT_CONTEXT.md / BUG_CLOSED.md / docs/Progress.md / docs/Architecture.md 整理生成。*
+---
+
+## 六、审批要求
+
+以下操作**必须先描述意图、获得用户明确同意后**才能执行：
+
+1. 修改 `api/services/recommendation.py` 中任何 Tier 阈值、折减因子、先验混合比例
+2. 改变 `sort_and_slice` 的回填顺序或策略
+3. 修改 `calc_rank_prob` 中的概率计算公式或年份窗口
+4. 更改意向学校是否跳过 tier_mult/先验混合的逻辑
+5. 调整质量过滤（`is_intended` vs `is_intended_city` 豁免规则）
+
+**审批流程**：在对话中说明"要改什么、为什么改、预期效果"，等待用户回复同意后再动代码。
+
+---
+
+*本文档最后更新：2026-06-21，基于 BugReport.md / Progress.md / PROJECT_STATUS.md 整理。*
