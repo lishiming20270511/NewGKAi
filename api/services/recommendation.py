@@ -1130,7 +1130,7 @@ def sort_and_slice(
             # (closest to the 冲刺 threshold = most ambitious of what's available)
             if needed > 0:
                 remaining_asc = sorted(
-                    [s for s in eligible if s.school_id not in used_ids and not s.globe_expanded],
+                    [s for s in eligible if s.school_id not in used_ids and not s.globe_expanded and s.tier != 2],
                     key=lambda s: (s.rank_prob or 0),
                 )
                 for s in remaining_asc:
