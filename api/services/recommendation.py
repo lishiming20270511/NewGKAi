@@ -260,6 +260,7 @@ async def estimate_rank(
 _MILITARY_SCHOOL_CITY = {
     "空军工程大学": "西安",
     "空军军医大学": "西安",
+    "第四军医大学": "西安",
     "武警工程大学": "西安",
     "海军工程大学": "武汉",
     "陆军工程大学": "南京",
@@ -273,6 +274,27 @@ _MILITARY_SCHOOL_CITY = {
     "联合勤务学院": "北京",
     "国防大学": "北京",
 }
+
+# 省份 → 省会城市（用于学校名称无法提取城市时的兜底）
+_PROVINCE_CAPITAL: dict[str, str] = {
+    "北京": "北京", "上海": "上海", "天津": "天津", "重庆": "重庆",
+    "广东": "广州", "浙江": "杭州", "江苏": "南京", "四川": "成都",
+    "湖北": "武汉", "陕西": "西安", "山东": "济南", "河南": "郑州",
+    "湖南": "长沙", "安徽": "合肥", "福建": "福州", "江西": "南昌",
+    "黑龙江": "哈尔滨", "吉林": "长春", "辽宁": "沈阳",
+    "河北": "石家庄", "山西": "太原", "内蒙古": "呼和浩特",
+    "广西": "南宁", "海南": "海口", "贵州": "贵阳", "云南": "昆明",
+    "西藏": "拉萨", "青海": "西宁", "宁夏": "银川", "新疆": "乌鲁木齐",
+    "甘肃": "兰州",
+}
+
+
+def _city_from_school(name: str, province: str) -> str:
+    """从学校名称提取城市，提取失败时用省会兜底，避免城市显示为省份名。"""
+    city = _extract_city(name)
+    if city:
+        return city
+    return _PROVINCE_CAPITAL.get(province, province)
 
 
 def _extract_city(name: str) -> str:
@@ -364,7 +386,7 @@ async def _fetch_schools_by_provinces(
             school_id=r["school_id"],
             name=r["name"],
             province=r["province"],
-            city=_extract_city(r["name"]) or r["province"],
+            city=_city_from_school(r["name"], r["province"]),
             level=r["level"] or "",
             school_type=r["school_type"] or "",
             is_985=bool(r["is_985"]),
@@ -400,7 +422,7 @@ async def build_candidate_pool(
                 school_id=r["school_id"],
                 name=r["name"],
                 province=r["province"],
-                city=_extract_city(r["name"]) or r["province"],
+                city=_city_from_school(r["name"], r["province"]),
                 level=r["level"] or "",
                 school_type=r["school_type"] or "",
                 is_985=bool(r["is_985"]),
@@ -463,7 +485,7 @@ async def build_candidate_pool(
                 school_id=r["school_id"],
                 name=r["name"],
                 province=r["province"],
-                city=_extract_city(r["name"]) or r["province"],
+                city=_city_from_school(r["name"], r["province"]),
                 level=r["level"] or "",
                 school_type=r["school_type"] or "",
                 is_985=bool(r["is_985"]),
@@ -498,7 +520,7 @@ async def build_candidate_pool(
                     school_id=r["school_id"],
                     name=r["name"],
                     province=r["province"],
-                    city=_extract_city(r["name"]) or r["province"],
+                    city=_city_from_school(r["name"], r["province"]),
                     level=r["level"] or "",
                     school_type=r["school_type"] or "",
                     is_985=bool(r["is_985"]),
@@ -973,8 +995,9 @@ def apply_quality_threshold_filter(
 
     result = []
     for s in schools:
-        # 意向学校和意向城市强制保留，不受质量底线约束
-        if s.is_intended or s.is_intended_city:
+        # 仅明确指定的意向学校（is_intended）豁免质量底线
+        # 意向城市（is_intended_city）仍需通过质量过滤，避免城市内职业院校混入高分推荐
+        if s.is_intended:
             result.append(s)
             continue
 
@@ -1050,44 +1073,18 @@ def sort_and_slice(
         result_by_tier[t] = sorted(tiers[t], key=sort_key)[:5]
 
     # Backfill: guarantee 5 per tier
+    # 顺序：冲刺 → 稳妥 → 保底，防止稳妥拿到劣于保底的学校（倒挂）
     used_ids = {s.school_id for t in result_by_tier.values() for s in t}
 
-    # Remaining eligible pool sorted by probability ascending (easiest last)
-    remaining = [s for s in eligible if s.school_id not in used_ids and not (s.globe_expanded)]
+    # Remaining eligible pool sorted by probability descending
+    remaining = [s for s in eligible if s.school_id not in used_ids and not s.globe_expanded]
     remaining_by_prob_desc = sorted(remaining, key=lambda s: -(s.rank_prob or 0))
-    remaining_by_prob_asc  = list(reversed(remaining_by_prob_desc))
 
-    # 保底 backfill: take highest-prob schools (safest bets, 排除 globe_expanded)
-    if len(result_by_tier[2]) < 5:
-        needed = 5 - len(result_by_tier[2])
-        fill_ids = {s.school_id for s in result_by_tier[2]}
-        for s in remaining_by_prob_desc:
-            if s.school_id not in fill_ids and s.school_id not in used_ids:
-                if s.globe_expanded:
-                    continue  # L4/L5全国扩展不出现在保底档
-                # 回填时应用质量过滤（与 apply_quality_threshold_filter 一致）
-                if score_segment == "high":
-                    # 高分段保底回填：排除专科/职业技术
-                    if _is_vocational(s):
-                        continue
-                elif score_segment == "mid":
-                    # 中分段保底回填：排除专科/职业技术
-                    if _is_vocational(s):
-                        continue
-                # low/unknown 段位不过滤
-                s.tier = 2
-                s.tier_label = "保底"
-                result_by_tier[2].append(s)
-                used_ids.add(s.school_id)
-                needed -= 1
-                if needed == 0:
-                    break
-
-    # 冲刺 backfill: take lowest-prob schools (most ambitious)
+    # 冲刺 backfill FIRST: take lowest-prob schools (most ambitious)
     if len(result_by_tier[0]) < 5:
         needed = 5 - len(result_by_tier[0])
         fill_ids = {s.school_id for s in result_by_tier[0]}
-        # 冲刺档回填：优先使用 globe_expanded 学校，但最多 2 所
+        # 优先使用 globe_expanded 学校，但最多 2 所
         globe_candidates = sorted(
             [s for s in eligible if s.school_id not in used_ids and s.globe_expanded],
             key=lambda s: (s.rank_prob or 0),
@@ -1095,7 +1092,6 @@ def sort_and_slice(
         globe_used = 0
         for s in globe_candidates:
             if s.school_id not in fill_ids:
-                # 冲刺档回填：高分段仅保留 985/211/双一流
                 if score_segment == "high" and not _is_elite(s):
                     continue
                 s.tier = 0
@@ -1106,7 +1102,6 @@ def sort_and_slice(
                 needed -= 1
                 if needed == 0 or globe_used >= 2:
                     break
-        # 如果还不够，从非 globe_expanded 中补充
         if needed > 0:
             remaining_asc = sorted(
                 [s for s in eligible if s.school_id not in used_ids and not s.globe_expanded],
@@ -1114,7 +1109,6 @@ def sort_and_slice(
             )
             for s in remaining_asc:
                 if s.school_id not in fill_ids:
-                    # 冲刺档回填：高分段仅保留 985/211/双一流
                     if score_segment == "high" and not _is_elite(s):
                         continue
                     s.tier = 0
@@ -1125,7 +1119,7 @@ def sort_and_slice(
                     if needed == 0:
                         break
 
-    # 稳妥 backfill: fill from whatever is left (排除 globe_expanded)
+    # 稳妥 backfill SECOND: fill from mid-prob remaining (排除 globe_expanded)
     if len(result_by_tier[1]) < 5:
         needed = 5 - len(result_by_tier[1])
         fill_ids = {s.school_id for s in result_by_tier[1]}
@@ -1135,7 +1129,6 @@ def sort_and_slice(
         )
         for s in remaining_mid:
             if s.school_id not in fill_ids:
-                # 稳妥档回填：高分段仅保留公办本科及以上
                 if score_segment == "high" and _is_vocational(s):
                     continue
                 if score_segment == "mid" and _is_vocational(s):
@@ -1143,6 +1136,26 @@ def sort_and_slice(
                 s.tier = 1
                 s.tier_label = "稳妥"
                 result_by_tier[1].append(s)
+                used_ids.add(s.school_id)
+                needed -= 1
+                if needed == 0:
+                    break
+
+    # 保底 backfill LAST: take highest-prob schools (safest bets, 排除 globe_expanded)
+    if len(result_by_tier[2]) < 5:
+        needed = 5 - len(result_by_tier[2])
+        fill_ids = {s.school_id for s in result_by_tier[2]}
+        for s in remaining_by_prob_desc:
+            if s.school_id not in fill_ids and s.school_id not in used_ids:
+                if s.globe_expanded:
+                    continue
+                if score_segment == "high" and _is_vocational(s):
+                    continue
+                elif score_segment == "mid" and _is_vocational(s):
+                    continue
+                s.tier = 2
+                s.tier_label = "保底"
+                result_by_tier[2].append(s)
                 used_ids.add(s.school_id)
                 needed -= 1
                 if needed == 0:
@@ -1432,7 +1445,7 @@ async def aggregate_16_dimensions(
     dims["trend_5yr"] = "数据收集中"
 
     # ── 维度15: 城市分析（city_analysis 表）─────────────────────────────────
-    city = school.city or _extract_city(school.name) or school.province
+    city = school.city or _city_from_school(school.name, school.province)
     r15 = await db.execute(
         text("""
             SELECT location, advantage, development, main_business, city_level
@@ -1758,7 +1771,7 @@ async def batch_aggregate_dimensions(
         dims["trend_5yr"] = "数据收集中"
 
         # Dim 15: city analysis
-        city = school.city or _extract_city(school.name) or school.province
+        city = school.city or _city_from_school(school.name, school.province)
         ca = ca_map.get(city)
         if ca:
             city_level = ca.get("city_level") or "二线"
