@@ -440,7 +440,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ── API ──────────────────────────────────────────────────
-async function api(method, path, body) {
+async function api(method, path, body, isLoginReq) {
   const headers = { 'Content-Type': 'application/json' };
   if (S.token) headers['Authorization'] = 'Bearer ' + S.token;
   const res = await fetch(path, {
@@ -449,6 +449,10 @@ async function api(method, path, body) {
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
   if (res.status === 401) {
+    const errData = await res.json().catch(() => ({}));
+    if (isLoginReq) {
+      throw new Error(errData.detail || '用户名或密码错误');
+    }
     doLogout();
     throw new Error('登录已过期，请重新登录');
   }
@@ -469,7 +473,7 @@ async function doLogin() {
   btn.disabled = true;
   btn.textContent = '登录中…';
   try {
-    const data = await api('POST', '/admin/login', { username: user, password: pass });
+    const data = await api('POST', '/admin/login', { username: user, password: pass }, true);
     S.token = data.token;
     localStorage.setItem('gk_admin_token', S.token);
     showMain();
