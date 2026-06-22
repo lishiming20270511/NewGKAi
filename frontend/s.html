@@ -1349,6 +1349,7 @@ function buildSchoolCardHTML(s, idx, tierKey) {
     <div class="sc-hd ${tc}">
       <div><div class="sc-name">㊉${idx}. ${esc(s.name)}</div><div class="sc-badges">${badgeHtml}<span class="badge bpub">公办</span>${cityBadge}</div></div>
       <div class="prob-area">
+        <div style="font-size:8.5px;color:#6B7280;text-align:right;line-height:1.2;">录取概率</div>
         <div class="prob-big ${tc}">${prob}%</div>
         <div style="font-size:9.5px;color:#6B7280;text-align:right;">综合 ${wProb}%</div>
         <div class="prob-bar"><div class="prob-fill ${tc}" style="width:${Math.min(prob,100)}%"></div></div>
