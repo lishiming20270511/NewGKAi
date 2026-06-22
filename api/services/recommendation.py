@@ -155,7 +155,8 @@ CITY_NEARBY_BY_LEVEL: dict[str, list[str]] = {
 }
 
 # Tier 阈值
-TIER_BOOST_MIN = 25.0   # 冲刺下界（含）
+TIER_BOOST_MIN       = 30.0   # 冲刺下界（含）
+TIER_BOOST_ELITE_MIN = 15.0   # 精英冲刺回填下界（tier=-1 学校）
 TIER_SOLID_MIN = 50.0   # 稳妥下界（含）；冲刺上界（不含）
 TIER_SAFE_MIN  = 85.0   # 保底下界（含）
 TIER_SPRINT_PROB_CAP = TIER_SOLID_MIN + 5  # 冲刺回填概率上界（防止高概率稳妥学校进入冲刺）
@@ -1178,7 +1179,8 @@ def sort_and_slice(
             # These genuinely belong in 冲刺 — too ambitious for the student but still aspirational
             sub_threshold = sorted(
                 [s for s in schools if s.tier == -1 and _is_elite(s)
-                 and not s.globe_expanded and s.school_id not in used_ids],
+                 and not s.globe_expanded and s.school_id not in used_ids
+                 and (s.rank_prob or 0) >= TIER_BOOST_ELITE_MIN],
                 key=lambda s: -(s.rank_prob or 0),
             )
             for s in sub_threshold:
@@ -1201,6 +1203,22 @@ def sort_and_slice(
                 for s in remaining_asc:
                     if _is_vocational(s):
                         continue
+                    s.tier = 0
+                    s.tier_label = "冲刺"
+                    result_by_tier[0].append(s)
+                    used_ids.add(s.school_id)
+                    needed -= 1
+                    if needed == 0:
+                        break
+            # Third pass: absolute last resort — any unused non-vocational with prob >= TIER_BOOST_ELITE_MIN
+            if needed > 0:
+                last_resort = sorted(
+                    [s for s in schools if s.school_id not in used_ids
+                     and not _is_vocational(s)
+                     and (s.rank_prob or 0) >= TIER_BOOST_ELITE_MIN],
+                    key=lambda s: -(s.rank_prob or 0),
+                )
+                for s in last_resort:
                     s.tier = 0
                     s.tier_label = "冲刺"
                     result_by_tier[0].append(s)
