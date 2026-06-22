@@ -26,9 +26,7 @@
 | # | 优先级 | 事项 | 状态 | 说明 |
 |---|:---:|------|:---:|------|
 | 1 | 🔴 P0 | chsi编码映射 | ⚠️ 待完成 | 需运行`crawl_school_list()`获取阳光高考学校编码 |
-| 2 | 🟡 P1 | qswl.tech DNS+ICP+SSL | ⏳ 外部 | 域名备案后配置 |
-| 3 | 🟢 P2 | 小程序BASE_URL | 📋 待定 | 备案通过后更新 |
-| 4 | 🟢 P2 | gaokao.cn CDN API | 📋 调查中 | `list_v2.json`疑似变更 |
+| 2 | 🟢 P2 | gaokao.cn CDN API | 📋 调查中 | `list_v2.json`疑似变更 |
 
 ---
 

@@ -6,6 +6,7 @@
 """
 import hashlib
 import hmac
+import json
 import uuid
 from datetime import datetime
 from typing import List, Optional
@@ -324,4 +325,27 @@ async def student_recommend(
         {"ip": client_ip, "id": rec["id"]},
     )
     await db.commit()
+
+    # 保存报告快照，供管理员补发PDF（失败不影响主流程）
+    try:
+        await db.execute(
+            text("""
+                INSERT INTO report_snapshots
+                    (link_token, student_nickname, student_province,
+                     student_score, student_input, recommendation_result)
+                VALUES (:tok, :nick, :prov, :score, :inp, :res)
+            """),
+            {
+                "tok":   body.token,
+                "nick":  getattr(body, "student_nickname", "") or "",
+                "prov":  body.province,
+                "score": body.score,
+                "inp":   json.dumps(body.dict(), ensure_ascii=False),
+                "res":   json.dumps(result,      ensure_ascii=False, default=str),
+            },
+        )
+        await db.commit()
+    except Exception:
+        pass
+
     return result

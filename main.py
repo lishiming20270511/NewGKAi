@@ -9,7 +9,7 @@ from sqlalchemy import text
 
 from api.database import engine
 from api.redis_client import get_redis, close_redis
-from api.routers import auth, schools, recommendation, qa, report, admin, crawler, one_time_links
+from api.routers import auth, schools, recommendation, qa, report, admin, crawler, one_time_links, report_snapshots
 
 
 @asynccontextmanager
@@ -58,6 +58,7 @@ app.include_router(report.router)
 app.include_router(admin.router)
 app.include_router(crawler.router)
 app.include_router(one_time_links.router)
+app.include_router(report_snapshots.router)
 
 
 # ─── Frontend ────────────────────────────────────────────────────────────────

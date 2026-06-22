@@ -168,7 +168,7 @@ tr:hover td{background:rgba(148,163,184,.04)}
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>订单号</th><th>主播</th><th>考生昵称</th><th>省份</th><th>分数</th><th>时间</th><th>状态</th></tr></thead>
+          <thead><tr><th>订单号</th><th>主播</th><th>考生昵称</th><th>省份</th><th>分数</th><th>时间</th><th>状态</th><th>操作</th></tr></thead>
           <tbody id="ordersTbody"></tbody>
         </table>
       </div>
@@ -728,10 +728,11 @@ async function loadOrders(delta) {
         <td>${o.student_score}</td>
         <td style="font-size:11px">${esc(String(o.created_at).slice(0,16))}</td>
         <td style="color:var(--color-success)">${esc(o.status)}</td>
+        <td><a href="/?admin_preview=${encodeURIComponent(o.id)}" target="_blank" class="btn btn-ghost btn-sm">⬇ 下载PDF</a></td>
       </tr>`).join('') ||
-      '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-secondary)">暂无数据</td></tr>';
+      '<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--text-secondary)">暂无数据</td></tr>';
   } catch(e) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--color-danger)">${esc(e.message)}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--color-danger)">${esc(e.message)}</td></tr>`;
   }
 }
 

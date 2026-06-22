@@ -68,7 +68,6 @@
 | 事项 | 说明 |
 |------|------|
 | chsi 学校编码映射 | 需运行 `crawl_school_list()` |
-| qswl.tech DNS/ICP/SSL | 域名备案中 |
 
 ---
 

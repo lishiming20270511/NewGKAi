@@ -764,6 +764,33 @@ document.addEventListener('DOMContentLoaded', () => {
   setupSchoolSearch();
 
   window.addEventListener('hashchange', onHashChange);
+
+  // 管理员预览模式：/?admin_preview=<order_id>  打开此URL可重新下载已保存的报告PDF
+  const _adminPreviewOrder = new URLSearchParams(location.search).get('admin_preview');
+  if (_adminPreviewOrder) {
+    const _adminTok = localStorage.getItem('gk_admin_token');
+    if (!_adminTok) {
+      alert('请先在管理后台登录后再点击下载PDF');
+    } else {
+      fetch('/admin/report-snapshots?order_id=' + encodeURIComponent(_adminPreviewOrder),
+        { headers: { 'Authorization': 'Bearer ' + _adminTok } })
+        .then(function(r) { return r.ok ? r.json() : Promise.reject('暂无此订单的报告快照'); })
+        .then(function(d) {
+          S.student    = d.snapshot.student_input;
+          S.reportData = d.snapshot.recommendation_result;
+          S.orderId    = d.snapshot.order_id || '';
+          navigate('report');
+        })
+        .catch(function(msg) {
+          const errDiv = document.createElement('div');
+          errDiv.style.cssText = 'padding:40px;color:#F1F5F9;font-size:16px;background:#0F172A;min-height:100vh';
+          errDiv.textContent = '⚠️ ' + msg;
+          document.body.replaceChildren(errDiv);
+        });
+    }
+    return;
+  }
+
   onHashChange();
 });
 
@@ -1231,6 +1258,16 @@ async function runAnalysis() {
 
   S.reportData = result;
   sessionStorage.setItem('gk_report', JSON.stringify(result));
+
+  // 保存快照供管理员补发PDF（fire-and-forget，失败静默）
+  if (S.orderId && S.token) {
+    fetch('/api/reports/snapshot', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + S.token },
+      body: JSON.stringify({ order_id: S.orderId, student_input: S.student, recommendation_result: result })
+    }).catch(function() {});
+  }
+
   navigate('paywall');
   showToast('✓ 分析完成！15所院校已就绪', 'success');
 }
