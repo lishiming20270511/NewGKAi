@@ -4,7 +4,7 @@
 |---------|------|
 | 项目名称 | AI高考志愿规划师 · 直播辅助工具 |
 | 上级文档 | [Tasks.md](./Tasks.md) |
-| 更新日期 | 2026-06-22 (v5.14 管理端PDF重下载功能) |
+| 更新日期 | 2026-06-22 (v5.18 冲刺档阈值+精英回填修复) |
 
 ---
 
@@ -62,6 +62,11 @@
 | **Backfill Tier归属错误(0+9+6)** | **v5.13** | **P0** | **backfill未更新s.tier导致前端计数错误；保底/稳妥backfill补充职业院校过滤** | ✅ |
 | **职业院校漏检** | **v5.13** | **P1** | **_is_vocational新增"技术学院"匹配+精英院校豁免** | ✅ |
 | **一次性链接"无效链接"** | **v5.13** | **P0** | **/s/validate返回"active"但前端期望"valid"，接口映射修复** | ✅ |
+| **管理端PDF重下载** | **v5.14** | **P1** | **report_snapshots快照+管理后台"⬇ 下载PDF"按钮+/?admin_preview重载** | ✅ |
+| **BUG-015 院校城市错误** | **v5.15** | **P1** | **新增22条精确城市覆盖表+独立学院城市自动提取规则（commit 98ec65b）** | ✅ |
+| **BUG-016 PDF意向院校丢失** | **v5.16** | **P0** | **buildSchoolPages改读data.special_attention，旧_is_intended过滤永为空（commit 32a60c5）** | ✅ |
+| **BUG-017 PDF双数值无标签** | **v5.17** | **P1** | **buildSchoolCardHTML大数字上方加"录取概率"标签，index.html+s.html同步修复（commit 36b4710）** | ✅ |
+| **BUG-018 冲刺档阈值+精英回填** | **v5.18** | **P1** | **TIER_BOOST_MIN 25%→30%；新增TIER_BOOST_ELITE_MIN=15%；Pass1精英回填加≥15%下界；新增Pass3最终兜底（commit 7f8a67c）** | ✅ |
 
 ---
 
