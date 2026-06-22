@@ -1,7 +1,7 @@
 # PROJECT_STATUS.md — 项目当前状态
 
 **更新日期**: 2026-06-22  
-**当前版本**: v5.15（院校城市数据修复）  
+**当前版本**: v5.16（PDF意向院校丢失修复）  
 **当前分支**: `main`
 
 ---
@@ -24,6 +24,7 @@
 
 | Bug | 修复版本 | 说明 |
 |-----|---------|------|
+| BUG-016: PDF意向院校丢失 | v5.16 commit 32a60c5 | buildSchoolPages 改为读 data.special_attention；根因：意向院校不在 data.schools 内，旧代码 s._is_intended 过滤永远为空；index.html + s.html 同步修复 |
 | BUG-015: 院校城市数据错误 | v5.15 commit 98ec65b | 新增 _SCHOOL_CITY_OVERRIDES 精确覆盖表（14所已知错配）+ 独立学院城市自动提取规则；覆盖：中山大学→广州、五邑大学→江门、岭南师范→湛江、北京科技大学天津学院→天津 等 |
 | 管理端PDF重下载 v5.14 | commit 619c3f5 | report_snapshots表保存推荐快照；管理后台订单列表"⬇ 下载PDF"按钮；/?admin_preview=<order_id>在index.html重载报告 |
 | BUG-014-1: 冲刺档学校概率严重超出范围 | commit（当前分支） | sort_and_slice 兜底回填排除 tier=2 学校，防止保底级别学校被强行归入冲刺 |
