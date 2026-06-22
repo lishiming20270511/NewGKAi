@@ -1372,10 +1372,10 @@ function buildSchoolCardHTML(s, idx, tierKey) {
 
 function buildSchoolPages(stu, data, reportId, pageStart) {
   const schools  = data.schools || [];
-  const specials = schools.filter(s => s._is_intended);
-  const rush     = schools.filter(s => s.tier === 0 && !s._is_intended);
-  const stable   = schools.filter(s => s.tier === 1 && !s._is_intended);
-  const safe     = schools.filter(s => s.tier === 2 && !s._is_intended);
+  const specials = data.special_attention || [];
+  const rush     = schools.filter(s => s.tier === 0);
+  const stable   = schools.filter(s => s.tier === 1);
+  const safe     = schools.filter(s => s.tier === 2);
   const pages = [];
   let pageNum = pageStart, currentBlocks = [], currentHeight = 0;
   const MAX_H = 740;
