@@ -1,8 +1,8 @@
 # PROJECT_STATUS.md — 项目当前状态
 
-**更新日期**: 2026-06-21  
-**当前版本**: v5.8（学生端对齐版）  
-**当前分支**: `stabilize-ai-workflow`
+**更新日期**: 2026-06-22  
+**当前版本**: v5.14（管理端PDF重下载版）  
+**当前分支**: `main`
 
 ---
 
@@ -14,8 +14,8 @@
 | 数据库 MySQL | 🟢 正常 | gaokao_ai |
 | Redis 缓存 | 🟢 正常 | 推荐结果缓存10min，招生数据缓存1h |
 | 推荐算法 | 🟢 稳定 | 经 558分/江苏/深圳/郑州大学 场景验证通过 |
-| 前端 index.html | 🟢 已部署 | v5.7 |
-| 管理后台 | 🟢 正常 | `/admin/login` |
+| 前端 index.html | 🟢 已部署 | v5.14 |
+| 管理后台 | 🟢 正常 | `/admin/login`；订单列表新增"⬇ 下载PDF"按钮 |
 | 一次性链接 | 🟢 已修复 | BUG-006/007 已修复，背景亮度+PDF样式已对齐主播端 |
 
 ---
@@ -24,6 +24,7 @@
 
 | Bug | 修复版本 | 说明 |
 |-----|---------|------|
+| 管理端PDF重下载 v5.14 | commit 619c3f5 | report_snapshots表保存推荐快照；管理后台订单列表"⬇ 下载PDF"按钮；/?admin_preview=<order_id>在index.html重载报告 |
 | BUG-014-1: 冲刺档学校概率严重超出范围 | commit（当前分支） | sort_and_slice 兜底回填排除 tier=2 学校，防止保底级别学校被强行归入冲刺 |
 | BUG-014-2: 学生测试页深色主题→亮色 | commit（当前分支） | s.html 全量 CSS 变量替换为亮色主题，color-scheme:light |
 | BUG-007: 学生端PDF与主播端样式不一致 | commit（当前分支） | 完整移植 PDF_STYLES + 9个build函数 + QRCode，样式完全对齐 |
