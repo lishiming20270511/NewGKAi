@@ -232,6 +232,7 @@ body{background:#080D1A;min-height:100vh;display:flex;align-items:flex-start;jus
 .eco-badge{font-size:10px;color:var(--color-success);font-weight:600}
 .est-badge{font-size:10px;color:#94a3b8;background:rgba(148,163,184,.12);border:1px solid rgba(148,163,184,.25);border-radius:3px;padding:1px 5px;margin-left:4px;font-weight:500}
 .data-est{font-size:10px;color:var(--text-muted);margin-left:3px}
+.data-pending{font-size:11px;color:#94a3b8;font-style:italic}
 .src-note{font-size:10px;color:var(--text-muted);display:block;margin-top:1px}
 .major-note-tag{font-size:10px;color:var(--text-muted);margin-left:4px;font-weight:400}
 .badge{padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700}
@@ -1734,8 +1735,10 @@ function renderSchoolCard(s, tierKey) {
   let majorHtml = '';
   if (dim.recommended_major) {
     const noteTag = dim.major_note ? `<span class="major-note-tag">${esc(dim.major_note)}</span>` : '';
-    const levelRow = dim.major_level ? `<span class="src-note" style="color:var(--color-cyan)">${esc(dim.major_level)}</span>` : '';
+    const levelRow = dim.major_level ? `<span class="src-note" style="color:var(--color-cyan)">${esc(dim.major_level)}</span>` : '<span class="src-note data-pending">专业地位：暂无数据，持续完善中</span>';
     majorHtml = `<div class="school-row"><span class="label">🎓 推荐专业</span><span class="value">${esc(dim.recommended_major)}${noteTag}${levelRow}</span></div>`;
+  } else {
+    majorHtml = `<div class="school-row"><span class="label">🎓 推荐专业</span><span class="value"><span class="data-pending">暂无数据，持续完善中</span></span></div>`;
   }
 
   // Dim 8: Tuition — API returns dim.tuition (not tuition_per_year)
@@ -1755,6 +1758,8 @@ function renderSchoolCard(s, tierKey) {
   if (dim.employment_rate) {
     const srcNote = dim.employment_source ? `<span class="src-note">${esc(dim.employment_source)}</span>` : '';
     employHtml = `<div class="school-row"><span class="label">💼 就业率</span><span class="value">${esc(dim.employment_rate)}${srcNote}</span></div>`;
+  } else {
+    employHtml = `<div class="school-row"><span class="label">💼 就业率</span><span class="value"><span class="data-pending">暂无数据，持续完善中</span></span></div>`;
   }
 
   // Dim 12: Salary — API returns avg_salary_start + avg_salary_3yr (or legacy avg_salary)
@@ -1763,7 +1768,7 @@ function renderSchoolCard(s, tierKey) {
   const salaryEstBadge = dim.salary_data_quality === 'estimated' ? '<span class="est-badge">估算</span>' : '';
   const salaryHtml  = salaryStart
     ? `<div class="school-row"><span class="label">💵 薪资</span><span class="value">${esc(salaryStart)}${salary3yr ? ` → ${esc(salary3yr)}(3年)` : ''}${salaryEstBadge}</span></div>`
-    : '';
+    : `<div class="school-row"><span class="label">💵 薪资</span><span class="value"><span class="data-pending">暂无数据，持续完善中</span></span></div>`;
 
   // Dim 15: City analysis — collapsible 5-sub-dimension panel
   let cityHtml = '';
