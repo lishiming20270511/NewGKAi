@@ -284,6 +284,27 @@ body{background:var(--bg-primary);min-height:100vh;font-family:'PingFang SC','Mi
 @keyframes skeleton-shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
 .skeleton{background:linear-gradient(90deg,#E2E8F0 0%,#F1F5F9 50%,#E2E8F0 100%);background-size:200% 100%;animation:skeleton-shimmer 1.5s ease infinite;border-radius:var(--radius-sm);min-height:14px;}
 
+/* ── Assistant Tabs ── */
+.assist-tabs{display:flex;gap:4px;margin-bottom:16px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);padding:4px}
+.assist-tab-btn{flex:1;padding:8px 12px;border:none;border-radius:6px;font-size:14px;font-weight:500;cursor:pointer;background:transparent;color:var(--text-secondary);transition:var(--transition)}
+.assist-tab-btn.active{background:var(--color-accent);color:#fff;box-shadow:0 1px 4px rgba(59,130,246,.3)}
+.script-cat-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;margin-bottom:4px;font-weight:600;font-size:15px;color:var(--text-primary);box-shadow:var(--shadow-sm)}
+.script-cat-header:hover{background:var(--bg-card-hover)}
+.script-cat-count{font-size:12px;background:rgba(59,130,246,.1);color:var(--color-accent);padding:2px 8px;border-radius:20px;font-weight:500;margin-right:6px}
+.script-cat-arrow{font-size:12px;color:var(--text-muted);transition:transform .2s;display:inline-block}
+.script-cat-body{display:none;margin-bottom:10px;padding:0 2px}
+.script-cat-body.open{display:block}
+.script-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:6px;display:flex;gap:10px;align-items:flex-start;box-shadow:var(--shadow-sm)}
+.script-title{font-size:13px;color:var(--color-accent);font-weight:600;margin-bottom:4px}
+.script-body{font-size:14px;color:var(--text-primary);line-height:1.6;white-space:pre-wrap;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.script-body.expanded{display:block;-webkit-line-clamp:unset}
+.script-copy-btn{flex-shrink:0;padding:5px 12px;background:var(--color-accent);color:#fff;border:none;border-radius:var(--radius-sm);font-size:13px;cursor:pointer;white-space:nowrap}
+.script-copy-btn:hover{background:var(--color-accent-hover)}
+.qa-preset-btn{background:var(--bg-card-hover);border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 10px;font-size:13px;color:var(--text-primary);cursor:pointer;text-align:left;line-height:1.4;transition:var(--transition)}
+.qa-preset-btn:hover{background:rgba(59,130,246,.08);border-color:var(--color-accent);color:var(--color-accent)}
+.qa-bubble-user{background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.2);color:var(--text-primary);border-radius:10px 10px 2px 10px;padding:10px 14px;font-size:14px;line-height:1.6;align-self:flex-end;max-width:85%;word-break:break-word}
+.qa-bubble-ai{background:var(--bg-card);border:1px solid var(--border);color:var(--text-primary);border-radius:10px 10px 10px 2px;padding:10px 14px;font-size:14px;line-height:1.6;align-self:flex-start;max-width:85%;word-break:break-word;box-shadow:var(--shadow-sm)}
+
 /* ── Modal ── */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:300;align-items:center;justify-content:center}
 .modal-overlay.show{display:flex}
@@ -744,16 +765,50 @@ body{background:var(--bg-primary);min-height:100vh;font-family:'PingFang SC','Mi
     <div class="page" id="page-assistant">
       <div class="page-title">🎙️ 主播助手</div>
 
-      <!-- 直播话术 -->
-      <div id="assistantScripts">
-        <div id="scriptsLoading" style="color:var(--text-secondary);font-size:13px;padding:8px">加载话术中…</div>
-        <div id="scriptsContent"></div>
+      <!-- Tab Navigation -->
+      <div class="assist-tabs">
+        <button class="assist-tab-btn active" id="assistTabA" onclick="switchAssistTab('A')">📋 直播话术</button>
+        <button class="assist-tab-btn" id="assistTabB" onclick="switchAssistTab('B')">🤖 AI问答</button>
       </div>
 
-      <!-- 入口：独立AI问答页 -->
-      <div class="card" style="margin-top:10px;text-align:center">
-        <div style="font-size:13px;color:var(--text-secondary);margin-bottom:10px">需要AI答疑？打开独立问答页面（可多窗口操作）</div>
-        <button class="btn btn-primary" onclick="openChatPage()">🤖 打开AI问答助手</button>
+      <!-- Tab A: 直播话术 -->
+      <div id="assistPaneA">
+        <div id="scriptsLoading">
+          <div class="skeleton" style="height:44px;border-radius:8px;margin-bottom:4px"></div>
+          <div class="skeleton" style="height:44px;border-radius:8px;margin-bottom:4px"></div>
+          <div class="skeleton" style="height:44px;border-radius:8px"></div>
+        </div>
+        <div id="scriptsContent"></div>
+        <div id="scriptsError" style="display:none;text-align:center;color:var(--color-danger);padding:20px;font-size:14px">话术加载失败，请刷新页面重试</div>
+      </div>
+
+      <!-- Tab B: AI问答 -->
+      <div id="assistPaneB" style="display:none">
+        <!-- Quick presets -->
+        <div class="card" style="margin-bottom:12px">
+          <div class="section-title">💬 快捷提问（点击填入）</div>
+          <div id="qaPresetsGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:6px"></div>
+        </div>
+        <!-- Chat history -->
+        <div class="card" style="margin-bottom:12px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <div class="section-title" style="margin-bottom:0">问答记录</div>
+            <button class="btn btn-ghost" style="font-size:13px;padding:4px 12px;min-height:auto;border-radius:var(--radius-sm)" onclick="clearQaHistory()">清空历史</button>
+          </div>
+          <div id="qaHistory" style="display:flex;flex-direction:column;gap:10px;min-height:80px;max-height:420px;overflow-y:auto">
+            <div id="qaEmptyHint" style="text-align:center;color:var(--text-secondary);font-size:14px;padding:24px 0">向AI发送问题，获得张雪峰风格解答 💡</div>
+          </div>
+        </div>
+        <!-- Input -->
+        <div class="card">
+          <div style="display:flex;gap:10px;align-items:flex-end">
+            <div style="flex:1;position:relative">
+              <textarea id="qaInputEl" maxlength="100" placeholder="观众问啥，你就输啥，最多100字…" oninput="onQaInput()" rows="2" style="width:100%;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:15px;padding:10px 12px 22px;resize:none;outline:none;font-family:inherit;line-height:1.5;box-sizing:border-box;transition:border-color .2s"></textarea>
+              <span id="qaCharCount" style="position:absolute;bottom:6px;right:10px;font-size:12px;color:var(--text-muted);pointer-events:none">0/100</span>
+            </div>
+            <button id="qaSendBtn" class="btn btn-danger" onclick="sendQA()" style="flex-shrink:0;align-self:flex-end">发送 →</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -881,7 +936,7 @@ function navigate(page, updateHash = true) {
 
   if (page === 'paywall') renderPaywall();
   if (page === 'report') renderReport();
-  if (page === 'assistant') switchAssistantTab();
+  if (page === 'assistant') switchAssistTab('A');
 }
 
 function updateNavBar() {
@@ -2804,20 +2859,33 @@ function nextStudent() {
 // ══════════════════════════════════════════════════════════
 // Assistant Page (dual-tab: Scripts + Q&A)
 // ══════════════════════════════════════════════════════════
-function switchAssistantTab() {
-  loadAssistantScripts();
-}
+let _qaPresetBuilt = false;
+let _qaSending = false;
 
-function openChatPage() {
-  window.open('/chat.html', '_blank');
+function switchAssistTab(tab) {
+  document.getElementById('assistPaneA').style.display = tab === 'A' ? '' : 'none';
+  document.getElementById('assistPaneB').style.display = tab === 'B' ? '' : 'none';
+  document.getElementById('assistTabA').classList.toggle('active', tab === 'A');
+  document.getElementById('assistTabB').classList.toggle('active', tab === 'B');
+  if (tab === 'A') loadAssistantScripts();
+  if (tab === 'B' && !_qaPresetBuilt) { buildQAPresets(); _qaPresetBuilt = true; }
 }
 
 async function loadAssistantScripts() {
   const loading = document.getElementById('scriptsLoading');
   const content = document.getElementById('scriptsContent');
+  const errEl   = document.getElementById('scriptsError');
   if (!content) return;
-  if (loading) loading.style.display = '';
-  content.replaceChildren();
+  if (content.hasChildNodes()) return;
+  if (loading) {
+    loading.replaceChildren();
+    const hint = document.createElement('div');
+    hint.style.cssText = 'padding:20px;text-align:center;color:var(--text-secondary);font-size:14px';
+    hint.textContent = '加载中…';
+    loading.appendChild(hint);
+    loading.style.display = '';
+  }
+  if (errEl) errEl.style.display = 'none';
   try {
     const res = await fetch('/api/scripts', {
       headers: S.token ? { Authorization: 'Bearer ' + S.token } : {}
@@ -2829,54 +2897,167 @@ async function loadAssistantScripts() {
     if (categories.length === 0) {
       const p = document.createElement('p');
       p.textContent = '暂无话术';
-      p.style.cssText = 'text-align:center;color:#888;padding:20px';
+      p.style.cssText = 'text-align:center;color:var(--text-secondary);padding:24px';
       content.appendChild(p);
       return;
     }
     categories.forEach(cat => {
       const catItems = scripts[cat] || [];
-      // category header
-      const header = document.createElement('div');
-      header.style.cssText = 'font-weight:700;font-size:15px;color:#667eea;margin:16px 0 8px';
-      header.textContent = cat;
-      content.appendChild(header);
+      const section = document.createElement('div');
+      section.style.marginBottom = '8px';
+      const hdr = document.createElement('div');
+      hdr.className = 'script-cat-header';
+      const hCat = document.createElement('span'); hCat.textContent = cat;
+      const hCnt = document.createElement('span'); hCnt.className = 'script-cat-count'; hCnt.textContent = catItems.length;
+      const hArrow = document.createElement('span');
+      hArrow.style.cssText = 'margin-left:auto;font-size:12px;color:var(--text-secondary)';
+      hArrow.textContent = '▼';
+      hdr.appendChild(hCat); hdr.appendChild(hCnt); hdr.appendChild(hArrow);
+      hdr.onclick = () => {
+        const body = section.querySelector('.script-cat-body');
+        body.classList.toggle('open');
+        hArrow.textContent = body.classList.contains('open') ? '▲' : '▼';
+      };
+      const body = document.createElement('div');
+      body.className = 'script-cat-body';
       catItems.forEach(item => {
         const card = document.createElement('div');
-        card.style.cssText = 'background:#f8f9ff;border-radius:8px;padding:12px 14px;margin-bottom:8px;display:flex;gap:10px;align-items:flex-start';
-        const text = document.createElement('div');
-        text.style.cssText = 'flex:1;font-size:13px;line-height:1.6;color:#333;white-space:pre-wrap';
+        card.className = 'script-card';
+        const textWrap = document.createElement('div');
+        textWrap.style.flex = '1';
         const titleEl = document.createElement('div');
-        titleEl.style.cssText = 'font-size:12px;color:#667eea;font-weight:600;margin-bottom:4px';
+        titleEl.style.cssText = 'font-size:13px;font-weight:600;color:var(--text-primary);margin-bottom:4px';
         titleEl.textContent = item.title;
-        text.appendChild(titleEl);
         const bodyEl = document.createElement('div');
+        bodyEl.style.cssText = 'font-size:13px;color:var(--text-secondary);line-height:1.6;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden;cursor:pointer';
+        bodyEl.title = '点击展开/折叠';
         bodyEl.textContent = item.content;
-        text.appendChild(bodyEl);
-        const btn = document.createElement('button');
-        btn.textContent = '复制';
-        btn.style.cssText = 'flex-shrink:0;padding:4px 10px;background:#667eea;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer';
-        btn.onclick = () => copyScript(item.content);
-        card.appendChild(text);
-        card.appendChild(btn);
-        content.appendChild(card);
+        bodyEl.onclick = () => {
+          const exp = bodyEl.dataset.expanded === '1';
+          bodyEl.style.webkitLineClamp = exp ? '3' : 'unset';
+          bodyEl.style.overflow = exp ? 'hidden' : 'visible';
+          bodyEl.dataset.expanded = exp ? '0' : '1';
+        };
+        textWrap.appendChild(titleEl);
+        textWrap.appendChild(bodyEl);
+        const cpBtn = document.createElement('button');
+        cpBtn.className = 'script-copy-btn';
+        cpBtn.textContent = '复制';
+        cpBtn.onclick = () => copyScript(item.content);
+        card.appendChild(textWrap);
+        card.appendChild(cpBtn);
+        body.appendChild(card);
       });
+      section.appendChild(hdr);
+      section.appendChild(body);
+      content.appendChild(section);
     });
   } catch (e) {
-    const errEl = document.createElement('p');
-    errEl.style.cssText = 'text-align:center;color:#e74c3c;padding:20px';
-    errEl.textContent = '加载失败，请重试';
-    content.appendChild(errEl);
+    if (errEl) errEl.style.display = '';
   } finally {
     if (loading) loading.style.display = 'none';
   }
 }
 
-function copyScript(content) {
-  navigator.clipboard.writeText(content).then(() => {
-    showToast('已复制到剪贴板', 'success');
+function copyScript(text) {
+  navigator.clipboard.writeText(text).then(() => {
+    showToast('已复制', 'success');
   }).catch(() => {
     showToast('复制失败，请手动复制', 'warning');
   });
+}
+
+// ── Tab B: AI Q&A ──────────────────────────────────────────
+const QA_PRESETS = [
+  '这个专业好就业吗？',
+  '这所学校值得报吗？',
+  '这个专业未来薪资怎么样？',
+  '冲这所学校风险大吗？',
+  '要不要服从调剂？',
+  '这所学校省内认可度怎样？',
+  '这个城市适合毕业后留下来吗？',
+  '这个专业考研好考吗？',
+  '复读还是填这所学校好？',
+  '这所学校有哪些特色专业？',
+];
+
+function buildQAPresets() {
+  const grid = document.getElementById('qaPresetsGrid');
+  if (!grid) return;
+  QA_PRESETS.forEach(q => {
+    const btn = document.createElement('button');
+    btn.className = 'qa-preset-btn';
+    btn.textContent = q;
+    btn.onclick = () => {
+      document.getElementById('qaInputEl').value = q;
+      onQaInput();
+      document.getElementById('qaInputEl').focus();
+    };
+    grid.appendChild(btn);
+  });
+}
+
+function onQaInput() {
+  const len = (document.getElementById('qaInputEl').value || '').length;
+  const cc = document.getElementById('qaCharCount');
+  if (cc) cc.textContent = len + '/100';
+}
+
+function clearQaHistory() {
+  const hist = document.getElementById('qaHistory');
+  if (!hist) return;
+  hist.replaceChildren();
+  const hint = document.createElement('div');
+  hint.id = 'qaEmptyHint';
+  hint.style.cssText = 'text-align:center;color:var(--text-secondary);font-size:14px;padding:24px 0';
+  hint.textContent = '向AI发送问题，获得张雪峰风格解答 💡';
+  hist.appendChild(hint);
+}
+
+async function sendQA() {
+  if (_qaSending) return;
+  const inp  = document.getElementById('qaInputEl');
+  const text = (inp.value || '').trim();
+  if (!text) { showToast('请输入问题', 'warning'); return; }
+  if (text.length > 100) { showToast('问题不超过100字', 'warning'); return; }
+  if (!S.token) { showToast('请先登录', 'warning'); return; }
+  const hist = document.getElementById('qaHistory');
+  const hint = document.getElementById('qaEmptyHint');
+  if (hint) hint.remove();
+  const userBub = document.createElement('div');
+  userBub.className = 'qa-bubble-user';
+  userBub.textContent = text;
+  hist.insertBefore(userBub, hist.firstChild);
+  inp.value = '';
+  onQaInput();
+  const aiBub = document.createElement('div');
+  aiBub.className = 'qa-bubble-ai';
+  const loadSpan = document.createElement('span');
+  loadSpan.style.cssText = 'color:var(--text-secondary);font-size:13px';
+  loadSpan.textContent = 'AI思考中…';
+  aiBub.appendChild(loadSpan);
+  hist.insertBefore(aiBub, hist.firstChild);
+  _qaSending = true;
+  const sendBtn = document.getElementById('qaSendBtn');
+  if (sendBtn) sendBtn.disabled = true;
+  try {
+    const res = await fetch('/api/qa/ask', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + S.token },
+      body: JSON.stringify({ question: text }),
+    });
+    if (res.status === 401) { showToast('登录已过期，请重新登录', 'error'); return; }
+    const data = await res.json();
+    aiBub.replaceChildren();
+    aiBub.textContent = data.answer || data.response || '暂时无法回答，请稍后再试。';
+  } catch (e) {
+    aiBub.replaceChildren();
+    aiBub.style.color = 'var(--color-danger)';
+    aiBub.textContent = '⚠ 请求失败：' + e.message;
+  } finally {
+    _qaSending = false;
+    if (sendBtn) sendBtn.disabled = false;
+  }
 }
 
 
