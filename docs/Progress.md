@@ -75,6 +75,7 @@
 | **TASK-06 登录页+STEP1 PC适配** | **v5.22** | **P1** | **登录页max-width:480px居中；5条宣传文案竖排；STEP1表单双列grid布局；省份/分数/位次三列并排；选科全宽；服从调剂/家庭经济并排** | ✅ |
 | **TASK-07 STEP2+付款墙PC适配** | **v5.22** | **P1** | **STEP2四模块2×2 grid布局；城市标签+自定义输入框并排；付款墙院校列表2列grid；解锁CTA卡片max-width:480px居中** | ✅ |
 | **TASK-08 完整报告页PC布局** | **v5.22** | **P1** | **封面信息区两列横排；板块四AI建议书标题24px+2列grid展示；15所学校卡片2列grid；报告底部按钮btn-lg横排放大** | ✅ |
+| **TASK-01 BUG-011 冲刺回填概率上限+邻省省重点扩展** | **v5.19** | **P0** | **SchoolRecord.is_neighbor_province字段；L3打标；_is_provincial_key()；quality_filter高分tier=0允许邻省省重点；globe_expanded+last_resort加TIER_SPRINT_PROB_CAP上界；test_bug011.py 14/14 PASS** | ✅ |
 | **TASK-09 s.html亮色主题改造** | **v5.23** | **P2** | **s.html全面切换方案C浅色主题（bg:#F5F7FA/card:#FFFFFF/accent:#3B82F6）；PC横幅改警告色；输入框44px；与index.html方案C完全一致** | ✅ |
 | **TASK-10 broadcast_scripts表+话术CRUD API** | **v5.x** | **P1** | **broadcast_scripts表及完整管理员/主播CRUD接口已在api/routers/broadcast_scripts.py实现（复用已有代码）** | ✅ |
 | **TASK-11/12 主播助手双Tab直播话术+AI问答** | **v5.24** | **P1** | **Page⑧改双Tab：Tab A话术列表Accordion折叠展开+分类数量角标+一键复制；Tab B AI问答10个预设问题+100字限制+对话历史（最近在上）+清空历史；switchAssistTab()路由；JS语法验证通过** | ✅ |
