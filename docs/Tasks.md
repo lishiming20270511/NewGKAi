@@ -48,7 +48,7 @@
 | 属性 | 内容 |
 |------|------|
 | **优先级** | P0 |
-| **状态** | 待开发（需用户审批后才可动 recommendation.py） |
+| **状态** | ✅ 已完成（v5.20，`_SPECIALTY_SCHOOL_MARKERS` + `_MAJOR_EXCLUDED_SPECIALTIES` + `apply_major_type_filter` + `major_match_label` 字段） |
 | **预计工时** | 3–4 h |
 | **文件** | `api/services/recommendation.py` |
 
@@ -78,9 +78,9 @@
 | 属性 | 内容 |
 |------|------|
 | **优先级** | P1 |
-| **状态** | 待开发 |
+| **状态** | ✅ 已完成（v5.19，`_SCHOOL_CITY_OVERRIDES` 补录湖北文理学院→襄阳、湖北民族大学→恩施及其他湖北非武汉院校） |
 | **预计工时** | 1–2 h |
-| **文件** | `api/services/recommendation.py`（CITY_OVERRIDES 常量） |
+| **文件** | `api/services/recommendation.py`（`_SCHOOL_CITY_OVERRIDES` 常量） |
 
 **需求来源**：BUG-020（BugReport.md）
 
