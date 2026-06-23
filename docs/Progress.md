@@ -67,6 +67,9 @@
 | **BUG-016 PDF意向院校丢失** | **v5.16** | **P0** | **buildSchoolPages改读data.special_attention，旧_is_intended过滤永为空（commit 32a60c5）** | ✅ |
 | **BUG-017 PDF双数值无标签** | **v5.17** | **P1** | **buildSchoolCardHTML大数字上方加"录取概率"标签，index.html+s.html同步修复（commit 36b4710）** | ✅ |
 | **BUG-018 冲刺档阈值+精英回填** | **v5.18** | **P1** | **TIER_BOOST_MIN 25%→30%；新增TIER_BOOST_ELITE_MIN=15%；Pass1精英回填加≥15%下界；新增Pass3最终兜底（commit 7f8a67c）** | ✅ |
+| **BUG-011 冲刺回填概率超范围+邻省省重点扩展** | **v5.19** | **P0** | **SchoolRecord.is_neighbor_province字段；L3段打标邻省；_is_provincial_key()辅助函数；quality_filter高分冲刺允许邻省省重点；globe_expanded+last_resort回填加<55%上界** | ✅ |
+| **BUG-020 湖北院校城市数据错误** | **v5.19** | **P1** | **CITY_OVERRIDES补录湖北文理学院→襄阳、湖北民族大学→恩施，及三峡大学→宜昌、长江大学→荆州等（commit 770b462）** | ✅ |
+| **BUG-021 专业详情信息空白** | **v5.19** | **P1** | **index.html新增.data-pending样式；推荐专业/就业率/薪资字段缺失时显示"暂无数据，持续完善中"降级文案（commit 770b462）** | ✅ |
 
 ---
 
