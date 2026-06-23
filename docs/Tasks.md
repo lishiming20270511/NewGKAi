@@ -1,902 +1,406 @@
-# AI高考志愿规划师 — 开发任务拆分 v3.0
+# AI高考志愿规划师 — 开发任务拆分
 
-| 文档信息 | 内容 |
-|---------|------|
-| 产品名称 | AI高考志愿规划师 · 直播辅助工具 |
-| 上级文档 | [PRD_v5.md](./PRD_v5.md) v5.4 · [Architecture.md](./Architecture.md) v2.1 |
-| 创建日期 | 2026-06-19 |
-| 覆盖版本 | PRD v5.3 算法升级 + PRD v5.4 新功能 + 遗留Bug |
-| 前置状态 | Phase 1-10（v5.10）全部完成，本文档仅列**剩余未完成任务** |
+**生成日期**：2026-06-23  
+**基于文档**：PRD_v5.md（v5.5）/ BugReport.md / CURRENT_TASK.md / LOCKED_TASKS.md / Architecture.md / superpowers/specs & plans  
+**原则**：每任务 2–4 小时；最小改动；不碰锁定模块（LOCKED_TASKS.md）；涉及 recommendation.py 核心逻辑须先获用户审批。
 
 ---
 
-## 一、架构评估与调整说明
+## 优先级说明
 
-### 现状
-Architecture.md 当前版本 v2.1，对齐 PRD v5.2。核心架构（FastAPI + MySQL + Redis + Nginx + 单文件前端）**无需大改**，可满足所有新需求。
-
-### 需要调整的内容
-
-| 变更类型 | 具体内容 | 影响范围 |
-|---------|---------|---------|
-| **新增数据表（4张）** | `province_cutoffs`、`province_cutoff_crawl_tasks`、`one_time_links`、`broadcast_scripts` | MySQL DDL |
-| **新增后端模块** | 一次性链接（admin生成/学生校验）、话术管理（admin CRUD/streamer只读） | FastAPI routers |
-| **新增前端页面** | Page⑧ 升级为主播助手（双Tab）、Page⑨ 学生自助报告页（`/s.html` 独立页） | index.html / s.html |
-| **推荐引擎算法扩展** | §4.7 成绩段位前置判断、§4.8 院校质量底线、§4.1.2 三档统一地域扩展 | recommendation.py |
-| **Nginx 新增路由** | `/s` → `s.html` 静态页 | nginx 配置 |
-
-### 不需要调整的内容
-- 扣费系统（原子事务 + 幂等）保持不变
-- JWT 认证体系保持不变
-- 爬虫数据网关保持不变
-- Redis 缓存策略保持不变
-- Celery 保持 P2 暂不引入
+| 级别 | 含义 |
+|------|------|
+| P0 | 生产阻断 / 严重误导，立即修 |
+| P1 | 主要功能缺失，本周完成 |
+| P2 | 体验优化，下周完成 |
 
 ---
 
-## 二、任务总览
+## 模块一：Bug 修复
 
-```
-Phase 11: 算法升级（PRD v5.3 §4.7/4.8/4.1.2）  3个任务，~10h
-Phase 12: 一次性链接系统（PRD v5.4）             3个任务，~12h
-Phase 13: 主播助手页面（PRD v5.4 Page⑧升级）     3个任务，~10h
-Phase 14: 遗留Bug + 细节完善                      2个任务，~ 4h
-Phase 15: 集成验证与生产部署                       2个任务，~ 6h
-                                            ─────────────────────
-                                            13个任务，约 42h
-```
-
----
-
-## Phase 11：算法升级（PRD v5.3）
-
-> **背景**：PRD v5.3 新增成绩段位判断（§4.7）和院校质量底线（§4.8），用于修复 Bug #8（高分冲刺档为空）和 Bug #9（高分保底出现职业技术学校）。同时升级三档地域扩展规则（§4.1.2）。
-
----
-
-### T11.1 · province_cutoffs 数据表 + 种子数据
+### TASK-01：BUG-011 冲刺档回填概率上限 + 邻省省重点扩展
 
 | 属性 | 内容 |
 |------|------|
-| **工时** | 3h |
-| **前置** | T1.2（基础DB已就绪） |
-| **负责人** | 后端/数据 |
-| **解决问题** | 为 §4.7 成绩段位判断提供数据基础 |
+| **优先级** | P0 |
+| **状态** | 待开发（已有设计文档 + 实施计划） |
+| **预计工时** | 2–3 h |
+| **文件** | `api/services/recommendation.py` / `scripts/test_bug011.py` |
 
-**为什么需要**：PRD §4.7 要求在推荐引擎执行前查询 `province_cutoffs` 表判断考生处于高分段/中分段/低分段，进而应用不同的院校质量底线规则。
+**需求来源**：BUG-011（BugReport.md）、设计稿 `docs/superpowers/specs/2026-06-21-bug011-sprint-tier-fix-design.md`、实施计划 `docs/superpowers/plans/2026-06-21-bug011-sprint-tier-fix.md`
 
-**任务清单**：
+**工作内容**（四处聚焦改动，按已批准方案 A 执行）：
+1. `SchoolRecord` 新增字段 `is_neighbor_province: bool = False`
+2. `build_candidate_pool` L3 段：对每所邻省学校打标 `is_neighbor_province = True`
+3. 新增辅助函数 `_is_provincial_key(school)` — 判断省属重点公办一本（排除精英/职业/民办）
+4. `apply_quality_threshold_filter` 高分段 tier=0 条件：`_is_elite(s) or (s.is_neighbor_province and _is_provincial_key(s))`
+5. `sort_and_slice` globe_candidates 列表推导式加过滤：`(s.rank_prob or 0) < TIER_SOLID_MIN + 5`
+6. `sort_and_slice` remaining_asc 列表推导式加相同过滤（last resort）
 
-- [ ] **建表**：在 MySQL `gaokao_ai` 库中创建 `province_cutoffs` 表：
-  ```sql
-  CREATE TABLE province_cutoffs (
-      id           INT AUTO_INCREMENT PRIMARY KEY,
-      province     VARCHAR(32) NOT NULL COMMENT '省份',
-      subject_category VARCHAR(16) NOT NULL COMMENT '科类（物理/历史/综合）',
-      year         INT NOT NULL COMMENT '年份',
-      cutoff_yiben INT DEFAULT NULL COMMENT '一本/本科最低控制线',
-      cutoff_zhuanke INT DEFAULT NULL COMMENT '专科最低控制线',
-      created_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      updated_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      UNIQUE KEY uk_prov_sub_year (province, subject_category, year),
-      INDEX idx_province (province)
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='省份录取控制线（一本线/专科线）';
-  ```
+**验收**：`python scripts/test_bug011.py` 全部 PASS；上海 588 分测试用例冲刺档返回 5 所且概率均 < 55%
 
-- [ ] **建表**：创建 `province_cutoff_crawl_tasks` 爬虫任务表（同6类爬虫任务表结构，`city_name` 改为 `province + subject_category`）：
-  ```sql
-  CREATE TABLE province_cutoff_crawl_tasks (
-      id              INT AUTO_INCREMENT PRIMARY KEY,
-      province        VARCHAR(32) NOT NULL,
-      subject_category VARCHAR(16) NOT NULL,
-      year            INT NOT NULL,
-      status          ENUM('pending','running','done','failed') NOT NULL DEFAULT 'pending',
-      retry_count     INT NOT NULL DEFAULT 0,
-      error_msg       TEXT DEFAULT NULL,
-      created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      updated_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      INDEX idx_status (status),
-      INDEX idx_province (province)
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='省份控制线爬虫任务表';
-  ```
-
-- [ ] **种子数据**：编写 `scripts/seed_province_cutoffs.py`，写入 2025 年 31 省×科类 的一本线/专科线（约 60 条）：
-  - 数据参考各省2025年高考成绩公布后公告的录取控制分数线
-  - 3+1+2省份科类字段分别写"物理"和"历史"
-  - 3+3省份写"综合"
-  - `ON DUPLICATE KEY UPDATE` 幂等写入
-
-- [ ] **爬虫网关**：更新 `POST /internal/crawler/ingest` 支持 `data_type="province_cutoff"`，写入 `province_cutoffs` 表
-
-**验收标准**：
-```sql
-SELECT COUNT(*) FROM province_cutoffs WHERE year=2025;  -- >= 50条
--- 示例：河南物理2025年一本线约519，专科线约150
-SELECT * FROM province_cutoffs WHERE province='河南' AND subject_category='物理' AND year=2025;
-```
+> ⚠️ **锁定约束**：不得修改 TIER_BOOST_MIN / 回填顺序 / tier=-1 精英回填策略（L2-01 至 L2-03）
 
 ---
 
-### T11.2 · 成绩段位前置判断 + 院校质量底线规则
+### TASK-02：BUG-019 专业意向匹配过滤层（后端）
 
 | 属性 | 内容 |
 |------|------|
-| **工时** | 4h |
-| **前置** | T11.1（province_cutoffs数据已就绪） |
-| **负责人** | 后端 ★ 核心算法 |
-| **解决Bug** | Bug #8（高分冲刺档为空）、Bug #9（高分保底出现职业技术学校） |
+| **优先级** | P0 |
+| **状态** | 待开发（需用户审批后才可动 recommendation.py） |
+| **预计工时** | 3–4 h |
+| **文件** | `api/services/recommendation.py` |
 
-**为什么需要**：当前推荐引擎不区分考生分数段，导致666分考生保底推荐出现专科/职业技术学校（Bug #9），以及高分考生意向城市学校全被超越后冲刺档为空（Bug #8）。
+**需求来源**：BUG-019（BugReport.md）、PRD §4.9
 
-**任务清单**：
+**工作内容**：
+1. 在文件顶部定义映射常量 `MAJOR_DISCIPLINE_MAP`：26 个考生意向专业标签 → 学科门类 + 允许/排除院校类型（按 PRD §4.9.2 表格实现）
+2. 新增函数 `_get_allowed_disciplines(major_prefs)`：将考生意向专业列表解析为允许学科门类集合
+3. 新增函数 `apply_major_type_filter(pool, allowed_disciplines, intended_ids, db)`：
+   - 查 `school_majors` 表判断每所学校是否开设允许学科门类下的专业
+   - 意向院校豁免过滤，但附注 `⚠️ 该校暂无[意向专业]相关专业，请确认报考意向`
+   - 无匹配学科门类 → 从推荐池移除；移除后不足 15 所时重新触发四层填充
+4. 在 `generate_recommendation` 中，于 Tier 分层之前调用（仅当 `major_preference` 非空时）
+5. 学校数据组装新增字段 `major_match_label`（✅/🔶/⚠️ 三种）
 
-- [ ] **新增** `classify_score_segment()` 函数（`api/services/recommendation.py`）：
-  ```python
-  async def classify_score_segment(province: str, subject_category: str, score: int, db) -> str:
-      """
-      查询 province_cutoffs 判断段位
-      返回: 'high'（≥一本线）/ 'mid'（专科线≤x<一本线）/ 'low'（<专科线）/ 'unknown'（无数据）
-      """
-      cutoff = await db.fetch_one(
-          "SELECT cutoff_yiben, cutoff_zhuanke FROM province_cutoffs "
-          "WHERE province=:p AND subject_category=:s AND year=2025",
-          {"p": province, "s": subject_category}
-      )
-      if not cutoff:
-          return "unknown"
-      if cutoff["cutoff_yiben"] and score >= cutoff["cutoff_yiben"]:
-          return "high"
-      if cutoff["cutoff_zhuanke"] and score >= cutoff["cutoff_zhuanke"]:
-          return "mid"
-      return "low"
-  ```
+**验收**：
+- 计算机/理工意向 → 北京舞蹈学院、北京体育大学不出现在推荐池
+- 医学意向 → 北外、政法、师范等无医学院的学校不出现
+- 意向院校无论专业匹配与否均出现在特别关注区并附加 ⚠️ 说明
 
-- [ ] **新增** `apply_quality_threshold_filter()` 函数：按 PRD §4.8 规则过滤不符合质量底线的学校：
-  ```
-  高分段 保底档: 剔除专科/职业技术学校；最低为有国家级/省级一流专业的公办二本
-  高分段 冲刺档: 仅985/211/双一流
-  高分段 稳妥档: 公办一本
-  中分段: 冲刺=公办一本，稳妥=公办二本，保底=二本为主
-  低分段: 保底可纳入专科/职业技术
-  ```
-  - 质量判断依据：`schools.tags`（985/211/双一流）+ `school_majors.major_level`（国家级/省级一流）
-  - 保留 `_intended_city` 标记学校不受底线过滤（意向城市强制展示）
-  - 保留特别关注区学校不受过滤
-
-- [ ] 在 `generate_recommendation()` 主流程中，Phase 0 之后插入段位判断，Phase 3 Tier分层后插入质量底线过滤：
-  ```python
-  # Phase 0.5: 成绩段位前置判断
-  score_segment = await classify_score_segment(province, subject_category, score, db)
-  
-  # Phase 3之后: 应用质量底线
-  filtered_schools = apply_quality_threshold_filter(tier_schools, score_segment, db)
-  ```
-
-- [ ] **处理 Bug #8**：当高分考生意向城市学校全部被超越（冲刺档空）时，L4 全国名校扩展不再仅限 L4 兜底，而是补充至冲刺档5所（附 🌐 说明文字："您的成绩已超出意向城市所有院校录取线，以下为全国匹配高校"）
-
-**验收标准**：
-- 666分河南考生（高分段）：保底档无专科/职业技术学校（Bug #9 修复）
-- 666分河南考生：冲刺档显示985/211学校，不为空（Bug #8 修复）
-- 350分考生（低分段）：保底档可出现专科（正常行为，无回归）
-- `score_segment` 字段返回到 API response 供前端可选展示
+> ⚠️ **审批要求**：修改 recommendation.py 核心逻辑前须在对话中获得用户明确同意（LOCKED_TASKS.md §六）
 
 ---
 
-### T11.3 · 地域扩展规则重构（三档统一）
+### TASK-03：BUG-020 院校地理数据修正（湖北及其他省份）
 
 | 属性 | 内容 |
 |------|------|
-| **工时** | 3h |
-| **前置** | T2.4（候选池构建已有基础） |
-| **负责人** | 后端 |
+| **优先级** | P1 |
+| **状态** | 待开发 |
+| **预计工时** | 1–2 h |
+| **文件** | `api/services/recommendation.py`（CITY_OVERRIDES 常量） |
 
-**为什么需要**：PRD §4.1.2 升级后三个档位（冲/稳/保）凑不够5所时统一按"意向城市→周边城市按经济等级降序→本省→全国名校（仅冲刺）"扩展，不再仅限冲刺档使用全国兜底。
+**需求来源**：BUG-020（BugReport.md）
 
-**任务清单**：
+**工作内容**：
+1. 找到 `CITY_OVERRIDES` 常量（参考 BUG-015 修复方式）
+2. 补录两条确认错误：`"湖北文理学院": "襄阳"` / `"湖北民族大学": "恩施"`
+3. 核查湖北省全部非武汉城市院校（黄石、荆州、宜昌、十堰、孝感等），逐一补录发现的错误
+4. 回归测试：陈彤（595 分，医学意向，意向城市武汉）推荐结果中以上两校城市显示正确
 
-- [ ] **新增** `CITY_ECONOMIC_LEVEL` 映射字典：城市→经济等级（一线/新一线/二线/三线），用于周边城市扩展时按等级降序排列：
-  ```python
-  CITY_ECONOMIC_LEVEL = {
-      "北京": 1, "上海": 1, "广州": 1, "深圳": 1,
-      "成都": 2, "杭州": 2, "武汉": 2, "重庆": 2, "西安": 2,
-      "南京": 2, "郑州": 2, "长沙": 2, "天津": 2, ...
-  }
-  ```
-
-- [ ] **新增** `CITY_NEARBY_BY_LEVEL` 映射：每个城市 → 按经济等级降序排列的周边城市列表：
-  ```python
-  # 示例
-  CITY_NEARBY_BY_LEVEL = {
-      "杭州": ["上海", "南京", "苏州", "宁波", "金华"],  # 一线优先，再新一线
-      "西安": ["北京", "上海", "郑州", "成都", "武汉"],
-      ...
-  }
-  ```
-
-- [ ] **重构** `build_candidate_pool_four_tiers()` 中各档位填充逻辑：
-  - 旧逻辑：L1意向城市 → L2本省 → L3周边 → L4全国（仅冲刺）
-  - 新逻辑（三档统一）：
-    ```
-    对每个Tier档位（冲/稳/保）:
-      Step1: 意向城市学校（L1）
-      Step2: 不足5所 → 意向城市周边，按经济等级降序扩展
-      Step3: 仍不足 → 考生所在省（L2）
-      Step4（仅冲刺档）: 仍不足 → 全国985/211/双一流，附🌐说明文字
-    ```
-
-- [ ] 确保 `_intended_city` 标记学校在任意档位均优先排序（不设概率门槛）
-
-- [ ] 前端 `renderSchoolCard()` 中：当学校有 `globe_expanded=True` 标记时，在学校卡片顶部显示 `🌐 全国扩展推荐：您的成绩已超出意向城市所有院校录取线`
-
-**验收标准**：
-- 场景：河南350分，意向城市上海 → 推荐池: L1上海学校 → L2河南本省 → L3上海周边（江苏/浙江），L4不展示（非冲刺档）
-- 场景：666分，意向城市郑州 → 冲刺档无本省普通院校，扩展至全国985/211，附🌐说明文字
-- 地域扩展周边城市按经济等级降序（一线优先）
+**验收**：湖北文理学院显示"襄阳"，湖北民族大学显示"恩施"；不影响武汉本地院校
 
 ---
 
-## Phase 12：一次性链接系统（PRD v5.4）
-
-> **背景**：管理员可批量生成一次性链接，发给团体付费学生，学生无需登录直接完成填表→报告→PDF全流程，跳过付款墙。链接使用后立即失效，UUID v4 + HMAC 防伪造。
-
----
-
-### T12.1 · `one_time_links` 数据表 + 后端API
+### TASK-04：BUG-021 专业详情降级展示（前端）
 
 | 属性 | 内容 |
 |------|------|
-| **工时** | 4h |
-| **前置** | T1.2（基础DB）、T4.1（Admin认证） |
-| **负责人** | 后端 |
+| **优先级** | P1 |
+| **状态** | 待开发 |
+| **预计工时** | 1–2 h |
+| **文件** | `frontend/index.html` |
 
-**为什么需要**：学生自助报告页需要后端存储一次性链接状态（有效/已使用/失效），并提供管理员生成接口和学生校验接口。
+**需求来源**：BUG-021（BugReport.md）
 
-**任务清单**：
+**工作内容**：
+1. 找到报告渲染函数中学校卡片的专业详情板块（专业介绍、就业前景、学科实力评级、专业地位）
+2. 每个字段加空值检测：null / 空字符串 → 显示 `<span class="data-pending">暂无数据，持续完善中</span>` 而非空白
+3. 同步修改 PDF 渲染对应函数，保持一致
 
-- [ ] **建表**：
-  ```sql
-  CREATE TABLE one_time_links (
-      id           INT AUTO_INCREMENT PRIMARY KEY,
-      token        VARCHAR(128) NOT NULL COMMENT 'UUID4.HMAC签名，唯一令牌',
-      batch_id     INT NOT NULL COMMENT '批次ID',
-      batch_note   VARCHAR(128) DEFAULT NULL COMMENT '批次备注',
-      status       ENUM('active','used','revoked') NOT NULL DEFAULT 'active',
-      used_at      DATETIME DEFAULT NULL COMMENT '使用时间',
-      used_ip      VARCHAR(45) DEFAULT NULL,
-      created_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      UNIQUE KEY uk_token (token),
-      INDEX idx_batch (batch_id),
-      INDEX idx_status (status)
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='一次性报告链接';
-  
-  CREATE TABLE one_time_link_batches (
-      id           INT AUTO_INCREMENT PRIMARY KEY,
-      note         VARCHAR(128) DEFAULT NULL COMMENT '批次备注',
-      total_count  INT NOT NULL DEFAULT 0,
-      created_by   INT NOT NULL COMMENT '管理员ID',
-      created_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='链接批次';
-  ```
-
-- [ ] **生成API** `POST /admin/one-time-links/generate`（Admin JWT）：
-  ```
-  Request: { "note": "6月19日10人团购", "count": 10 }
-  处理:
-    ① 创建 one_time_link_batches 记录，获取 batch_id
-    ② 循环 count 次：uuid4() → HMAC(uuid4, SECRET_KEY, sha256) → token = "{uuid4}.{hmac[:12]}"
-    ③ 批量插入 one_time_links
-  Response: { "batch_id": 1, "links": ["http://121.41.69.234/s?t=xxx", ...] }
-  ```
-
-- [ ] **查询API** `GET /admin/one-time-links?batch_id=&page=&per_page=`（Admin JWT）：返回批次列表（含总数/已用/未用统计）
-
-- [ ] **作废API** `POST /admin/one-time-links/revoke-batch`（Admin JWT）：`{ "batch_id": 1 }` → 将该批次所有 `status='active'` 改为 `'revoked'`
-
-- [ ] **校验API** `GET /s/validate?t=<token>`（无需Auth）：
-  ```
-  ① 分割 token → uuid4 部分 + hmac 部分
-  ② HMAC 签名校验（防伪造）
-  ③ 查询 DB：
-    - 不存在 → 404 {"status": "invalid"}
-    - status='used' → 200 {"status": "used"}
-    - status='revoked' → 200 {"status": "revoked"}
-    - status='active' → 200 {"status": "valid"}
-  ```
-
-- [ ] **消费API** `POST /s/consume`（无需Auth）：
-  ```
-  Request: { "token": "xxx" }
-  处理: BEGIN TRANSACTION
-    SELECT id, status FROM one_time_links WHERE token=? FOR UPDATE
-    IF status != 'active' → ROLLBACK → 409 { "error": "链接已使用" }
-    UPDATE status='used', used_at=NOW(), used_ip=client_ip
-    COMMIT
-  Response: { "success": true }
-  ```
-  - **并发保证**：行锁确保同一链接只能被使用一次
-
-**验收标准**：
-```bash
-# 生成5个链接
-curl -X POST /admin/one-time-links/generate -H "Authorization: Bearer <admin>" \
-  -d '{"note":"test","count":5}'
-# → {"batch_id":1, "links":["http://121.41.69.234/s?t=...×5"]}
-
-# 校验有效链接
-curl /s/validate?t=<token>  # → {"status":"valid"}
-
-# 消费一次
-curl -X POST /s/consume -d '{"token":"<token>"}' # → {"success":true}
-
-# 再次校验→已使用
-curl /s/validate?t=<token>  # → {"status":"used"}
-
-# 并发双消费（同一token）→只有一次成功
-```
+**验收**：专业详情空白区域全部替换为降级文案；有数据时正常展示；JS 语法验证无报错
 
 ---
 
-### T12.2 · 学生自助报告页⑨（前端）
+## 模块二：PC 全宽布局迁移（方案 C）
+
+> **背景**：PRD §6.2（2026-06-23 决策）废弃方案A暗色Bento Grid和375px竖屏手机框，切换为方案C浅色清朗主题+PC全宽布局（max-width: 1280px，内容区 1000px，字号+1档，输入框 44px）。
+
+### TASK-05：PC全宽基础框架 + 方案C主题色迁移
 
 | 属性 | 内容 |
 |------|------|
-| **工时** | 4h |
-| **前置** | T12.1（后端API已就绪）、T3.5（报告渲染组件复用） |
-| **负责人** | 前端 |
+| **优先级** | P1 |
+| **状态** | ✅ 已完成（v5.21） |
+| **预计工时** | 3–4 h |
+| **文件** | `frontend/index.html` |
 
-**为什么需要**：学生通过一次性链接访问，无需登录，自助完成填表→报告→PDF，跳过付款墙，是独立于主播端的全新入口。
+**工作内容**（仅改 CSS 层，不动业务逻辑）：
+1. 将顶层手机框容器（375px×800px，overflow hidden）改为 `max-width: 1280px; margin: 0 auto; overflow: auto`
+2. 内容区设 `max-width: 1000px; margin: 0 auto`
+3. 将 CSS 变量替换为方案C色值：
+   - 页面背景：`#F5F7FA` / 卡片：`#FFFFFF` / 主文字：`#1E293B` / 次级：`#64748B`
+   - 边框：`#E2E8F0` / CTA 按钮：`#3B82F6` / 冲刺红：`#EF4444` / 保底绿：`#22C55E`
+   - 985标签：`#F59E0B` / 211标签：`#8B5CF6` / 双一流标签：`#06B6D4`
+   - 圆角：卡片 `10px` / 小元素 `6px`；阴影：`0 1px 3px rgba(0,0,0,0.08)`
+4. 全局字号上调一档：基础正文 16px，次级 14px，表单 Label 15px，卡片标题 18px，页面大标题 24px，最小 13px
+5. 顶部导航栏改为水平完整展开（不再挤压在手机框内）
 
-**任务清单**：
-
-- [ ] **新建文件** `frontend/s.html`（独立页，约600行）：
-  - 路由：`/s?t=<token>` → Nginx 返回 `s.html`，前端 JS 读取 `URLSearchParams('t')`
-  
-- [ ] **链接校验流程（页面加载时）**：
-  ```javascript
-  const token = new URLSearchParams(location.search).get('t');
-  const res = await fetch(`/s/validate?t=${token}`);
-  const { status } = await res.json();
-  if (status === 'used')    showPage('used');     // "此链接已被使用"
-  if (status === 'invalid') showPage('invalid');  // "无效链接"
-  if (status === 'revoked') showPage('revoked');  // "链接已作废"
-  if (status === 'valid')   showPage('form');     // 进入填表流程
-  ```
-
-- [ ] **PC端专用强制横幅**（不可关闭，始终固定在顶部）：
-  ```html
-  <div class="pc-only-banner">
-    ⚠️ 请在电脑端浏览器中使用本页面
-    手机端打开将无法正常下载PDF报告，且操作界面不适配手机屏幕。
-    建议使用 Chrome / Edge / Firefox 浏览器在电脑上打开。
-  </div>
-  ```
-
-- [ ] **复用主播端表单**（从 `index.html` 复制 STEP1 + STEP2 逻辑）：
-  - 相同的7字段考生信息 + 动态选科 + 4区域意向偏好
-  - 删除登录态相关检查（此页面无需JWT）
-
-- [ ] **推荐生成**（无需扣费，直接调用推荐接口）：
-  - 使用公开推荐接口或在 `/api/recommendation/generate` 新增 `mode=student_link` 跳过JWT验证（设 `allow_unauthenticated_student_link=True` 参数）
-  - 链接消费时机：推荐生成**成功后** `POST /s/consume` 标记已使用（不是点击链接时）
-
-- [ ] **报告页**：直接展示完整报告（复用 `renderReport()` + `renderSchoolCard()`），无付款墙
-
-- [ ] **底部操作**：仅显示 `📥 下载PDF`，无"测下一个"、无"直播答疑"
-
-- [ ] **Nginx 新增路由**：
-  ```nginx
-  location = /s {
-      try_files /s.html =404;
-  }
-  location /s/ {
-      try_files $uri /s.html;
-  }
-  ```
-
-**验收标准**：
-- 有效链接 → PC横幅 → 填表 → 直接完整报告（无付款墙）→ 下载PDF
-- 下载PDF后刷新 → 显示"此链接已被使用"
-- 手机端打开 → 顶部横幅始终可见且不可关闭
-- 无效token → 显示错误提示页，不崩溃
+**验收**：页面在 1280px 宽下无横向滚动条；手机框消失；方案C配色生效；JS 语法验证无报错
 
 ---
 
-### T12.3 · 管理后台：一次性链接管理 Tab
+### TASK-06：登录页 + STEP1 考生信息页 PC 适配
 
 | 属性 | 内容 |
 |------|------|
-| **工时** | 4h |
-| **前置** | T12.1（后端API）、T4.1（Admin后台框架） |
-| **负责人** | 前端 |
+| **优先级** | P1 |
+| **状态** | ✅ 已完成（v5.22） |
+| **预计工时** | 2–3 h |
+| **文件** | `frontend/index.html` |
 
-**为什么需要**：管理员需要在后台批量生成链接、查看使用状态、复制/下载链接列表、作废整批。
+**工作内容**：
+1. **登录页**：表单居中最大宽度 480px；输入框高度 44px；主按钮高度 48px；宣传文案 5 条竖排展示在表单下方
+2. **STEP1**：7 字段表单双列布局（宽屏左右两列）；省份/分数/位次一行；选科组件全宽展示；标签芯片 padding: 6px 14px；字段间距 24px
+3. 所有输入框/下拉框统一高度 44px
 
-**任务清单**：
-
-- [ ] `admin.html` 新增第5个Tab："🔗 一次性链接"
-
-- [ ] **生成区域**（Tab顶部）：
-  ```
-  表单：批次备注（选填，最多50字）+ 生成数量（1-100）+ "✨ 立即生成" 按钮
-  ```
-
-- [ ] **生成后展示**（生成完成后在模态框或内联展示）：
-  - 标题："已生成 N 个链接"
-  - 按钮组：`一键复制全部` / `下载TXT文件`
-    - `一键复制全部`：`navigator.clipboard.writeText(links.join('\n'))`
-    - `下载TXT文件`：命名 `链接批次_[备注]_[日期].txt`
-  - 链接列表（每行一个链接 + 独立复制按钮）
-
-- [ ] **批次状态看板**（Tab中部表格）：
-  ```
-  列：批次ID | 备注 | 生成时间 | 总数 | 已用 | 未用 | 操作
-  操作：[查看详情] [作废整批]
-  ```
-  - 查看详情：弹窗显示该批次每条链接状态（token前8位、状态、使用时间）
-  - 作废整批：确认弹窗 → `POST /admin/one-time-links/revoke-batch`
-
-- [ ] 分页加载（每页20批次）
-
-**验收标准**：
-- 生成10条 → 显示链接列表 → "一键复制全部"复制到剪贴板 → "下载TXT"下载文件
-- 批次看板显示正确的已用/未用计数
-- 作废整批 → 该批次未用链接状态变为"已作废"
-- 查看详情 → 每条链接状态可追溯
+**验收**：1280px 下登录表单居中、STEP1 双列布局正常；窄至 1024px 时退化为单列；JS 语法验证无报错
 
 ---
 
-## Phase 13：主播助手（PRD v5.4 Page⑧升级）
-
-> **背景**：原Page⑧ "直播答疑"升级为"主播助手"，合并固定话术脚本（Tab A）和AI问答（Tab B）于同一页面。管理员在后台维护话术脚本库。
-
----
-
-### T13.1 · `broadcast_scripts` 数据表 + 后端API
+### TASK-07：STEP2 意向偏好页 + 付款墙 PC 适配
 
 | 属性 | 内容 |
 |------|------|
-| **工时** | 3h |
-| **前置** | T1.2（基础DB）、T4.1（Admin认证）、T2.1（主播认证） |
-| **负责人** | 后端 |
+| **优先级** | P1 |
+| **状态** | ✅ 已完成（v5.22） |
+| **预计工时** | 2–3 h |
+| **文件** | `frontend/index.html` |
 
-**为什么需要**：话术内容由管理员在后台维护，主播端实时读取，需要持久化存储和CRUD接口。
+**工作内容**：
+1. **STEP2**：4 个区域（专业/城市/院校/性格）宽屏下 2×2 网格布局；专业 26 个标签换行展示不溢出；城市预设标签 + 自定义输入框并排
+2. **付款墙**：加密遮蔽区域横向拉伸至内容区全宽；院校列表卡片横排；CTA 按钮蓝色 `#3B82F6`，高度 48px；遮罩对比度保证可见
 
-**任务清单**：
-
-- [ ] **建表**：
-  ```sql
-  CREATE TABLE broadcast_scripts (
-      id           INT AUTO_INCREMENT PRIMARY KEY,
-      category     VARCHAR(64) NOT NULL COMMENT '话术分类',
-      title        VARCHAR(128) NOT NULL COMMENT '话术标题',
-      content      TEXT NOT NULL COMMENT '话术正文',
-      sort_order   INT NOT NULL DEFAULT 0 COMMENT '同分类内排序（越小越靠前）',
-      is_active    TINYINT NOT NULL DEFAULT 1 COMMENT '是否启用',
-      created_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      updated_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      INDEX idx_category (category),
-      INDEX idx_sort (category, sort_order)
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='直播话术脚本库';
-  ```
-
-- [ ] **预置默认分类话术**：编写 `scripts/seed_broadcast_scripts.py`，写入5个默认分类各2-3条示例话术：
-  - 开播话术 / 产品介绍 / 报告讲解 / 收单话术 / 常见异议处理
-
-- [ ] **主播只读接口** `GET /api/scripts`（Streamer JWT）：
-  ```
-  Response: {
-    "categories": ["开播话术", "产品介绍", ...],
-    "scripts": {
-      "开播话术": [{ "id": 1, "title": "xx", "content": "xx" }, ...],
-      ...
-    }
-  }
-  ```
-  - 仅返回 `is_active=1` 的话术，按 `sort_order` 升序
-
-- [ ] **管理员CRUD** `GET/POST /admin/scripts`、`PUT/DELETE /admin/scripts/{id}`（Admin JWT）
-
-- [ ] **分类管理** `GET /admin/script-categories`（读）、`POST /admin/script-categories`（新增）、`DELETE /admin/script-categories/{name}`（删除整个分类的话术）
-
-- [ ] **排序更新** `PUT /admin/scripts/{id}/sort`：`{ "sort_order": 5 }` → 更新排序
-
-**验收标准**：
-```bash
-# 主播读取话术
-curl /api/scripts -H "Authorization: Bearer <streamer_token>"
-# → {"categories":["开播话术",...], "scripts":{"开播话术":[{...}],...}}
-
-# 管理员新增话术
-curl -X POST /admin/scripts -H "Authorization: Bearer <admin_token>" \
-  -d '{"category":"开播话术","title":"开场白","content":"大家好，欢迎来到..."}'
-# → {"id": 6, "success": true}
-```
+**验收**：STEP2 四区域 2×2 布局；付款墙遮蔽在浅色背景下清晰可见；JS 语法验证无报错
 
 ---
 
-### T13.2 · 主播助手页⑧前端（双Tab）
+### TASK-08：完整报告页 PC 布局优化
 
 | 属性 | 内容 |
 |------|------|
-| **工时** | 4h |
-| **前置** | T13.1（后端API已就绪）、T3.7（原直播答疑组件复用） |
-| **负责人** | 前端 |
+| **优先级** | P1 |
+| **状态** | ✅ 已完成（v5.22） |
+| **预计工时** | 3–4 h |
+| **文件** | `frontend/index.html` |
 
-**为什么需要**：原 `#qa` 页面仅有AI问答，PRD v5.4 要求升级为主播助手，新增固定话术Tab，保留AI问答Tab。
+**工作内容**：
+1. 封面信息区域横向展开（考生信息 + AI 推理引擎说明并排）
+2. 特别关注区（★）置顶独立展示，视觉区分于 15 所推荐
+3. 15 所学校卡片改为网格布局（宽屏 2 列）；冲刺/稳妥/保底分组标题方案C色彩（红/蓝/绿）
+4. 三档横向对比表全宽展示
+5. 板块四（AI 建议书）段落间距放宽，标题 24px
+6. 底部按钮区（下载PDF / 测下一个 / 直播答疑）横排展示
 
-**任务清单**：
+> ⚠️ **锁定约束**：不修改 PDF 生成函数（`buildPDFWrap` 及相关 `build*Page` 函数）；不修改 `_tierTotals` 计算逻辑；不修改报告章节顺序（LOCKED_TASKS L3）
 
-- [ ] **页面重命名**：`#qa` → `#assistant`，导航栏"直播答疑" → "🎙️ 主播助手"
-
-- [ ] **Tab导航**（两个Tab，固定在页面顶部）：
-  ```
-  [📋 直播话术] | [🤖 AI问答]
-  ```
-
-- [ ] **Tab A：直播话术**：
-  - 加载时调用 `GET /api/scripts`，按分类展示
-  - 分类折叠展开（默认第一个分类展开）：
-    ```html
-    <div class="category-header" onclick="toggleCategory('开播话术')">
-      开播话术 (3条) ▼
-    </div>
-    <div class="category-body">
-      <div class="script-card">
-        <div class="script-title">开场白</div>
-        <div class="script-content">大家好...</div>
-        <button class="copy-btn" onclick="copyScript('大家好...')">📋 复制</button>
-      </div>
-    </div>
-    ```
-  - 复制按钮：`navigator.clipboard.writeText(content)` + Toast "已复制"
-  - 数据库无话术时显示"暂无话术，请联系管理员配置"
-
-- [ ] **Tab B：AI问答**（从原 `#qa` 页面完整迁移，代码复用）：
-  - 10个预设快捷问题按钮（PRD §Page⑧ Tab B 10题）
-  - 自由输入框（限100字）
-  - AI回答气泡 + 对话历史
-  - 清空历史按钮
-
-- [ ] Tab切换时滚动位置重置到顶部
-
-- [ ] 从报告页"🤖 直播答疑"按钮跳转到 `#assistant`（默认展示Tab B AI问答）
-
-**验收标准**：
-- 进入主播助手 → Tab A 显示分类话术 → 点击话术 → 复制按钮复制内容
-- 切换Tab B → 10预设题+输入框正常工作
-- 从报告页"直播答疑"按钮跳转后默认Tab B
-- 管理员新增话术后，主播端刷新可见新内容
+**验收**：报告页 1280px 下两列卡片布局正常；分层颜色与方案C一致；PDF 下载功能未受影响
 
 ---
 
-### T13.3 · 管理后台：话术管理 Tab
+### TASK-09：s.html 亮色主题改造（BUG-014-2）
 
 | 属性 | 内容 |
 |------|------|
-| **工时** | 3h |
-| **前置** | T13.1（后端API）、T4.1（Admin后台框架） |
-| **负责人** | 前端 |
+| **优先级** | P2 |
+| **状态** | 待开发 |
+| **预计工时** | 2–3 h |
+| **文件** | `frontend/s.html` |
 
-**为什么需要**：管理员需要通过可视化界面维护话术脚本，包括分类管理、内容编辑、排序调整。
+**需求来源**：BUG-014-2（BugReport.md）
 
-**任务清单**：
+**工作内容**：
+1. 页面背景 `#F5F7FA`，卡片 `#FFFFFF`，主文字 `#1E293B`，次级 `#64748B`
+2. 表单、按钮、标签芯片样式与 index.html 方案C保持一致（参考 TASK-05）
+3. PC端专用提示横幅样式改为方案C警告色，内容保持不变
+4. 布局适配 PC 宽屏（参考 index.html STEP1/STEP2 布局）
 
-- [ ] `admin.html` 新增第6个Tab："📝 话术管理"
+> ⚠️ **锁定约束**：不修改 `/s/validate` 接口字段（L5-01）；不修改 PDF 生成代码（已锁定）
 
-- [ ] **分类管理区**（Tab顶部）：
-  - 显示当前所有分类 + "新增分类"按钮
-  - 删除分类：确认弹窗（"删除将同时删除该分类下所有话术"）
-
-- [ ] **话术列表区**（按分类分组显示）：
-  ```
-  分类：开播话术 [新增话术]
-  ┌─────────────────────────────────────────┐
-  │ # | 标题      | 内容预览   | 操作         │
-  │ 1 | 开场白    | 大家好...  | [编辑][删除][↑][↓] │
-  │ 2 | 产品介绍  | 我们是...  | [编辑][删除][↑][↓] │
-  └─────────────────────────────────────────┘
-  ```
-
-- [ ] **新增/编辑弹窗**：
-  ```
-  分类选择（下拉，可选已有分类或输入新分类名）
-  标题（必填，最多50字）
-  内容（必填，Textarea，最多500字）
-  [保存] [取消]
-  ```
-
-- [ ] **排序**：`[↑][↓]` 按钮调用 `PUT /admin/scripts/{id}/sort` 更新 `sort_order`，操作后刷新列表（保持当前分类展开状态）
-
-- [ ] **启用/禁用**：每条话术有"启用/禁用"Toggle，禁用后主播端不可见
-
-**验收标准**：
-- 新增话术 → 主播端刷新后可见
-- 调整排序（↑/↓）→ 主播端刷新后顺序变化
-- 禁用话术 → 主播端不可见
-- 删除分类 → 该分类所有话术消失
+**验收**：s.html 亮色主题正常；PDF 下载功能未受影响
 
 ---
 
-## Phase 14：遗留Bug + 细节完善
+## 模块三：主播助手新功能
 
----
+> **背景**：PRD v5.4 Page⑧ 将"直播答疑"升级为"主播助手"，双 Tab：Tab A 直播话术（管理员后台维护）+ Tab B AI问答（犀利风格）。后端需要 `broadcast_scripts` 表和 API。
 
-### T14.1 · Bug #7 /gk-admin 路径修复 + 其他小Bug
+### TASK-10：broadcast_scripts 表 + 话术 CRUD API（后端）
 
 | 属性 | 内容 |
 |------|------|
-| **工时** | 2h |
-| **前置** | 无 |
-| **负责人** | 后端+运维 |
-| **解决Bug** | Bug #7（/gk-admin 404） |
+| **优先级** | P1 |
+| **状态** | 待开发 |
+| **预计工时** | 3–4 h |
+| **文件** | `api/routers/admin.py`（或新建 `api/routers/scripts.py`）；数据库 DDL |
 
-**任务清单**：
+**工作内容**：
+1. 确认/新建 `broadcast_scripts` 表：
+   ```sql
+   CREATE TABLE broadcast_scripts (
+       id INT AUTO_INCREMENT PRIMARY KEY,
+       category VARCHAR(64) NOT NULL COMMENT '分类名',
+       title VARCHAR(128) NOT NULL COMMENT '话术标题',
+       content TEXT NOT NULL COMMENT '话术正文',
+       sort_order INT NOT NULL DEFAULT 0 COMMENT '同分类内排序',
+       status ENUM('active','disabled') NOT NULL DEFAULT 'active',
+       created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+       updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+       INDEX idx_category (category),
+       INDEX idx_sort (category, sort_order)
+   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+   ```
+2. 管理员接口（`/admin/scripts/`，Admin JWT）：
+   - `GET /admin/scripts` — 分类分组列表
+   - `POST /admin/scripts` — 新增话术（category, title, content）
+   - `PUT /admin/scripts/{id}` — 编辑话术
+   - `DELETE /admin/scripts/{id}` — 删除话术
+   - `PUT /admin/scripts/{id}/sort` — 更新排序
+   - `GET /admin/scripts/categories` — 获取所有分类名
+3. 主播读取接口（`/api/scripts`，主播 JWT）：`GET /api/scripts` — 分类分组列表
+4. 预置 5 个默认分类：开播话术 / 产品介绍 / 报告讲解 / 收单话术 / 常见异议处理
 
-- [ ] **Bug #7 根因排查**：
-  - SSH 登录 `121.41.69.234`，查 Nginx 配置是否有 `/gk-admin` 路由
-  - 查 FastAPI 路由是否有 `/gk-admin`：`grep -r "gk-admin" /root/gaokao-ai/`
-  - **修复方案A**（推荐）：在 Nginx 添加 301 重定向：`location = /gk-admin { return 301 /admin.html; }`
-  - **修复方案B**：在 `main.py` 添加 `@app.get("/gk-admin")` → `RedirectResponse("/admin.html")`
-
-- [ ] **验收**：
-  ```bash
-  curl -I http://121.41.69.234/gk-admin  # → HTTP/1.1 301, Location: /admin.html
-  ```
-
-- [ ] **dim17 空数据前端渲染**：当 API 返回 `risk_diff=null`、`risk_level=null`、`adjustment_advice=null` 时，前端 `renderSchoolCard()` 中报考风险区块整体不渲染（避免显示空框或"undefined"）
-
-- [ ] **dim18 空数据前端渲染**：当 `enrollment_trend=null` 时，招生规模趋势区块不渲染
-
-- [ ] **招生规模数据接口扩展**：在 `aggregate_school_dimensions()` 新增对 `dim18` 的占位组装（从 `admission_history` 的 `plan_count`/`actual_count` 字段查询，若字段不存在则返回 `null`），为后续爬虫补全留桩
-
-**验收标准**：
-- `/gk-admin` → 301 跳转到 `/admin.html`
-- 报告中无 "undefined"、"null" 等不友好文字（无数据的维度整体隐藏）
+**验收**：`GET /api/scripts` 返回正确分类结构；CRUD 幂等正确；Admin JWT 限制生效
 
 ---
 
-### T14.2 · 三档对比表 + 整体梯度总结渲染
+### TASK-11：主播助手页面 Tab A — 直播话术（前端）
 
 | 属性 | 内容 |
 |------|------|
-| **工时** | 2h |
-| **前置** | T3.5（报告渲染基础） |
-| **负责人** | 前端 |
+| **优先级** | P1 |
+| **状态** | 待开发（依赖 TASK-10） |
+| **预计工时** | 3–4 h |
+| **文件** | `frontend/index.html` |
 
-**为什么需要**：PRD v5.1 板块三末尾新增"三档院校综合横向对比表"，板块四末尾新增"整体梯度搭配策略总结"，当前代码未实现。
+**工作内容**：
+1. 将 Page⑧（原直播答疑/QA页）改为双 Tab 结构，Tab A "直播话术" + Tab B "AI问答"
+2. **Tab A 直播话术**：
+   - 页面加载时调用 `GET /api/scripts` 获取话术列表
+   - 按分类折叠展开（Accordion），默认全部收起；分类标题带话术数量角标
+   - 每条话术卡片：标题 + 正文（超 3 行折叠）+ **一键复制按钮**（Toast 提示"已复制"）
+   - 加载中骨架屏；API 失败时提示"话术加载失败，请刷新"
 
-**任务清单**：
-
-- [ ] **三档横向对比表**（板块三末尾，所有学校卡片之后）：
-  ```javascript
-  function buildComparisonTable(schools) {
-    // schools 按 tier 分组 (0=冲刺/1=稳妥/2=保底)
-    // 按 PRD §板块三-补充 生成HTML表格
-    // 列：院校名称 | 层次 | 近年录取分 | 录取概率 | 就业率 | 均薪(月) | 年学费 | 风险等级
-    // 数据从 school.dimensions 中提取
-    // 按冲刺/稳妥/保底分组，组间加分组标题行
-  }
-  ```
-
-- [ ] **整体梯度搭配策略总结**（板块四末尾新增第7节）：
-  ```javascript
-  function buildGradientSummary(schools, tierCounts) {
-    // 基于实际推荐的冲/稳/保数量给出建议文字
-    // "综合推荐：冲刺X所（建议报2-3）+ 稳妥X所（建议报3-5）+ 保底X所（建议报2-3）"
-    // 调剂风险提示 + 注意事项（固定文本）
-  }
-  ```
-
-- [ ] 对比表和梯度总结均计入PDF导出（`downloadPDF()` 的内容捕获范围包含新区块）
-
-**验收标准**：
-- 报告板块三末尾出现横向对比表（含冲/稳/保分组）
-- 报告板块四末尾出现梯度搭配策略总结
-- PDF下载包含以上内容
+**验收**：Tab A 话术列表加载正常；折叠展开正确；复制功能生效；JS 语法验证无报错
 
 ---
 
-## Phase 15：集成验证与生产部署
-
----
-
-### T15.1 · 数据库迁移 + 生产部署
+### TASK-12：主播助手页面 Tab B — AI 问答（前端）
 
 | 属性 | 内容 |
 |------|------|
-| **工时** | 2h |
-| **前置** | Phase 11-14 全部完成 |
-| **负责人** | 后端/运维 |
+| **优先级** | P1 |
+| **状态** | 待开发（依赖 TASK-11 中双Tab结构） |
+| **预计工时** | 2–3 h |
+| **文件** | `frontend/index.html` |
 
-**任务清单**：
+**工作内容**（复用现有 QA 模块逻辑，移入 Tab B）：
+1. 10 个预设快捷问题按钮（按 PRD §Page⑧ 列表），点击填入输入框
+2. 文本输入框（100 字限制，超限提示）+ 提交按钮
+3. 调用现有 `POST /api/qa/ask` 接口（Bearer token）
+4. AI 回答展示：卡片样式，回答 ≤ 200 字，默认犀利直接风格（无需切换）
+5. 本次会话问答历史列表（滚动，最近在上）；"清空历史"按钮；加载中 spinner（防重复提交）
 
-- [ ] **编写迁移SQL文件** `scripts/migrate_v5_new_features.sql`：
-  ```sql
-  -- 建表：province_cutoffs, province_cutoff_crawl_tasks
-  -- 建表：one_time_links, one_time_link_batches
-  -- 建表：broadcast_scripts
-  ```
-
-- [ ] **生产执行顺序**：
-  ```bash
-  # 1. 备份当前DB
-  mysqldump gaokao_ai | gzip > /tmp/backup_before_v5_$(date +%Y%m%d).sql.gz
-  
-  # 2. 执行DDL迁移
-  mysql -u root -p gaokao_ai < scripts/migrate_v5_new_features.sql
-  
-  # 3. 写入种子数据
-  python scripts/seed_province_cutoffs.py
-  python scripts/seed_broadcast_scripts.py
-  
-  # 4. 部署后端代码
-  cd /root/gaokao-ai && git pull origin main
-  systemctl restart gaokao-api.service
-  
-  # 5. 部署前端文件
-  cp frontend/index.html /www/wwwroot/gaokao.lumenaistudio.co/index.html
-  cp frontend/admin.html /www/wwwroot/gaokao.lumenaistudio.co/admin.html
-  cp frontend/s.html     /www/wwwroot/gaokao.lumenaistudio.co/s.html
-  
-  # 6. 更新Nginx配置（新增/s路由）并重载
-  nginx -t && systemctl reload nginx
-  
-  # 7. 健康验证
-  curl http://121.41.69.234/health
-  ```
-
-**验收标准**：
-```bash
-curl http://121.41.69.234/health  # → {"status":"ok","mysql":"ok","redis":"ok"}
-SELECT COUNT(*) FROM province_cutoffs;         # → >= 50
-SELECT COUNT(*) FROM broadcast_scripts;        # → >= 5（种子话术）
-curl http://121.41.69.234/s.html               # → 200 OK（学生自助报告页）
-curl -I http://121.41.69.234/gk-admin          # → 301
-```
+**验收**：预设问题一键填入；AI 回答正常返回；历史清空正常；JS 语法验证无报错
 
 ---
 
-### T15.2 · PRD v5.x 验收场景测试
+### TASK-13：管理后台话术管理模块
 
 | 属性 | 内容 |
 |------|------|
-| **工时** | 4h |
-| **前置** | T15.1（生产部署完成） |
-| **负责人** | 全员 |
+| **优先级** | P1 |
+| **状态** | 待开发（依赖 TASK-10） |
+| **预计工时** | 3–4 h |
+| **文件** | `frontend/admin.html` |
 
-**依据**：PRD v5.2 §十 验收标准（4个场景）+ 新功能验收
+**工作内容**：
+1. 管理后台顶部标签栏新增"话术管理"Tab
+2. **话术列表**：按分类分组展示，每条显示分类/标题/状态；支持按分类筛选
+3. **新增话术弹窗**：分类下拉（含"新建分类"选项）+ 标题 + 正文多行文本框 + 保存
+4. **编辑话术**：点击编辑弹窗预填旧内容，PUT 接口提交
+5. **删除话术**：确认弹窗 → DELETE 接口
+6. **分类排序（简化版）**：上移/下移按钮调整同分类内顺序（调用 sort 接口）
 
-**场景1：端对端标准查询（PRD §十 场景1）**
-
-```
-输入：河南 + 物理+化学+政治 + 540分 + 位次约35000 + 意向郑州大学(计算机) + 意向城市郑州
-预期验证：
-  ✓ 郑州大学出现在"📌 特别关注"区（不计入15所）
-  ✓ 推荐概率显示具体百分比（非"暂无"）
-  ✓ 分数线趋势展示≤5年，逐年可见
-  ✓ 就业率/薪资标注真实数据来源及年份，不同学校差异化
-  ✓ 推荐池15所按四层填充，郑州学校置顶
-```
-
-**场景2：算法边界与数据缺失（PRD §十 场景4）**
-
-```
-预期验证：
-  ✓ rankProb < 30% 的非意向学校不进推荐池
-  ✓ 仅1年历史数据时：100%权重并在卡片注明"仅有1年历史数据，参考价值有限"
-  ✓ 无录取数据时：前端显示"暂无录取数据"
-  ✓ dim17/dim18 无数据时：整块不渲染（无空框）
-```
-
-**场景3：高分考生边界（Bug #8、#9 验证）**
-
-```
-输入：河南 + 660分（高分段）
-预期验证：
-  ✓ 冲刺档：显示985/211学校（不为空，Bug #8修复）
-  ✓ 保底档：无专科/职业技术学校（Bug #9修复）
-  ✓ 推荐包含🌐全国扩展推荐说明文字
-```
-
-**场景4：低分考生+跨省（PRD §十 场景3）**
-
-```
-输入：河南350分 + 意向城市上海 + 意向学校北京大学+河南科技大学+洛阳师范学院
-预期验证：
-  ✓ 特别关注区3所（北京大学标"录取概率0%·成绩未达录取线"）
-  ✓ 推荐池：L1上海学校→L2河南本省→L3上海周边（江苏/浙江）
-  ✓ 低分段专科纳入推荐范围
-```
-
-**场景5：新功能验收**
-
-```
-一次性链接：
-  ✓ 管理员生成10条链接 → 下载TXT → 复制全部
-  ✓ 学生打开链接 → PC横幅显示 → 填表 → 完整报告 → PDF
-  ✓ 再次访问 → "此链接已被使用"
-
-主播助手：
-  ✓ 主播端进入主播助手 → Tab A显示管理员配置的话术 → 点复制
-  ✓ Tab B AI问答正常（10预设题+自由输入）
-  ✓ 管理员后台新增话术 → 主播端刷新可见
-
-管理后台：
-  ✓ 话术管理Tab：增删改查、排序
-  ✓ 一次性链接Tab：生成、状态追踪、作废批次
-```
-
-**验收标准**：5个场景全部通过 → 可通知主播开始使用新功能
+**验收**：管理员可完成话术增删改；分类展示正确；操作后列表实时刷新
 
 ---
 
-## 任务依赖图
+## 模块四：管理后台一次性链接管理
+
+### TASK-14：管理后台一次性链接管理模块
+
+| 属性 | 内容 |
+|------|------|
+| **优先级** | P1 |
+| **状态** | 待开发（后端接口需核实是否完整） |
+| **预计工时** | 3–4 h |
+| **文件** | `frontend/admin.html`；`api/routers/admin.py`（如接口缺失则补充） |
+
+**工作内容**：
+1. **核实/补充后端接口**（如缺失则新增）：
+   - `POST /admin/links/batch` — 批量生成一次性链接（参数：count 1-100，note 备注）
+   - `GET /admin/links/batches` — 批次列表（总数/已使用/未使用/生成时间/备注）
+   - `GET /admin/links/batches/{batch_id}` — 批次详情（每条链接状态）
+   - `POST /admin/links/batches/{batch_id}/invalidate` — 作废整批未使用链接
+2. **管理后台 UI（admin.html 新增 Tab "链接管理"）**：
+   - **生成区**：数量输入（1-100）+ 备注文本框 + "生成链接"按钮
+   - **生成结果弹窗**：链接列表（每条可独立复制）+ "一键复制全部" + "下载TXT文件"（`链接批次_[备注]_[日期].txt`）
+   - **批次看板表格**：批次备注、总数、已使用、未使用、生成时间；"查看详情"/"作废整批"操作
+
+> 链接安全（已实现则复用）：UUID v4 + HMAC 签名、`one_time_links` 行锁防重复消费（L5-01/L5-02 锁定，不可改）
+
+**验收**：管理员可批量生成 10 条链接并复制；批次状态看板数据准确；作废整批后链接不可用
+
+---
+
+## 任务依赖关系
 
 ```
-Phase 11（算法升级）
-  T11.1 ──────────────────────► T11.2
-  T11.3（独立，可与T11.2并行）
+TASK-01 (BUG-011)         ── 无依赖，可立即开始
+TASK-02 (BUG-019)         ── 无依赖，但需用户审批
+TASK-03 (BUG-020)         ── 无依赖，可立即开始
+TASK-04 (BUG-021前端)     ── 无依赖，可立即开始
 
-Phase 12（一次性链接）
-  T12.1 ──► T12.2
-        └─► T12.3（可与T12.2并行）
+TASK-05 (PC基础框架)      ── 无依赖，可立即开始
+TASK-06 (登录+STEP1)      ── TASK-05
+TASK-07 (STEP2+付款墙)    ── TASK-05
+TASK-08 (完整报告)         ── TASK-05
+TASK-09 (s.html亮色)      ── TASK-05（参考方案C变量）
 
-Phase 13（主播助手）
-  T13.1 ──► T13.2
-        └─► T13.3（可与T13.2并行）
+TASK-10 (话术API后端)     ── 无依赖
+TASK-11 (Tab A 话术前端)  ── TASK-10 + TASK-05
+TASK-12 (Tab B AI问答)    ── TASK-11（共享双Tab结构）
+TASK-13 (管理后台话术)    ── TASK-10
 
-Phase 14（Bug修复）
-  T14.1（独立）
-  T14.2（独立）
-
-Phase 15（集成部署）
-  Phase11~14全部完成 ──► T15.1 ──► T15.2
+TASK-14 (链接管理)        ── 无依赖（后端可能已有）
 ```
 
-**并行策略**：
-- Phase 11 / Phase 12 / Phase 13 / Phase 14 可四线并行开发
-- T12.2（学生前端）和 T12.3（管理后台）可在 T12.1 完成后并行
-- T13.2（主播助手前端）和 T13.3（管理后台话术）可在 T13.1 完成后并行
-- Phase 15 必须在前四个Phase全部完成后串行执行
+---
+
+## 并行开发建议
+
+| 并行组 | 任务 | 备注 |
+|--------|------|------|
+| 可立即并行 | TASK-01 + TASK-03 + TASK-05 | Bug修复与PC框架同步推进 |
+| 后端先行 | TASK-02（审批后）+ TASK-10 | 后端API先完成，前端依赖 |
+| 前端页面适配 | TASK-06 + TASK-07（TASK-05完成后） | 两人可各负责一个STEP |
+| 管理后台 | TASK-13 + TASK-14（TASK-10完成后） | 同一文件内不同Tab |
 
 ---
 
-## 工时汇总
+## 总工时估算
 
-| Phase | 任务数 | 工时 | 说明 |
-|-------|:---:|:---:|------|
-| Phase 11: 算法升级 | 3 | 10h | Bug #8/#9 + §4.7/4.8/4.1.2 |
-| Phase 12: 一次性链接系统 | 3 | 12h | 含后端API + 前端学生页 + 管理后台 |
-| Phase 13: 主播助手 | 3 | 10h | 含后端API + 前端双Tab + 管理后台 |
-| Phase 14: 遗留Bug修复 | 2 | 4h | Bug #7 + 对比表渲染 |
-| Phase 15: 集成验证部署 | 2 | 6h | DB迁移 + 5场景验收 |
-| **合计** | **13** | **~42h** | 约5.25人天 |
-
-> **关键路径**（最短时间）：并行执行 Phase11+12+13+14（约12h）→ T15.1迁移（2h）→ T15.2验收（4h）= **约18h（约2.25人天）**
+| 模块 | 任务数 | 估计总工时 |
+|------|--------|-----------|
+| Bug 修复 | 4 | 9–13 h |
+| PC 全宽布局迁移 | 5 | 12–17 h |
+| 主播助手功能 | 4 | 11–15 h |
+| 链接管理 | 1 | 3–4 h |
+| **合计** | **14** | **35–49 h** |
 
 ---
 
-## Architecture.md 更新清单
-
-本次任务完成后，Architecture.md 需同步以下变更（文档更新随代码提交一并完成）：
-
-| 章节 | 更新内容 |
-|------|---------|
-| §4.1 表结构总览 | 新增 province_cutoffs, province_cutoff_crawl_tasks, one_time_links, one_time_link_batches, broadcast_scripts |
-| §4.2 DDL | 新增5张表完整DDL |
-| §4.5 爬虫任务表 | 新增 province_cutoff_crawl_tasks |
-| §5.1 接口总览 | 新增12个接口（一次性链接管理/学生校验/话术CRUD） |
-| §2.2 前端模块 | 新增 Page⑧主播助手双Tab / Page⑨学生自助报告页 |
-| §2.3 后端模块 | 新增 OneTimeLinks 模块 / BroadcastScripts 模块 |
-| §3.2 推荐引擎流程 | Phase 0.5 成绩段位判断 / Phase 3之后质量底线过滤 |
-| §10.2 Nginx 配置 | 新增 `/s` location |
-| 附录B 约束速查 | 新增省份控制线查询 / 质量底线规则 / 链接防伪造 |
-
----
-
-| 版本 | 日期 | 变更 |
-|------|------|------|
-| v1.0 | 2026-06-16 | 初始任务拆分（Phase 1-6） |
-| v2.0 | 2026-06-17 | 新增 Phase 7-10（v4.0升级） |
-| v2.1 | 2026-06-17 | 新增 Phase 10（数据丰富） |
-| **v3.0** | **2026-06-19** | **重写：Phase 1-10已全部完成；新增 Phase 11-15 覆盖 PRD v5.3（算法升级）+ PRD v5.4（一次性链接/主播助手）+ 遗留Bug修复，共13任务约42h** |
+*本文档仅为任务拆分，不包含实施步骤。实施前请查阅对应设计文档（superpowers/specs/）和锁定约束（LOCKED_TASKS.md）。*
