@@ -30,49 +30,22 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-  background: #E2E8F0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  background: var(--bg-primary);
   min-height: 100vh;
-  padding: 20px;
   -webkit-font-smoothing: antialiased;
+  font-size: 22px;
 }
 
-/* ============ Phone Frame ============ */
+/* ============ PC Frame ============ */
 .prototype-wrapper {
-  display: flex;
-  gap: 24px;
-  align-items: flex-start;
+  max-width: 1440px;
+  margin: 0 auto;
 }
-.phone-frame {
-  width: 375px;
-  height: 800px;
+.pc-frame {
   background: var(--bg-primary);
-  border-radius: 24px;
-  overflow: hidden;
-  box-shadow: var(--shadow-lg), 0 0 0 3px #1E293B, 0 0 0 6px #334155;
   display: flex;
   flex-direction: column;
-  position: relative;
-}
-.status-bar {
-  height: 28px;
-  background: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 16px;
-  font-size: 11px;
-  font-weight: 600;
-  color: #1E293B;
-  flex-shrink: 0;
-}
-.status-bar-right {
-  display: flex;
-  gap: 4px;
-  align-items: center;
-  font-size: 11px;
+  min-height: 100vh;
 }
 
 /* ============ Nav Bar ============ */
@@ -80,15 +53,14 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
-  padding: 8px 8px;
+  padding: 10px 24px;
   background: #fff;
   border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
 }
 .nav-btn {
   flex: 0 0 auto;
   padding: 4px 8px;
-  font-size: 11px;
+  font-size: 15px;
   border: 1px solid var(--border);
   border-radius: 20px;
   background: #fff;
@@ -113,21 +85,14 @@ body {
 
 /* ============ Page Container ============ */
 .page-container {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+  padding: 0 24px;
 }
-.page-container::-webkit-scrollbar { width: 4px; }
-.page-container::-webkit-scrollbar-track { background: transparent; }
-.page-container::-webkit-scrollbar-thumb {
-  background: #CBD5E1;
-  border-radius: 4px;
-}
-.page-container::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
 .page {
   display: none;
-  padding: 16px;
+  padding: 24px 0;
   flex-direction: column;
   gap: 12px;
   animation: fadeIn .25s ease;
@@ -138,28 +103,10 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* ============ Home Bar ============ */
-.home-bar {
-  height: 24px;
-  background: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  border-top: 1px solid var(--border);
-}
-.home-bar::after {
-  content: '';
-  width: 100px;
-  height: 4px;
-  background: #CBD5E1;
-  border-radius: 99px;
-}
-
 /* ============ Typography ============ */
-.page-title { font-size: 18px; font-weight: 700; color: var(--text-primary); }
-.page-subtitle { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
-.section-title { font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; }
+.page-title { font-size: 30px; font-weight: 700; color: var(--text-primary); }
+.page-subtitle { font-size: 18px; color: var(--text-secondary); margin-top: 2px; }
+.section-title { font-size: 24px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; }
 .step-indicator {
   display: inline-flex;
   align-items: center;
@@ -168,7 +115,7 @@ body {
   color: var(--color-info);
   padding: 4px 10px;
   border-radius: 20px;
-  font-size: 12px;
+  font-size: 16px;
   font-weight: 600;
   margin-bottom: 4px;
   width: fit-content;
@@ -185,12 +132,13 @@ body {
 
 /* ============ Form ============ */
 .form-group { display: flex; flex-direction: column; gap: 4px; }
-.form-label { font-size: 13px; font-weight: 600; color: var(--text-primary); }
-.form-hint { font-size: 11px; color: var(--text-secondary); }
+.form-label { font-size: 20px; font-weight: 600; color: var(--text-primary); }
+.form-hint { font-size: 16px; color: var(--text-secondary); }
 .form-input, .form-select, .form-textarea {
   width: 100%;
-  padding: 10px 12px;
-  font-size: 14px;
+  padding: 12px 14px;
+  height: 48px;
+  font-size: 19px;
   border: 1.5px solid var(--border);
   border-radius: var(--radius-sm);
   background: #fff;
@@ -198,6 +146,7 @@ body {
   transition: border-color .15s;
   font-family: inherit;
 }
+.form-textarea { height: auto; min-height: 60px; }
 .form-input:focus, .form-select:focus, .form-textarea:focus {
   outline: none;
   border-color: var(--color-info);
@@ -209,12 +158,13 @@ body {
   25% { transform: translateX(-4px); }
   75% { transform: translateX(4px); }
 }
-.form-error-text { font-size: 11px; color: var(--color-danger); display: none; }
+.form-error-text { font-size: 15px; color: var(--color-danger); display: none; }
 .form-error-text.show { display: block; }
-.form-textarea { resize: none; min-height: 60px; }
+.form-textarea { resize: none; }
 .input-with-suffix {
   display: flex;
   align-items: center;
+  height: 48px;
   border: 1.5px solid var(--border);
   border-radius: var(--radius-sm);
   overflow: hidden;
@@ -227,14 +177,14 @@ body {
 .input-with-suffix input {
   flex: 1;
   border: none;
-  padding: 10px 12px;
-  font-size: 14px;
+  padding: 12px 14px;
+  font-size: 19px;
   outline: none;
   font-family: inherit;
 }
 .input-with-suffix .suffix {
   padding: 0 10px;
-  font-size: 13px;
+  font-size: 17px;
   color: var(--text-secondary);
   font-weight: 500;
   white-space: nowrap;
@@ -242,6 +192,7 @@ body {
 .password-wrap {
   display: flex;
   align-items: center;
+  height: 48px;
   border: 1.5px solid var(--border);
   border-radius: var(--radius-sm);
   overflow: hidden;
@@ -251,8 +202,8 @@ body {
 .password-wrap input {
   flex: 1;
   border: none;
-  padding: 10px 12px;
-  font-size: 14px;
+  padding: 12px 14px;
+  font-size: 19px;
   outline: none;
   font-family: inherit;
 }
@@ -261,7 +212,7 @@ body {
   border: none;
   padding: 0 10px;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 20px;
   color: var(--text-secondary);
 }
 
@@ -271,10 +222,10 @@ body {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 10px 20px;
+  padding: 12px 24px;
   border: none;
   border-radius: var(--radius-sm);
-  font-size: 14px;
+  font-size: 19px;
   font-weight: 600;
   cursor: pointer;
   transition: all .15s;
@@ -283,7 +234,7 @@ body {
 }
 .btn:active { transform: scale(0.97); }
 .btn-block { width: 100%; }
-.btn-lg { padding: 13px 20px; font-size: 16px; }
+.btn-lg { padding: 14px 24px; font-size: 21px; min-height: 52px; }
 .btn-primary { background: var(--color-info); color: #fff; }
 .btn-primary:hover { background: #2563EB; }
 .btn-danger { background: var(--color-danger); color: #fff; }
@@ -305,8 +256,8 @@ body {
 /* ============ Tags ============ */
 .tag-group { display: flex; flex-wrap: wrap; gap: 6px; }
 .tag {
-  padding: 6px 12px;
-  font-size: 12px;
+  padding: 8px 16px;
+  font-size: 17px;
   border: 1.5px solid var(--border);
   border-radius: 20px;
   cursor: pointer;
@@ -325,8 +276,8 @@ body {
 .tag.disabled { opacity: 0.35; cursor: not-allowed; }
 
 .tag-radio {
-  padding: 8px 16px;
-  font-size: 13px;
+  padding: 10px 18px;
+  font-size: 18px;
   border: 1.5px solid var(--border);
   border-radius: 8px;
   cursor: pointer;
@@ -347,7 +298,7 @@ body {
   display: inline-block;
   padding: 2px 7px;
   border-radius: 4px;
-  font-size: 10px;
+  font-size: 14px;
   font-weight: 700;
   color: #fff;
 }
@@ -357,8 +308,8 @@ body {
 
 /* ============ Brand / Hero Copy ============ */
 .brand-section { text-align: center; padding: 8px 0 4px; }
-.brand-logo { font-size: 20px; font-weight: 800; color: var(--text-primary); }
-.brand-subtitle { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+.brand-logo { font-size: 24px; font-weight: 800; color: var(--text-primary); }
+.brand-subtitle { font-size: 16px; color: var(--text-secondary); margin-top: 2px; }
 .hero-copy {
   padding: 4px 0;
 }
@@ -370,10 +321,10 @@ body {
   border-bottom: 1px solid #F1F5F9;
 }
 .hero-copy-item:last-child { border-bottom: none; }
-.hc-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+.hc-icon { font-size: 22px; flex-shrink: 0; margin-top: 1px; }
 .hc-text { flex: 1; }
-.hc-head { font-size: 13px; font-weight: 600; color: var(--text-primary); line-height: 1.4; }
-.hc-body { font-size: 12px; color: var(--text-secondary); line-height: 1.5; margin-top: 1px; }
+.hc-head { font-size: 17px; font-weight: 600; color: var(--text-primary); line-height: 1.4; }
+.hc-body { font-size: 16px; color: var(--text-secondary); line-height: 1.5; margin-top: 1px; }
 
 /* ============ Blur Card (Paywall) ============ */
 .blur-card {
@@ -381,7 +332,7 @@ body {
   border-radius: var(--radius-sm);
   padding: 10px 14px;
   color: #94A3B8;
-  font-size: 13px;
+  font-size: 17px;
   font-style: italic;
   text-align: center;
   position: relative;
@@ -415,9 +366,9 @@ body {
   padding: 12px 14px;
   border-bottom: 1px solid #F1F5F9;
 }
-.school-name { font-size: 15px; font-weight: 700; color: var(--text-primary); flex: 1; }
+.school-name { font-size: 19px; font-weight: 700; color: var(--text-primary); flex: 1; }
 .school-prob {
-  font-size: 18px;
+  font-size: 22px;
   font-weight: 800;
   padding: 4px 10px;
   border-radius: 6px;
@@ -430,17 +381,17 @@ body {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
+  font-size: 16px;
   color: var(--text-secondary);
 }
 .school-row .label { color: #94A3B8; min-width: 50px; flex-shrink: 0; }
 .school-row .value { color: var(--text-primary); font-weight: 500; }
-.school-match { color: var(--color-success); font-weight: 600; font-size: 12px; }
+.school-match { color: var(--color-success); font-weight: 600; font-size: 16px; }
 .school-ai-comment {
   background: #FFF7ED;
   border-left: 3px solid #F97316;
   padding: 8px 12px;
-  font-size: 12px;
+  font-size: 16px;
   color: #7C2D12;
   margin: 0 14px 12px;
   border-radius: 0 6px 6px 0;
@@ -456,13 +407,13 @@ body {
   align-items: center;
   gap: 8px;
   padding: 8px 0;
-  font-size: 15px;
+  font-size: 19px;
   font-weight: 700;
 }
 .tier-header.rush { color: var(--color-danger); }
 .tier-header.safe { color: var(--color-info); }
 .tier-header.bottom { color: var(--color-success); }
-.tier-count { font-size: 12px; color: var(--text-secondary); font-weight: 400; }
+.tier-count { font-size: 16px; color: var(--text-secondary); font-weight: 400; }
 
 /* ============ Insights Grid ============ */
 .insights-grid {
@@ -477,19 +428,19 @@ body {
   text-align: center;
   border: 1px solid var(--border);
 }
-.insight-item .label { font-size: 11px; color: var(--text-secondary); }
-.insight-item .value { font-size: 20px; font-weight: 800; margin: 4px 0; }
+.insight-item .label { font-size: 15px; color: var(--text-secondary); }
+.insight-item .value { font-size: 24px; font-weight: 800; margin: 4px 0; }
 .insight-item .value.blurred { color: #94A3B8; }
 
 /* ============ Toast ============ */
 .toast {
-  position: absolute;
-  top: 36px;
+  position: fixed;
+  top: 24px;
   left: 50%;
   transform: translateX(-50%);
   padding: 8px 16px;
   border-radius: 8px;
-  font-size: 13px;
+  font-size: 17px;
   font-weight: 600;
   color: #fff;
   z-index: 100;
@@ -559,7 +510,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 28px;
+  font-size: 32px;
   background: linear-gradient(135deg, #EEF2FF, #E0E7FF);
   border-radius: 16px;
   border: 2px solid rgba(59,130,246,0.15);
@@ -586,14 +537,14 @@ body {
 }
 
 .analyzing-title {
-  font-size: 17px; font-weight: 800;
+  font-size: 21px; font-weight: 800;
   background: linear-gradient(135deg, #3B82F6, #6366F1);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 .analyzing-subtitle {
-  font-size: 11px; color: var(--text-secondary);
+  font-size: 15px; color: var(--text-secondary);
   text-align: center; line-height: 1.5;
   position: relative; z-index: 2;
 }
@@ -637,7 +588,7 @@ body {
 .analyzing-step .step-icon {
   width: 32px; height: 32px;
   display: flex; align-items: center; justify-content: center;
-  font-size: 14px; border-radius: 8px;
+  font-size: 18px; border-radius: 8px;
   background: #F1F5F9; flex-shrink: 0;
   transition: all .4s ease; position: relative; z-index: 1;
 }
@@ -653,7 +604,7 @@ body {
 /* Step content */
 .analyzing-step .step-info { flex: 1; position: relative; z-index: 1; }
 .analyzing-step .step-label {
-  font-size: 12px; font-weight: 600;
+  font-size: 16px; font-weight: 600;
   color: #94A3B8; transition: color .4s;
 }
 .analyzing-step.active .step-label { color: #1E40AF; }
@@ -661,7 +612,7 @@ body {
 
 /* Step status */
 .analyzing-step .step-status {
-  font-size: 11px; font-weight: 700;
+  font-size: 15px; font-weight: 700;
   color: #94A3B8; min-width: 40px;
   text-align: right; transition: color .4s;
   font-family: 'SF Mono', 'Consolas', monospace;
@@ -712,7 +663,7 @@ body {
   position: relative; z-index: 2;
 }
 .engine-badge {
-  padding: 5px 10px; font-size: 10px; font-weight: 600;
+  padding: 5px 10px; font-size: 14px; font-weight: 600;
   border-radius: 6px; background: #fff;
   border: 1px solid var(--border); color: var(--text-secondary);
   display: flex; align-items: center; gap: 4px;
@@ -738,12 +689,12 @@ body {
   border-radius: 8px; padding: 10px 12px;
 }
 .analyzing-info-card .info-card-title {
-  font-size: 11px; font-weight: 700;
+  font-size: 15px; font-weight: 700;
   color: var(--text-secondary);
   margin-bottom: 3px;
 }
 .analyzing-info-card .info-card-text {
-  font-size: 10px; color: #94A3B8;
+  font-size: 14px; color: #94A3B8;
   line-height: 1.6;
 }
 .analyzing-info-card .info-card-text strong {
@@ -756,10 +707,80 @@ body {
   color: #92400E;
   padding: 8px 12px;
   border-radius: var(--radius-sm);
-  font-size: 12px;
+  font-size: 16px;
   font-weight: 600;
   text-align: center;
 }
+
+/* ============ Tabs ============ */
+.tab-bar {
+  display: flex;
+  border-bottom: 2px solid var(--border);
+  background: #fff;
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+.tab-btn {
+  flex: 1;
+  padding: 12px 16px;
+  font-size: 18px;
+  font-weight: 600;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: all .15s;
+}
+.tab-btn:hover { color: var(--text-primary); }
+.tab-btn.active { color: var(--color-info); border-bottom-color: var(--color-info); }
+.tab-panel { display: none; }
+.tab-panel.active { display: flex; flex-direction: column; gap: 12px; padding-top: 12px; }
+
+/* ============ Script Card ============ */
+.script-card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.script-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: #F8FAFC;
+  border-bottom: 1px solid var(--border);
+}
+.script-card-title { font-size: 17px; font-weight: 700; color: var(--text-primary); }
+.script-category {
+  font-size: 14px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: #EEF2FF;
+  color: var(--color-info);
+}
+.script-card-body {
+  padding: 10px 14px;
+  font-size: 17px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+.script-copy-btn {
+  display: block;
+  width: 100%;
+  padding: 7px;
+  font-size: 16px;
+  background: #F8FAFC;
+  border: none;
+  border-top: 1px solid var(--border);
+  cursor: pointer;
+  color: var(--color-info);
+  font-weight: 600;
+  transition: background .15s;
+}
+.script-copy-btn:hover { background: #EEF2FF; }
 
 /* ============ Chat ============ */
 .chat-area { display: flex; flex-direction: column; gap: 8px; max-height: 260px; overflow-y: auto; }
@@ -767,7 +788,7 @@ body {
   max-width: 82%;
   padding: 10px 14px;
   border-radius: 14px;
-  font-size: 13px;
+  font-size: 17px;
   line-height: 1.5;
 }
 .chat-bubble.user {
@@ -786,7 +807,7 @@ body {
 
 /* ============ Admin ============ */
 .admin-wrapper {
-  width: 900px;
+  width: 1100px;
   background: var(--bg-primary);
   border-radius: 12px;
   box-shadow: var(--shadow-lg);
@@ -795,8 +816,8 @@ body {
 .admin-header {
   background: #1E293B;
   color: #fff;
-  padding: 14px 24px;
-  font-size: 16px;
+  padding: 16px 28px;
+  font-size: 21px;
   font-weight: 700;
   display: flex;
   align-items: center;
@@ -809,8 +830,8 @@ body {
   border-bottom: 1px solid var(--border);
 }
 .admin-nav-btn {
-  padding: 12px 20px;
-  font-size: 13px;
+  padding: 14px 22px;
+  font-size: 18px;
   border: none;
   background: none;
   cursor: pointer;
@@ -825,7 +846,7 @@ body {
   border-bottom-color: var(--color-info);
 }
 .admin-content { padding: 24px; }
-.admin-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.admin-table { width: 100%; border-collapse: collapse; font-size: 17px; }
 .admin-table th {
   text-align: left;
   padding: 10px 12px;
@@ -833,7 +854,7 @@ body {
   border-bottom: 2px solid var(--border);
   color: var(--text-secondary);
   font-weight: 600;
-  font-size: 12px;
+  font-size: 16px;
 }
 .admin-table td {
   padding: 10px 12px;
@@ -845,7 +866,7 @@ body {
 .admin-table .action-btns { display: flex; gap: 6px; }
 .admin-table .action-btns button {
   padding: 4px 10px;
-  font-size: 12px;
+  font-size: 16px;
   border-radius: 4px;
   border: 1px solid var(--border);
   background: #fff;
@@ -872,7 +893,7 @@ body {
   width: 360px;
   box-shadow: 0 20px 60px rgba(0,0,0,0.3);
 }
-.modal h3 { font-size: 16px; margin-bottom: 16px; }
+.modal h3 { font-size: 20px; margin-bottom: 16px; }
 .modal .form-group { margin-bottom: 12px; }
 .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
 
@@ -912,14 +933,14 @@ body {
 .search-dropdown.show { display: block; }
 .search-dropdown-item {
   padding: 10px 12px;
-  font-size: 13px;
+  font-size: 17px;
   cursor: pointer;
   border-bottom: 1px solid #F1F5F9;
   display: flex;
   justify-content: space-between;
 }
 .search-dropdown-item:hover { background: #F1F5F9; }
-.search-dropdown-item .city { color: var(--text-secondary); font-size: 11px; }
+.search-dropdown-item .city { color: var(--text-secondary); font-size: 15px; }
 .selected-schools { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
 .selected-school-tag {
   display: inline-flex;
@@ -929,18 +950,18 @@ body {
   background: #EEF2FF;
   border: 1px solid var(--color-info);
   border-radius: 20px;
-  font-size: 12px;
+  font-size: 16px;
   color: var(--color-info);
   font-weight: 500;
 }
-.selected-school-tag .remove { cursor: pointer; font-size: 14px; font-weight: 700; }
+.selected-school-tag .remove { cursor: pointer; font-size: 18px; font-weight: 700; }
 
 /* ============ Report Summary Bar ============ */
 .report-summary {
   display: flex;
   gap: 8px;
   align-items: center;
-  font-size: 12px;
+  font-size: 16px;
   color: var(--text-secondary);
   padding: 4px 0;
   flex-wrap: wrap;
@@ -959,7 +980,7 @@ body {
   align-items: center;
   gap: 6px;
   margin-bottom: 8px;
-  font-size: 13px;
+  font-size: 17px;
   font-weight: 700;
   color: #B45309;
 }
@@ -967,7 +988,7 @@ body {
   display: inline-block;
   background: var(--color-985);
   color: #fff;
-  font-size: 10px;
+  font-size: 14px;
   font-weight: 700;
   padding: 2px 6px;
   border-radius: 4px;
@@ -984,10 +1005,10 @@ body {
   border: 1px solid #FDE68A;
 }
 .sa-school-row:last-child { margin-bottom: 0; }
-.sa-school-name { font-size: 13px; font-weight: 600; color: var(--text-primary); }
-.sa-school-prob { font-size: 13px; font-weight: 700; color: var(--color-985); }
-.sa-school-zero { font-size: 11px; color: var(--color-danger); font-weight: 600; }
-.sa-school-city { font-size: 11px; color: var(--text-secondary); }
+.sa-school-name { font-size: 17px; font-weight: 600; color: var(--text-primary); }
+.sa-school-prob { font-size: 17px; font-weight: 700; color: var(--color-985); }
+.sa-school-zero { font-size: 15px; color: var(--color-danger); font-weight: 600; }
+.sa-school-city { font-size: 15px; color: var(--text-secondary); }
 .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .flex-row { display: flex; gap: 8px; align-items: center; }
 .flex-between { display: flex; justify-content: space-between; align-items: center; }
@@ -997,13 +1018,8 @@ body {
 
 <div class="prototype-wrapper">
 
-  <!-- ============ PHONE FRAME ============ -->
-  <div class="phone-frame" id="phoneFrame">
-    <!-- Status Bar -->
-    <div class="status-bar">
-      <span>9:41</span>
-      <span class="status-bar-right">📶 🔋</span>
-    </div>
+  <!-- ============ PC FRAME ============ -->
+  <div class="pc-frame" id="phoneFrame">
 
     <!-- Nav Bar -->
     <div class="nav-bar" id="navBar">
@@ -1014,7 +1030,7 @@ body {
       <button class="nav-btn" data-page="analyzing">⏳ 分析中</button>
       <button class="nav-btn" data-page="report">📊 完整报告</button>
       <button class="nav-btn" data-page="sample">📋 报告样板</button>
-      <button class="nav-btn" data-page="qa">💬 直播答疑</button>
+      <button class="nav-btn" data-page="assistant">🤖 AI助手</button>
       <button class="nav-btn nav-live" id="btnLiveMode">🔴 直播</button>
     </div>
 
@@ -1080,7 +1096,7 @@ body {
             </div>
           </div>
           <div class="form-error-text" id="loginError" style="margin-top:6px"></div>
-          <button class="btn btn-danger btn-block btn-lg" id="btnLogin" onclick="doLogin()" style="margin-top:14px">
+          <button class="btn btn-primary btn-block btn-lg" id="btnLogin" onclick="doLogin()" style="margin-top:14px">
             登录
           </button>
         </div>
@@ -1148,7 +1164,7 @@ body {
             </div>
           </div>
           <div class="form-group" style="margin-top:10px">
-            <label class="form-label">省内位次 <span style="font-size:11px;color:var(--text-secondary)">（选填，可留空自动估算）</span></label>
+            <label class="form-label">省内位次 <span style="font-size: 15px;color:var(--text-secondary)">（选填，可留空自动估算）</span></label>
             <input class="form-input" id="stuRank" type="number" placeholder="可留空自动估算">
           </div>
           <div class="form-group" style="margin-top:10px">
@@ -1165,7 +1181,7 @@ body {
             </div>
           </div>
           <div class="form-group" style="margin-top:10px">
-            <label class="form-label">家庭经济 <span style="font-size:11px;color:var(--text-secondary)">（影响院校推荐）</span></label>
+            <label class="form-label">家庭经济 <span style="font-size: 15px;color:var(--text-secondary)">（影响院校推荐）</span></label>
             <select class="form-select" id="stuEconomy">
               <option value="">请选择</option>
               <option>较为困难</option>
@@ -1175,7 +1191,7 @@ body {
             </select>
           </div>
         </div>
-        <button class="btn btn-danger btn-block btn-lg" onclick="goToPref()">
+        <button class="btn btn-primary btn-block btn-lg" onclick="goToPref()">
           下一步：意向偏好 →
         </button>
       </div>
@@ -1240,7 +1256,7 @@ body {
             <span class="tag" data-val="suzhou">苏州</span>
             <span class="tag" data-val="qingdao">青岛</span>
           </div>
-          <input class="form-input" placeholder="其他城市（自填，如：郑州、洛阳）" style="margin-top:8px;font-size:13px">
+          <input class="form-input" placeholder="其他城市（自填，如：郑州、洛阳）" style="margin-top:8px;font-size: 17px">
         </div>
 
         <div class="card">
@@ -1268,7 +1284,7 @@ body {
 
         <div class="flex-row" style="gap:8px">
           <button class="btn btn-ghost" onclick="navigateTo('student')" style="flex:1">← 返回</button>
-          <button class="btn btn-danger btn-lg" onclick="startAnalyze()" style="flex:2">🚀 开始AI分析</button>
+          <button class="btn btn-primary btn-lg" onclick="startAnalyze()" style="flex:2">🚀 开始AI分析</button>
         </div>
       </div>
 
@@ -1334,9 +1350,9 @@ body {
 
         <div class="flex-row" style="justify-content:center;flex-wrap:wrap;gap:6px">
           <span class="badge badge-211">📌 小明</span>
-          <span style="font-size:12px;color:var(--text-secondary)">河南</span>
-          <span style="font-size:12px;color:var(--text-secondary)">560分</span>
-          <span style="font-size:12px;color:var(--text-secondary)">物理+化学</span>
+          <span style="font-size: 16px;color:var(--text-secondary)">河南</span>
+          <span style="font-size: 16px;color:var(--text-secondary)">560分</span>
+          <span style="font-size: 16px;color:var(--text-secondary)">物理+化学</span>
         </div>
 
         <div class="card">
@@ -1357,16 +1373,16 @@ body {
             <div class="blur-card">🔒 河南师范大学 —— ——</div>
             <div class="blur-card">🔒 河南科技大学 —— ——</div>
             <div class="blur-card">🔒 华北水利水电大学 —— ——</div>
-            <div style="text-align:center;font-size:11px;color:#94A3B8;margin-top:4px">… 共 15 所学校已加密 …</div>
+            <div style="text-align:center;font-size: 15px;color:#94A3B8;margin-top:4px">… 共 15 所学校已加密 …</div>
           </div>
         </div>
 
         <div class="card" style="text-align:center;background:#FEF2F2;border-color:#FECACA">
-          <div style="font-size:13px;color:var(--text-secondary);margin-bottom:4px">
-            剩余解锁次数：<strong style="color:var(--text-primary);font-size:16px" id="remainCount">8</strong> 次
+          <div style="font-size: 17px;color:var(--text-secondary);margin-bottom:4px">
+            剩余解锁次数：<strong style="color:var(--text-primary);font-size: 20px" id="remainCount">8</strong> 次
           </div>
-          <div style="font-size:11px;color:#94A3B8;margin-bottom:10px">次数不足时请联系平台充值</div>
-          <button class="btn btn-danger btn-block btn-lg" id="btnUnlock" onclick="doUnlock()">
+          <div style="font-size: 15px;color:#94A3B8;margin-bottom:10px">次数不足时请联系平台充值</div>
+          <button class="btn btn-primary btn-block btn-lg" id="btnUnlock" onclick="doUnlock()">
             🔓 一键解锁完整报告
           </button>
         </div>
@@ -1379,17 +1395,17 @@ body {
       <!-- ==================== PAGE: FULL REPORT ==================== -->
       <div class="page" id="page-report">
         <div style="text-align:center">
-          <div style="font-size:12px;color:var(--text-secondary)">报告编号：GK260616-5283 · 防伪</div>
+          <div style="font-size: 16px;color:var(--text-secondary)">报告编号：GK260616-5283 · 防伪</div>
           <div class="flex-row" style="justify-content:center;flex-wrap:wrap;gap:6px;margin-top:4px">
             <span class="badge badge-211">📌 小明</span>
-            <span style="font-size:12px;color:var(--text-secondary)">河南 · 560分 · 物理+化学 · 位次48230</span>
+            <span style="font-size: 16px;color:var(--text-secondary)">河南 · 560分 · 物理+化学 · 位次48230</span>
           </div>
         </div>
 
         <!-- Special Attention Zone (意向学校，不计入15所) -->
         <div class="special-attention-card">
           <div class="sa-header">
-            <span>★</span> 📌 特别关注 · 意向院校 <span style="font-size:10px;font-weight:400;color:var(--text-secondary)">（不计入15所推荐，独立展示）</span>
+            <span>★</span> 📌 特别关注 · 意向院校 <span style="font-size: 14px;font-weight:400;color:var(--text-secondary)">（不计入15所推荐，独立展示）</span>
           </div>
           <div class="sa-school-row">
             <div>
@@ -1398,7 +1414,7 @@ body {
             </div>
             <div style="text-align:right">
               <div class="sa-school-zero">录取概率 0%</div>
-              <div style="font-size:10px;color:var(--text-secondary)">成绩未达该校录取线</div>
+              <div style="font-size: 14px;color:var(--text-secondary)">成绩未达该校录取线</div>
             </div>
           </div>
           <div class="sa-school-row">
@@ -1408,7 +1424,7 @@ body {
             </div>
             <div style="text-align:right">
               <div class="sa-school-prob">72%</div>
-              <div style="font-size:10px;color:var(--text-secondary)">成绩排名推荐率</div>
+              <div style="font-size: 14px;color:var(--text-secondary)">成绩排名推荐率</div>
             </div>
           </div>
           <div class="sa-school-row">
@@ -1418,7 +1434,7 @@ body {
             </div>
             <div style="text-align:right">
               <div class="sa-school-prob">85%</div>
-              <div style="font-size:10px;color:var(--text-secondary)">成绩排名推荐率</div>
+              <div style="font-size: 14px;color:var(--text-secondary)">成绩排名推荐率</div>
             </div>
           </div>
         </div>
@@ -1427,9 +1443,9 @@ body {
         <div class="card">
           <div class="section-title">📊 冲/稳/保 分布</div>
           <div class="flex-row" style="justify-content:space-around;text-align:center;margin-top:8px">
-            <div><div style="font-size:24px;font-weight:800;color:var(--color-danger)">5</div><div style="font-size:11px;color:var(--text-secondary)">冲刺</div></div>
-            <div><div style="font-size:24px;font-weight:800;color:var(--color-info)">5</div><div style="font-size:11px;color:var(--text-secondary)">稳妥</div></div>
-            <div><div style="font-size:24px;font-weight:800;color:var(--color-success)">5</div><div style="font-size:11px;color:var(--text-secondary)">保底</div></div>
+            <div><div style="font-size: 28px;font-weight:800;color:var(--color-danger)">5</div><div style="font-size: 15px;color:var(--text-secondary)">冲刺</div></div>
+            <div><div style="font-size: 28px;font-weight:800;color:var(--color-info)">5</div><div style="font-size: 15px;color:var(--text-secondary)">稳妥</div></div>
+            <div><div style="font-size: 28px;font-weight:800;color:var(--color-success)">5</div><div style="font-size: 15px;color:var(--text-secondary)">保底</div></div>
           </div>
           <div class="prob-bar" style="margin-top:8px;display:flex;gap:2px;height:8px;background:none">
             <div style="flex:5;background:var(--color-danger);border-radius:4px 0 0 4px"></div>
@@ -1445,7 +1461,7 @@ body {
             <!-- School Card 1 -->
             <div class="school-card">
               <div class="school-card-header">
-                <span class="badge badge-211" style="font-size:10px">211</span>
+                <span class="badge badge-211" style="font-size: 14px">211</span>
                 <span class="school-name">郑州大学</span>
                 <span class="school-prob tier-rush">22%</span>
               </div>
@@ -1453,6 +1469,7 @@ body {
                 <div class="school-row"><span class="label">📍 城市</span><span class="value">郑州</span></div>
                 <div class="school-row"><span class="label">📊 近年线</span><span class="value">约604分</span></div>
                 <div class="school-row"><span class="label"></span><span class="school-match">✓ 位次匹配</span></div>
+                <div class="school-row"><span class="label">🎯 专业匹配</span><span class="value">✅ 高度匹配 · 选科与计算机要求完全符合</span></div>
                 <div class="school-row"><span class="label">📈 趋势</span><span class="value">602→606→609→612（↑微升）</span></div>
                 <div class="school-row"><span class="label">🎓 推荐专业</span><span class="value">计算机科学与技术</span></div>
                 <div class="school-row"><span class="label">💰 学费</span><span class="value">5000-5500元/年 · 4年约2.2万，中等家庭可接受</span></div>
@@ -1471,7 +1488,7 @@ body {
             <!-- School Card 2 -->
             <div class="school-card">
               <div class="school-card-header">
-                <span class="badge badge-211" style="font-size:10px">211</span>
+                <span class="badge badge-211" style="font-size: 14px">211</span>
                 <span class="school-name">河南大学</span>
                 <span class="school-prob tier-rush">38%</span>
               </div>
@@ -1479,6 +1496,7 @@ body {
                 <div class="school-row"><span class="label">📍 城市</span><span class="value">开封</span></div>
                 <div class="school-row"><span class="label">📊 近年线</span><span class="value">约588分</span></div>
                 <div class="school-row"><span class="label"></span><span class="school-match">✓ 位次匹配</span></div>
+                <div class="school-row"><span class="label">🎯 专业匹配</span><span class="value">🔶 部分匹配 · 软件工程可报，需补强算法基础</span></div>
                 <div class="school-row"><span class="label">🎓 推荐专业</span><span class="value">软件工程</span></div>
                 <div class="school-row"><span class="label">💰 学费</span><span class="value">4500-5000元/年</span></div>
                 <div class="school-row"><span class="label">💵 薪资</span><span class="value">应届6500-9500/月</span></div>
@@ -1497,7 +1515,7 @@ body {
           <div style="display:flex;flex-direction:column;gap:10px">
             <div class="school-card">
               <div class="school-card-header">
-                <span class="badge badge-double-first" style="font-size:10px">双一流</span>
+                <span class="badge badge-double-first" style="font-size: 14px">双一流</span>
                 <span class="school-name">河南科技大学</span>
                 <span class="school-prob tier-safe">72%</span>
               </div>
@@ -1505,6 +1523,7 @@ body {
                 <div class="school-row"><span class="label">📍 城市</span><span class="value">洛阳</span></div>
                 <div class="school-row"><span class="label">📊 近年线</span><span class="value">约565分</span></div>
                 <div class="school-row"><span class="label"></span><span class="school-match">✓ 位次匹配</span></div>
+                <div class="school-row"><span class="label">🎯 专业匹配</span><span class="value">⚠️ 需关注 · 机械工程与计算机偏好存在差异</span></div>
                 <div class="school-row"><span class="label">🎓 推荐专业</span><span class="value">机械工程</span></div>
                 <div class="school-row"><span class="label">💰 学费</span><span class="value">4000-4500元/年</span></div>
                 <div class="school-row"><span class="label">💵 薪资</span><span class="value">应届5500-8000/月</span></div>
@@ -1523,7 +1542,7 @@ body {
           <div style="display:flex;flex-direction:column;gap:10px">
             <div class="school-card">
               <div class="school-card-header">
-                <span style="font-size:10px;color:var(--text-secondary)">公办</span>
+                <span style="font-size: 14px;color:var(--text-secondary)">公办</span>
                 <span class="school-name">华北水利水电大学</span>
                 <span class="school-prob tier-bottom">91%</span>
               </div>
@@ -1531,6 +1550,7 @@ body {
                 <div class="school-row"><span class="label">📍 城市</span><span class="value">郑州</span></div>
                 <div class="school-row"><span class="label">📊 近年线</span><span class="value">约542分</span></div>
                 <div class="school-row"><span class="label"></span><span class="school-match">✓ 位次匹配</span></div>
+                <div class="school-row"><span class="label">🎯 专业匹配</span><span class="value">⚠️ 需关注 · 水利工程特色强，可考虑转计算机方向</span></div>
                 <div class="school-row"><span class="label">🎓 推荐专业</span><span class="value">水利工程</span></div>
                 <div class="school-row"><span class="label">💰 学费</span><span class="value">3800-4300元/年</span></div>
               </div>
@@ -1543,9 +1563,9 @@ body {
         </div>
 
         <div class="flex-row" style="gap:6px;margin-top:12px">
-          <button class="btn btn-ghost" style="flex:1;font-size:12px" onclick="showToast('PDF下载中…','success')">📥 下载PDF</button>
-          <button class="btn btn-ghost" style="flex:1;font-size:12px" onclick="navigateTo('student')">👤 测下一个</button>
-          <button class="btn btn-primary" style="flex:1;font-size:12px" onclick="navigateTo('qa')">🤖 直播答疑</button>
+          <button class="btn btn-ghost" style="flex:1;font-size: 16px" onclick="showToast('PDF下载中…','success')">📥 下载PDF</button>
+          <button class="btn btn-ghost" style="flex:1;font-size: 16px" onclick="navigateTo('student')">👤 测下一个</button>
+          <button class="btn btn-primary" style="flex:1;font-size: 16px" onclick="navigateTo('assistant')">🤖 AI助手</button>
         </div>
       </div>
 
@@ -1553,19 +1573,19 @@ body {
       <div class="page" id="page-sample">
         <div class="sample-banner">★ 样板展示 · 仅供展示，非真实报告</div>
         <div style="text-align:center;margin-top:8px">
-          <div style="font-size:12px;color:var(--text-secondary)">样板编号：SAMPLE-001</div>
+          <div style="font-size: 16px;color:var(--text-secondary)">样板编号：SAMPLE-001</div>
           <div class="flex-row" style="justify-content:center;flex-wrap:wrap;gap:6px;margin-top:4px">
             <span class="badge badge-211">📌 抖音用户_小明</span>
-            <span style="font-size:12px;color:var(--text-secondary)">河南 · 560分 · 物理+化学+政治</span>
+            <span style="font-size: 16px;color:var(--text-secondary)">河南 · 560分 · 物理+化学+政治</span>
           </div>
         </div>
 
         <div class="card">
           <div class="section-title">📊 冲/稳/保 分布</div>
           <div class="flex-row" style="justify-content:space-around;text-align:center;margin-top:8px">
-            <div><div style="font-size:24px;font-weight:800;color:var(--color-danger)">4</div><div style="font-size:11px;color:var(--text-secondary)">冲刺</div></div>
-            <div><div style="font-size:24px;font-weight:800;color:var(--color-info)">3</div><div style="font-size:11px;color:var(--text-secondary)">稳妥</div></div>
-            <div><div style="font-size:24px;font-weight:800;color:var(--color-success)">3</div><div style="font-size:11px;color:var(--text-secondary)">保底</div></div>
+            <div><div style="font-size: 28px;font-weight:800;color:var(--color-danger)">4</div><div style="font-size: 15px;color:var(--text-secondary)">冲刺</div></div>
+            <div><div style="font-size: 28px;font-weight:800;color:var(--color-info)">3</div><div style="font-size: 15px;color:var(--text-secondary)">稳妥</div></div>
+            <div><div style="font-size: 28px;font-weight:800;color:var(--color-success)">3</div><div style="font-size: 15px;color:var(--text-secondary)">保底</div></div>
           </div>
         </div>
 
@@ -1574,7 +1594,7 @@ body {
         </div>
         <div class="school-card">
           <div class="school-card-header">
-            <span class="badge badge-985" style="font-size:10px">985</span>
+            <span class="badge badge-985" style="font-size: 14px">985</span>
             <span class="school-name">武汉大学</span>
             <span class="school-prob tier-rush">15%</span>
           </div>
@@ -1593,7 +1613,7 @@ body {
         </div>
         <div class="school-card">
           <div class="school-card-header">
-            <span class="badge badge-211" style="font-size:10px">211</span>
+            <span class="badge badge-211" style="font-size: 14px">211</span>
             <span class="school-name">郑州大学</span>
             <span class="school-prob tier-safe">68%</span>
           </div>
@@ -1612,7 +1632,7 @@ body {
         </div>
         <div class="school-card">
           <div class="school-card-header">
-            <span style="font-size:10px;color:var(--text-secondary)">公办</span>
+            <span style="font-size: 14px;color:var(--text-secondary)">公办</span>
             <span class="school-name">河南理工大学</span>
             <span class="school-prob tier-bottom">95%</span>
           </div>
@@ -1626,59 +1646,139 @@ body {
           </div>
         </div>
 
-        <div style="text-align:center;font-size:11px;color:#94A3B8;margin-top:12px">
+        <div style="text-align:center;font-size: 15px;color:#94A3B8;margin-top:12px">
           以上为样板数据，实际推荐将根据考生真实分数和偏好生成。
         </div>
       </div>
 
-      <!-- ==================== PAGE: LIVE Q&A ==================== -->
-      <div class="page" id="page-qa">
-        <div class="page-title">🤖 AI 直播答疑</div>
-
-        <div class="card">
-          <div class="section-title">快捷提问（点击填入）</div>
-          <div class="tag-group two-col" style="display:grid;grid-template-columns:1fr 1fr">
-            <span class="tag" onclick="fillQA('这个专业好就业吗？')" style="text-align:center">这个专业好就业吗？</span>
-            <span class="tag" onclick="fillQA('这所学校值得报吗？')" style="text-align:center">这所学校值得报吗？</span>
-            <span class="tag" onclick="fillQA('这个专业未来薪资怎么样？')" style="text-align:center">这个专业未来薪资怎么样？</span>
-            <span class="tag" onclick="fillQA('冲这所学校风险大吗？')" style="text-align:center">冲这所学校风险大吗？</span>
-            <span class="tag" onclick="fillQA('要不要服从调剂？')" style="text-align:center">要不要服从调剂？</span>
-            <span class="tag" onclick="fillQA('这所学校在省内认可度怎么样？')" style="text-align:center">这所学校在省内认可度怎么样？</span>
-            <span class="tag" onclick="fillQA('这个城市适合毕业后留下来吗？')" style="text-align:center">这个城市适合毕业后留下来吗？</span>
-            <span class="tag" onclick="fillQA('这个专业考研好考吗？')" style="text-align:center">这个专业考研好考吗？</span>
-            <span class="tag" onclick="fillQA('文科和理科哪个专业就业好？')" style="text-align:center">文科和理科哪个专业就业好？</span>
-            <span class="tag" onclick="fillQA('这个分数能上哪些好学校？')" style="text-align:center">这个分数能上哪些好学校？</span>
-          </div>
+      <!-- ==================== PAGE: AI ASSISTANT ==================== -->
+      <div class="page" id="page-assistant">
+        <div>
+          <div class="page-title">🤖 AI 助手</div>
+          <div class="page-subtitle">直播话术速查 · 实时AI问答</div>
         </div>
 
-        <div class="card">
-          <textarea class="form-textarea" id="qaInput" placeholder="观众问啥，你就输啥，最多100字…" maxlength="100" oninput="updateCharCount()"></textarea>
-          <div class="flex-between" style="margin-top:4px">
-            <span style="font-size:11px;color:var(--text-secondary)" id="charCount">0/100</span>
-            <button class="btn btn-primary btn-lg" onclick="sendQA()">发送 →</button>
+        <div class="card" style="padding:0">
+          <div class="tab-bar" id="assistantTabBar">
+            <button class="tab-btn active" data-tab="live-script">📢 直播话术</button>
+            <button class="tab-btn" data-tab="qa-chat">💬 AI问答</button>
           </div>
-        </div>
 
-        <div class="card">
-          <div class="section-title">对话历史</div>
-          <div class="chat-area" id="chatArea">
-            <div class="chat-bubble user">冲这所学校风险大吗？</div>
-            <div class="chat-bubble ai">
-              说实话，分数如果刚过线确实有风险。建议你看看这所学校近3年的位次变化，如果位次呈上升趋势，那风险会比分数看起来更大。稳妥起见，至少留2-3所保底学校，别全冲！
+          <!-- Tab A: 直播话术 -->
+          <div class="tab-panel active" id="tab-live-script" style="padding:14px">
+
+            <div class="section-title" style="font-size: 17px;color:var(--text-secondary);font-weight:500">点击「复制」即可直接使用</div>
+
+            <!-- 开场白 -->
+            <div class="script-card">
+              <div class="script-card-header">
+                <span class="script-card-title">📣 开场引流话术</span>
+                <span class="script-category">开场</span>
+              </div>
+              <div class="script-card-body">
+                大家好！今天我用AI高考志愿规划系统，帮大家分析孩子的最优志愿方案。只需输入分数和选科，系统自动匹配近6年<strong>2200万+</strong>录取数据，1秒出报告，推荐15所院校，冲稳保全覆盖！有需要的扣1️⃣
+              </div>
+              <button class="script-copy-btn" onclick="copyScript(this)">📋 复制话术</button>
             </div>
+
+            <!-- 答疑引导 -->
+            <div class="script-card">
+              <div class="script-card-header">
+                <span class="script-card-title">🎯 志愿分析引导话术</span>
+                <span class="script-category">答疑</span>
+              </div>
+              <div class="script-card-body">
+                刚才给【昵称】同学分析了一下，【分数】分在【省份】省，AI推荐了【冲/稳/保各X所】。冲刺首选【学校名】，录取概率【X%】，稳妥首选【学校名】。大家有类似分数的可以来测一下！
+              </div>
+              <button class="script-copy-btn" onclick="copyScript(this)">📋 复制话术</button>
+            </div>
+
+            <!-- 解锁引导 -->
+            <div class="script-card">
+              <div class="script-card-header">
+                <span class="script-card-title">🔓 解锁完整报告话术</span>
+                <span class="script-category">付款</span>
+              </div>
+              <div class="script-card-body">
+                刚才的预览只是冰山一角！完整报告有15所学校的录取概率、历年分数线趋势、推荐专业、就业薪资、张雪峰式点评…一次解锁，报告永久保存，现在下单还有优惠！
+              </div>
+              <button class="script-copy-btn" onclick="copyScript(this)">📋 复制话术</button>
+            </div>
+
+            <!-- 异议处理 -->
+            <div class="script-card">
+              <div class="script-card-header">
+                <span class="script-card-title">🛡️ 异议处理话术</span>
+                <span class="script-category">答疑</span>
+              </div>
+              <div class="script-card-body">
+                有朋友问这个准不准——我们的数据来自教育部官网阳光高考，近6年真实录取数据，不是估算！而且我们用了三个顶尖AI交叉验证，比单纯看分数线靠谱多了。今年已经帮了3000+家庭做了规划！
+              </div>
+              <button class="script-copy-btn" onclick="copyScript(this)">📋 复制话术</button>
+            </div>
+
+            <!-- 收尾 -->
+            <div class="script-card">
+              <div class="script-card-header">
+                <span class="script-card-title">👋 收尾话术</span>
+                <span class="script-category">收尾</span>
+              </div>
+              <div class="script-card-body">
+                今天直播快结束了！还没测的朋友抓紧，志愿截止日期快到了，别等到最后一天再抓瞎。点击下方链接，输入分数和选科，1秒拿到专属方案，我帮你逐条解读！关注我，明天继续！
+              </div>
+              <button class="script-copy-btn" onclick="copyScript(this)">📋 复制话术</button>
+            </div>
+
           </div>
-          <div class="chat-actions" style="margin-top:8px">
-            <button class="btn btn-ghost" style="font-size:12px;flex:1" onclick="document.getElementById('qaInput').value=''">清空输入</button>
-            <button class="btn btn-ghost" style="font-size:12px;flex:1" onclick="clearQAChat()">清空历史</button>
+
+          <!-- Tab B: AI问答 -->
+          <div class="tab-panel" id="tab-qa-chat" style="padding:14px">
+
+            <div class="card" style="box-shadow:none;border-color:var(--border);padding:10px">
+              <div class="section-title" style="margin-bottom:8px;font-size: 17px">快捷提问（点击填入）</div>
+              <div class="tag-group two-col" style="display:grid;grid-template-columns:1fr 1fr">
+                <span class="tag" onclick="fillQA('这个专业好就业吗？')" style="text-align:center">这个专业好就业吗？</span>
+                <span class="tag" onclick="fillQA('这所学校值得报吗？')" style="text-align:center">这所学校值得报吗？</span>
+                <span class="tag" onclick="fillQA('这个专业未来薪资怎么样？')" style="text-align:center">这个专业未来薪资怎么样？</span>
+                <span class="tag" onclick="fillQA('冲这所学校风险大吗？')" style="text-align:center">冲这所学校风险大吗？</span>
+                <span class="tag" onclick="fillQA('要不要服从调剂？')" style="text-align:center">要不要服从调剂？</span>
+                <span class="tag" onclick="fillQA('这所学校在省内认可度怎么样？')" style="text-align:center">这所学校在省内认可度怎么样？</span>
+                <span class="tag" onclick="fillQA('这个城市适合毕业后留下来吗？')" style="text-align:center">这个城市适合毕业后留下来吗？</span>
+                <span class="tag" onclick="fillQA('这个专业考研好考吗？')" style="text-align:center">这个专业考研好考吗？</span>
+                <span class="tag" onclick="fillQA('文科和理科哪个专业就业好？')" style="text-align:center">文科和理科哪个专业就业好？</span>
+                <span class="tag" onclick="fillQA('这个分数能上哪些好学校？')" style="text-align:center">这个分数能上哪些好学校？</span>
+              </div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:4px">
+              <textarea class="form-textarea" id="qaInput" placeholder="观众问啥，你就输啥，最多100字…" maxlength="100" oninput="updateCharCount()"></textarea>
+              <div class="flex-between">
+                <span style="font-size: 15px;color:var(--text-secondary)" id="charCount">0/100</span>
+                <button class="btn btn-primary btn-lg" onclick="sendQA()">发送 →</button>
+              </div>
+            </div>
+
+            <div class="card" style="box-shadow:none;border-color:var(--border);padding:10px">
+              <div class="section-title" style="font-size: 17px;margin-bottom:8px">对话历史</div>
+              <div class="chat-area" id="chatArea">
+                <div class="chat-bubble user">冲这所学校风险大吗？</div>
+                <div class="chat-bubble ai">
+                  说实话，分数如果刚过线确实有风险。建议你看看这所学校近3年的位次变化，如果位次呈上升趋势，那风险会比分数看起来更大。稳妥起见，至少留2-3所保底学校，别全冲！
+                </div>
+              </div>
+              <div class="chat-actions" style="margin-top:8px">
+                <button class="btn btn-ghost" style="font-size: 16px;flex:1" onclick="document.getElementById('qaInput').value=''">清空输入</button>
+                <button class="btn btn-ghost" style="font-size: 16px;flex:1" onclick="clearQAChat()">清空历史</button>
+              </div>
+            </div>
+
           </div>
         </div>
       </div>
 
     </div><!-- /page-container -->
 
-    <!-- Home Bar -->
-    <div class="home-bar"></div>
-  </div><!-- /phone-frame -->
+  </div><!-- /pc-frame -->
 
   <!-- ============ ADMIN PANEL ============ -->
   <div class="admin-wrapper" id="adminPanel" style="display:none">
@@ -1688,12 +1788,14 @@ body {
     <div class="admin-nav">
       <button class="admin-nav-btn active" data-admin="streamers">主播管理</button>
       <button class="admin-nav-btn" data-admin="orders">订单查看</button>
+      <button class="admin-nav-btn" data-admin="scripts">话术管理</button>
+      <button class="admin-nav-btn" data-admin="onelinks">一次性链接</button>
       <button class="admin-nav-btn" data-admin="config">系统配置</button>
     </div>
     <div class="admin-content" id="adminContent">
       <!-- Streamer Management -->
       <div id="admin-streamers">
-        <button class="btn btn-primary" style="margin-bottom:16px;font-size:13px" onclick="showRechargeModal()">+ 新增主播</button>
+        <button class="btn btn-primary" style="margin-bottom:16px;font-size: 17px" onclick="showRechargeModal()">+ 新增主播</button>
         <table class="admin-table">
           <thead>
             <tr><th>手机号</th><th>姓名</th><th>剩余次数</th><th>累计购买</th><th>已使用</th><th>状态</th><th>操作</th></tr>
@@ -1728,7 +1830,7 @@ body {
             </tr>
           </tbody>
         </table>
-        <div style="text-align:center;margin-top:12px;font-size:12px;color:var(--text-secondary)">
+        <div style="text-align:center;margin-top:12px;font-size: 16px;color:var(--text-secondary)">
           [上一页] 1/3 [下一页]
         </div>
       </div>
@@ -1745,6 +1847,112 @@ body {
             <tr><td>GK260616-4871</td><td>主播二明</td><td>网友小刚</td><td>山东</td><td>530</td><td>06-16 13:50</td><td style="color:var(--color-danger)">已退款</td></tr>
           </tbody>
         </table>
+      </div>
+
+      <!-- Scripts Management -->
+      <div id="admin-scripts" style="display:none">
+        <button class="btn btn-primary" style="margin-bottom:16px;font-size: 17px" onclick="showToast('新增话术功能开发中','warning')">+ 新增话术</button>
+        <table class="admin-table">
+          <thead>
+            <tr><th>话术名称</th><th>分类</th><th>字数</th><th>最后更新</th><th>操作</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>开场引流话术</td><td>开场</td><td>82字</td><td>06-20</td>
+              <td class="action-btns">
+                <button onclick="showToast('编辑话术','info')">编辑</button>
+                <button onclick="showToast('已复制到剪贴板','success')">复制</button>
+                <button style="color:var(--color-danger)">删除</button>
+              </td>
+            </tr>
+            <tr>
+              <td>志愿分析引导话术</td><td>答疑</td><td>76字</td><td>06-20</td>
+              <td class="action-btns">
+                <button onclick="showToast('编辑话术','info')">编辑</button>
+                <button onclick="showToast('已复制到剪贴板','success')">复制</button>
+                <button style="color:var(--color-danger)">删除</button>
+              </td>
+            </tr>
+            <tr>
+              <td>解锁完整报告话术</td><td>付款</td><td>68字</td><td>06-19</td>
+              <td class="action-btns">
+                <button onclick="showToast('编辑话术','info')">编辑</button>
+                <button onclick="showToast('已复制到剪贴板','success')">复制</button>
+                <button style="color:var(--color-danger)">删除</button>
+              </td>
+            </tr>
+            <tr>
+              <td>异议处理话术</td><td>答疑</td><td>79字</td><td>06-18</td>
+              <td class="action-btns">
+                <button onclick="showToast('编辑话术','info')">编辑</button>
+                <button onclick="showToast('已复制到剪贴板','success')">复制</button>
+                <button style="color:var(--color-danger)">删除</button>
+              </td>
+            </tr>
+            <tr>
+              <td>收尾话术</td><td>收尾</td><td>72字</td><td>06-18</td>
+              <td class="action-btns">
+                <button onclick="showToast('编辑话术','info')">编辑</button>
+                <button onclick="showToast('已复制到剪贴板','success')">复制</button>
+                <button style="color:var(--color-danger)">删除</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- One-Time Links -->
+      <div id="admin-onelinks" style="display:none">
+        <div style="display:flex;gap:8px;margin-bottom:16px">
+          <button class="btn btn-primary" style="font-size: 17px" onclick="showToast('已生成新链接','success')">+ 生成链接</button>
+          <button class="btn btn-ghost" style="font-size: 17px" onclick="showToast('批量生成功能开发中','warning')">批量生成</button>
+        </div>
+        <table class="admin-table">
+          <thead>
+            <tr><th>链接Token</th><th>归属主播</th><th>创建时间</th><th>有效期</th><th>使用人</th><th>状态</th><th>操作</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="font-family:monospace;font-size: 15px">gk-a7f2b...</td>
+              <td>主播大明</td><td>06-21 10:00</td><td>24小时</td><td>网友小红</td>
+              <td style="color:var(--color-success);font-weight:600">● 已使用</td>
+              <td class="action-btns">
+                <button onclick="showToast('已复制链接','success')">复制</button>
+                <button style="color:var(--text-secondary);cursor:not-allowed" disabled>作废</button>
+              </td>
+            </tr>
+            <tr>
+              <td style="font-family:monospace;font-size: 15px">gk-c9d1e...</td>
+              <td>主播大明</td><td>06-21 14:30</td><td>24小时</td><td>—</td>
+              <td style="color:var(--color-info);font-weight:600">● 未使用</td>
+              <td class="action-btns">
+                <button onclick="showToast('已复制链接','success')">复制</button>
+                <button style="color:var(--color-danger)" onclick="showToast('链接已作废','warning')">作废</button>
+              </td>
+            </tr>
+            <tr>
+              <td style="font-family:monospace;font-size: 15px">gk-5e8f3...</td>
+              <td>主播三明</td><td>06-20 09:15</td><td>24小时</td><td>—</td>
+              <td style="color:var(--color-danger);font-weight:600">● 已过期</td>
+              <td class="action-btns">
+                <button onclick="showToast('已复制链接','success')">复制</button>
+                <button style="color:var(--text-secondary);cursor:not-allowed" disabled>作废</button>
+              </td>
+            </tr>
+            <tr>
+              <td style="font-family:monospace;font-size: 15px">gk-b2a6c...</td>
+              <td>主播三明</td><td>06-21 16:00</td><td>24小时</td><td>网友小刚</td>
+              <td style="color:var(--color-success);font-weight:600">● 已使用</td>
+              <td class="action-btns">
+                <button onclick="showToast('已复制链接','success')">复制</button>
+                <button style="color:var(--text-secondary);cursor:not-allowed" disabled>作废</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div style="text-align:center;margin-top:12px;font-size: 16px;color:var(--text-secondary)">
+          [上一页] 1/1 [下一页]
+        </div>
       </div>
 
       <!-- System Config -->
@@ -1767,7 +1975,7 @@ body {
             <label class="form-label">低分特殊阈值（<400分）</label>
             <input class="form-input" value="5" style="width:60px;text-align:center;margin-top:4px" type="number"> %
           </div>
-          <button class="btn btn-primary" style="margin-top:12px;font-size:13px">保存配置</button>
+          <button class="btn btn-primary" style="margin-top:12px;font-size: 17px">保存配置</button>
         </div>
       </div>
     </div>
@@ -1778,7 +1986,7 @@ body {
     position:fixed;bottom:24px;right:24px;
     background:#1E293B;color:#fff;border:none;
     padding:10px 16px;border-radius:24px;
-    font-size:13px;cursor:pointer;z-index:50;
+    font-size: 17px;cursor:pointer;z-index:50;
     box-shadow:0 4px 12px rgba(0,0,0,0.3);
   ">📱 手机端 / 💻 管理后台</button>
 
@@ -1788,7 +1996,7 @@ body {
 <div class="modal-overlay" id="rechargeModal">
   <div class="modal">
     <h3>💰 充值 — 主播大明</h3>
-    <div style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">当前剩余：<strong style="color:var(--text-primary)">8</strong> 次</div>
+    <div style="font-size: 17px;color:var(--text-secondary);margin-bottom:12px">当前剩余：<strong style="color:var(--text-primary)">8</strong> 次</div>
     <div class="form-group">
       <label class="form-label">充值次数</label>
       <input class="form-input" type="number" id="rechargeCount" value="10" min="1" oninput="calcAmount()">
@@ -1901,17 +2109,17 @@ function onProvinceChange() {
         <span class="tag" data-val="geo" onclick="toggle33(this)">地理</span>
         ${extra}
       </div>
-      <span style="font-size:11px;color:var(--text-secondary)">任选3门</span>`;
+      <span style="font-size: 15px;color:var(--text-secondary)">任选3门</span>`;
   }
   // 3+1+2 模式
   else if (val) {
     area.innerHTML = `
-      <div style="margin-bottom:6px;font-size:12px;color:var(--text-secondary)">首选1门（必填）</div>
+      <div style="margin-bottom:6px;font-size: 16px;color:var(--text-secondary)">首选1门（必填）</div>
       <div class="flex-row" style="gap:0" id="subFirst">
         <div class="tag-radio selected" onclick="select312First(this,'物理')">物理</div>
         <div class="tag-radio" onclick="select312First(this,'历史')" style="margin-left:8px">历史</div>
       </div>
-      <div style="margin-top:8px;margin-bottom:4px;font-size:12px;color:var(--text-secondary)">再选2门</div>
+      <div style="margin-top:8px;margin-bottom:4px;font-size: 16px;color:var(--text-secondary)">再选2门</div>
       <div class="tag-group" id="subSecond">
         <span class="tag" data-val="chem" onclick="toggle312Second(this)">化学</span>
         <span class="tag" data-val="bio" onclick="toggle312Second(this)">生物</span>
@@ -2258,25 +2466,39 @@ function calcCount() {
   document.getElementById('rechargeCount').value = Math.round(amount / 29.9);
 }
 
+// ============ Assistant Tab ============
+document.querySelectorAll('#assistantTabBar .tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#assistantTabBar .tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const tabId = 'tab-' + btn.dataset.tab;
+    document.querySelectorAll('#page-assistant .tab-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+  });
+});
+
+function copyScript(btn) {
+  const text = btn.previousElementSibling.innerText;
+  navigator.clipboard.writeText(text).then(() => {
+    showToast('✓ 话术已复制', 'success');
+  }).catch(() => {
+    showToast('复制失败，请手动选择', 'warning');
+  });
+}
+
 // ============ Live Mode (simulate) ============
 document.getElementById('btnLiveMode').addEventListener('click', function() {
-  const frame = document.getElementById('phoneFrame');
   const navBar = document.getElementById('navBar');
-  const isLive = frame.classList.toggle('live-mode');
+  const pcFrame = document.getElementById('phoneFrame');
+  const isLive = pcFrame.classList.toggle('live-mode');
 
   if (isLive) {
     navBar.style.display = 'none';
-    frame.style.borderRadius = '0';
-    frame.style.width = '100vw';
-    frame.style.maxWidth = '100%';
     this.textContent = '⚪ 退出直播';
     this.style.animation = 'none';
     showToast('🔴 直播模式已开启', 'info');
   } else {
     navBar.style.display = '';
-    frame.style.borderRadius = '24px';
-    frame.style.width = '375px';
-    frame.style.maxWidth = '';
     this.textContent = '🔴 直播';
     this.style.animation = 'pulse-live 1.5s ease-in-out infinite';
   }
@@ -2291,7 +2513,7 @@ document.getElementById('rechargeModal').addEventListener('click', function(e) {
 // Init subject area
 onProvinceChange();
 document.getElementById('stuProvince').value = '';
-document.getElementById('subjectArea').innerHTML = '<span style="font-size:12px;color:var(--text-secondary)">请先选择省份</span>';
+document.getElementById('subjectArea').innerHTML = '<span style="font-size: 16px;color:var(--text-secondary)">请先选择省份</span>';
 
 console.log('✅ AI高考志愿规划师 — 交互原型已就绪');
 console.log('📱 手机端：登录 → 考生信息 → 意向偏好 → 付款墙 → 完整报告');
