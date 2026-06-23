@@ -4,7 +4,7 @@
 |---------|------|
 | 项目名称 | AI高考志愿规划师 · 直播辅助工具 |
 | 上级文档 | [Tasks.md](./Tasks.md) |
-| 更新日期 | 2026-06-23 (docs: TASK-02/03/04/14 状态确认并更新 Tasks.md，全部 14 个任务均已完成) |
+| 更新日期 | 2026-06-24 (v5.23: main.py 注册 broadcast_scripts 路由，TASK-10/11/12/13/09 全部确认已完成，生产服务器已部署) |
 
 ---
 
@@ -1333,7 +1333,7 @@ curl http://127.0.0.1:8000/health
 | 新建路由 | `api/routers/broadcast_scripts.py` | 话术脚本CRUD（8接口） |
 | 修改路由 | `api/routers/schools.py` | 新增 `GET /api/schools/search-public`（无JWT学生端用） |
 | 修改服务 | `api/services/recommendation.py` | Phase 0.5成绩段位 + Phase 3.5质量过滤 + globe_expanded地理扩展 |
-| 修改主入口 | `main.py` | 注册两个新路由；/gk-admin 301；/s 路由 |
+| 修改主入口 | `main.py` | 注册三个新路由（含 broadcast_scripts）；/gk-admin 301；/s 路由 |
 | 新建前端 | `frontend/s.html` | 学生自助报告页（独立页，无需JWT） |
 | 修改前端 | `frontend/index.html` | 主播助手双Tab；三档对比表；梯度总结 |
 | 修改前端 | `frontend/admin.html` | 一次性链接Tab；话术管理Tab |
