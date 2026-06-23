@@ -292,6 +292,45 @@ body{background:var(--bg-primary);min-height:100vh;font-family:'PingFang SC','Mi
 .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
 .modal .form-group{margin-top:12px}
 
+/* ── TASK-06: Login PC ── */
+#page-login{max-width:480px;margin:0 auto;width:100%}
+.login-promo-list{list-style:none;display:flex;flex-direction:column;gap:8px}
+.login-promo-item{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#F8FAFC;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;color:var(--text-secondary)}
+.login-promo-item .promo-icon{font-size:18px;flex-shrink:0}
+
+/* ── TASK-06: STEP1 dual-column form ── */
+@media(min-width:768px){
+  .step1-card{display:grid;grid-template-columns:1fr 1fr;column-gap:24px;row-gap:16px;align-items:start}
+  .step1-card .form-group{margin-top:0!important}
+  .step1-full{grid-column:1/-1}
+  .step1-triple{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+  .step1-triple .form-group{margin-top:0!important}
+}
+
+/* ── TASK-07: STEP2 2×2 grid ── */
+@media(min-width:768px){
+  .pref-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .city-tags-with-input{display:flex;gap:12px;align-items:flex-start}
+  .city-tags-with-input .tag-group{flex:1}
+  .city-tags-with-input .form-input{width:220px;flex-shrink:0;margin-top:0!important}
+}
+
+/* ── TASK-07: Paywall PC ── */
+@media(min-width:768px){
+  .blurred-schools-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .paywall-cta-wrap{max-width:480px;margin-left:auto;margin-right:auto}
+}
+
+/* ── TASK-08: Report school cards 2-col grid ── */
+@media(min-width:768px){
+  .school-cards-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
+  .board-one-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+  .advice-section-wrap{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+  .advice-section-wrap .card:last-child{grid-column:1/-1}
+}
+.report-action-row{gap:12px;margin-top:16px}
+.report-action-row .btn{flex:1;font-size:14px}
+
 </style>
 </head>
 <body>
@@ -321,7 +360,7 @@ body{background:var(--bg-primary);min-height:100vh;font-family:'PingFang SC','Mi
     <div class="page active" id="page-login">
       <div class="brand-section">
         <div class="brand-logo">🎓 AI高考志愿规划师</div>
-        <div class="brand-subtitle">直播辅助工具 · v5.4.1</div>
+        <div class="brand-subtitle">直播辅助工具 · v5.22</div>
       </div>
       <div class="trust-badge">
         <span>📊 2200万+</span>
@@ -343,6 +382,13 @@ body{background:var(--bg-primary);min-height:100vh;font-family:'PingFang SC','Mi
         <div class="form-error-text" id="loginError" style="margin-top:6px"></div>
         <button class="btn btn-danger btn-block btn-lg" id="btnLogin" onclick="doLogin()" style="margin-top:14px">登录</button>
       </div>
+      <ul class="login-promo-list">
+        <li class="login-promo-item"><span class="promo-icon">📊</span><span>2200万+ 历史录取数据，精准匹配每一位考生</span></li>
+        <li class="login-promo-item"><span class="promo-icon">🤖</span><span>Claude · DeepSeek · GPT-5.5 三大AI交叉验证</span></li>
+        <li class="login-promo-item"><span class="promo-icon">📅</span><span>覆盖近6年录取趋势，冲稳保梯度科学分层</span></li>
+        <li class="login-promo-item"><span class="promo-icon">🎯</span><span>意向城市+专业+性格多维偏好精准适配</span></li>
+        <li class="login-promo-item"><span class="promo-icon">📄</span><span>一键生成PDF报告，主播助手直播答疑全配套</span></li>
+      </ul>
     </div>
 
     <!-- ====== STUDENT INFO ====== -->
@@ -352,53 +398,55 @@ body{background:var(--bg-primary);min-height:100vh;font-family:'PingFang SC','Mi
         <div class="page-title">考生基本信息</div>
         <div class="page-subtitle">录入考生成绩与选科信息</div>
       </div>
-      <div class="card">
-        <div class="form-group">
+      <div class="card step1-card">
+        <div class="form-group step1-full">
           <label class="form-label">抖音昵称 <span style="color:var(--color-danger)">*</span></label>
           <input class="form-input" id="stuNickname" placeholder="建议录入用户抖音名" maxlength="64">
           <span class="form-error-text" id="errNick">请填写抖音昵称</span>
         </div>
-        <div class="form-group" style="margin-top:10px">
-          <label class="form-label">省份 <span style="color:var(--color-danger)">*</span></label>
-          <select class="form-select" id="stuProvince" onchange="onProvinceChange()">
-            <option value="">请选择省份</option>
-            <optgroup label="3+3 模式（6省）">
-              <option value="浙江">浙江</option><option value="上海">上海</option>
-              <option value="北京">北京</option><option value="天津">天津</option>
-              <option value="山东">山东</option><option value="海南">海南</option>
-            </optgroup>
-            <optgroup label="3+1+2 模式（25省）">
-              <option value="河北">河北</option><option value="辽宁">辽宁</option>
-              <option value="江苏">江苏</option><option value="福建">福建</option>
-              <option value="湖北">湖北</option><option value="湖南">湖南</option>
-              <option value="广东">广东</option><option value="重庆">重庆</option>
-              <option value="吉林">吉林</option><option value="黑龙江">黑龙江</option>
-              <option value="安徽">安徽</option><option value="江西">江西</option>
-              <option value="广西">广西</option><option value="贵州">贵州</option>
-              <option value="甘肃">甘肃</option><option value="山西">山西</option>
-              <option value="内蒙古">内蒙古</option><option value="河南">河南</option>
-              <option value="四川">四川</option><option value="云南">云南</option>
-              <option value="陕西">陕西</option><option value="青海">青海</option>
-              <option value="宁夏">宁夏</option><option value="新疆">新疆</option>
-              <option value="西藏">西藏</option>
-            </optgroup>
-          </select>
-        </div>
-        <div class="form-group" style="margin-top:10px">
-          <label class="form-label">高考分数 <span style="color:var(--color-danger)">*</span></label>
-          <div class="input-with-suffix">
-            <input type="number" id="stuScore" placeholder="请输入分数" oninput="clampScore()" min="0" max="900">
-            <span class="suffix" id="scoreMax">/750</span>
+        <div class="step1-triple">
+          <div class="form-group">
+            <label class="form-label">省份 <span style="color:var(--color-danger)">*</span></label>
+            <select class="form-select" id="stuProvince" onchange="onProvinceChange()">
+              <option value="">请选择省份</option>
+              <optgroup label="3+3 模式（6省）">
+                <option value="浙江">浙江</option><option value="上海">上海</option>
+                <option value="北京">北京</option><option value="天津">天津</option>
+                <option value="山东">山东</option><option value="海南">海南</option>
+              </optgroup>
+              <optgroup label="3+1+2 模式（25省）">
+                <option value="河北">河北</option><option value="辽宁">辽宁</option>
+                <option value="江苏">江苏</option><option value="福建">福建</option>
+                <option value="湖北">湖北</option><option value="湖南">湖南</option>
+                <option value="广东">广东</option><option value="重庆">重庆</option>
+                <option value="吉林">吉林</option><option value="黑龙江">黑龙江</option>
+                <option value="安徽">安徽</option><option value="江西">江西</option>
+                <option value="广西">广西</option><option value="贵州">贵州</option>
+                <option value="甘肃">甘肃</option><option value="山西">山西</option>
+                <option value="内蒙古">内蒙古</option><option value="河南">河南</option>
+                <option value="四川">四川</option><option value="云南">云南</option>
+                <option value="陕西">陕西</option><option value="青海">青海</option>
+                <option value="宁夏">宁夏</option><option value="新疆">新疆</option>
+                <option value="西藏">西藏</option>
+              </optgroup>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">高考分数 <span style="color:var(--color-danger)">*</span></label>
+            <div class="input-with-suffix">
+              <input type="number" id="stuScore" placeholder="请输入分数" oninput="clampScore()" min="0" max="900">
+              <span class="suffix" id="scoreMax">/750</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">省内位次 <span style="font-size:13px;color:var(--text-secondary)">（选填）</span></label>
+            <input class="form-input" id="stuRank" type="number" placeholder="可留空自动估算" min="1">
           </div>
         </div>
-        <div class="form-group" style="margin-top:10px">
-          <label class="form-label">省内位次 <span style="font-size:11px;color:var(--text-secondary)">（选填，可留空自动估算）</span></label>
-          <input class="form-input" id="stuRank" type="number" placeholder="可留空自动估算" min="1">
-        </div>
-        <div class="form-group" style="margin-top:10px">
+        <div class="form-group step1-full" style="margin-top:10px">
           <label class="form-label">选科 <span style="color:var(--color-danger)">*</span></label>
           <div id="subjectArea" style="margin-top:6px">
-            <span style="font-size:12px;color:var(--text-secondary)">请先选择省份</span>
+            <span style="font-size:13px;color:var(--text-secondary)">请先选择省份</span>
           </div>
         </div>
         <div class="form-group" style="margin-top:10px">
@@ -409,7 +457,7 @@ body{background:var(--bg-primary);min-height:100vh;font-family:'PingFang SC','Mi
           </div>
         </div>
         <div class="form-group" style="margin-top:10px">
-          <label class="form-label">家庭经济 <span style="font-size:11px;color:var(--text-secondary)">（影响院校推荐）</span></label>
+          <label class="form-label">家庭经济 <span style="font-size:13px;color:var(--text-secondary)">（影响院校推荐）</span></label>
           <select class="form-select" id="stuEconomy">
             <option value="">请选择</option>
             <option value="较为困难">较为困难</option>
@@ -429,70 +477,74 @@ body{background:var(--bg-primary);min-height:100vh;font-family:'PingFang SC','Mi
         <div class="page-title">意向偏好</div>
         <div class="page-subtitle">选择越细致，推荐越精准</div>
       </div>
-      <div class="card">
-        <div class="section-title">📚 专业方向（多选）</div>
-        <div class="tag-group" id="majorTags">
-          <span class="tag" data-val="计算机">计算机</span>
-          <span class="tag" data-val="软件工程">软件工程</span>
-          <span class="tag" data-val="人工智能">人工智能</span>
-          <span class="tag" data-val="数据科学">数据科学</span>
-          <span class="tag" data-val="电子信息">电子信息</span>
-          <span class="tag" data-val="通信工程">通信工程</span>
-          <span class="tag" data-val="电气工程">电气工程</span>
-          <span class="tag" data-val="自动化">自动化</span>
-          <span class="tag" data-val="机械工程">机械工程</span>
-          <span class="tag" data-val="土木工程">土木工程</span>
-          <span class="tag" data-val="建筑学">建筑学</span>
-          <span class="tag" data-val="临床医学">临床医学</span>
-          <span class="tag" data-val="口腔医学">口腔医学</span>
-          <span class="tag" data-val="药学">药学</span>
-          <span class="tag" data-val="护理学">护理学</span>
-          <span class="tag" data-val="金融学">金融学</span>
-          <span class="tag" data-val="会计学">会计学</span>
-          <span class="tag" data-val="法学">法学</span>
-          <span class="tag" data-val="汉语言文学">汉语言文学</span>
-          <span class="tag" data-val="英语">英语</span>
-          <span class="tag" data-val="新闻传播">新闻传播</span>
-          <span class="tag" data-val="数学">数学</span>
-          <span class="tag" data-val="物理学">物理学</span>
-          <span class="tag" data-val="化学">化学</span>
-          <span class="tag" data-val="生物学">生物学</span>
-          <span class="tag" data-val="环境工程">环境工程</span>
+      <div class="pref-grid">
+        <div class="card">
+          <div class="section-title">📚 专业方向（多选）</div>
+          <div class="tag-group" id="majorTags">
+            <span class="tag" data-val="计算机">计算机</span>
+            <span class="tag" data-val="软件工程">软件工程</span>
+            <span class="tag" data-val="人工智能">人工智能</span>
+            <span class="tag" data-val="数据科学">数据科学</span>
+            <span class="tag" data-val="电子信息">电子信息</span>
+            <span class="tag" data-val="通信工程">通信工程</span>
+            <span class="tag" data-val="电气工程">电气工程</span>
+            <span class="tag" data-val="自动化">自动化</span>
+            <span class="tag" data-val="机械工程">机械工程</span>
+            <span class="tag" data-val="土木工程">土木工程</span>
+            <span class="tag" data-val="建筑学">建筑学</span>
+            <span class="tag" data-val="临床医学">临床医学</span>
+            <span class="tag" data-val="口腔医学">口腔医学</span>
+            <span class="tag" data-val="药学">药学</span>
+            <span class="tag" data-val="护理学">护理学</span>
+            <span class="tag" data-val="金融学">金融学</span>
+            <span class="tag" data-val="会计学">会计学</span>
+            <span class="tag" data-val="法学">法学</span>
+            <span class="tag" data-val="汉语言文学">汉语言文学</span>
+            <span class="tag" data-val="英语">英语</span>
+            <span class="tag" data-val="新闻传播">新闻传播</span>
+            <span class="tag" data-val="数学">数学</span>
+            <span class="tag" data-val="物理学">物理学</span>
+            <span class="tag" data-val="化学">化学</span>
+            <span class="tag" data-val="生物学">生物学</span>
+            <span class="tag" data-val="环境工程">环境工程</span>
+          </div>
         </div>
-      </div>
-      <div class="card">
-        <div class="section-title">🏙️ 意向城市（多选）</div>
-        <div class="tag-group" id="cityTags">
-          <span class="tag" data-val="北京">北京</span><span class="tag" data-val="上海">上海</span>
-          <span class="tag" data-val="广州">广州</span><span class="tag" data-val="深圳">深圳</span>
-          <span class="tag" data-val="杭州">杭州</span><span class="tag" data-val="南京">南京</span>
-          <span class="tag" data-val="武汉">武汉</span><span class="tag" data-val="成都">成都</span>
-          <span class="tag" data-val="西安">西安</span><span class="tag" data-val="郑州">郑州</span>
-          <span class="tag" data-val="长沙">长沙</span><span class="tag" data-val="合肥">合肥</span>
-          <span class="tag" data-val="重庆">重庆</span><span class="tag" data-val="天津">天津</span>
-          <span class="tag" data-val="苏州">苏州</span><span class="tag" data-val="青岛">青岛</span>
+        <div class="card">
+          <div class="section-title">🏙️ 意向城市（多选）</div>
+          <div class="city-tags-with-input">
+            <div class="tag-group" id="cityTags">
+              <span class="tag" data-val="北京">北京</span><span class="tag" data-val="上海">上海</span>
+              <span class="tag" data-val="广州">广州</span><span class="tag" data-val="深圳">深圳</span>
+              <span class="tag" data-val="杭州">杭州</span><span class="tag" data-val="南京">南京</span>
+              <span class="tag" data-val="武汉">武汉</span><span class="tag" data-val="成都">成都</span>
+              <span class="tag" data-val="西安">西安</span><span class="tag" data-val="郑州">郑州</span>
+              <span class="tag" data-val="长沙">长沙</span><span class="tag" data-val="合肥">合肥</span>
+              <span class="tag" data-val="重庆">重庆</span><span class="tag" data-val="天津">天津</span>
+              <span class="tag" data-val="苏州">苏州</span><span class="tag" data-val="青岛">青岛</span>
+            </div>
+            <input class="form-input" id="cityCustom" placeholder="其他城市（自填）" style="margin-top:8px;font-size:13px">
+          </div>
         </div>
-        <input class="form-input" id="cityCustom" placeholder="其他城市（自填，如：郑州、洛阳）" style="margin-top:8px;font-size:13px">
-      </div>
-      <div class="card">
-        <div class="section-title">🏫 意向院校（最多3所）</div>
-        <div class="search-wrap">
-          <input class="form-input" id="schoolSearch" placeholder="🔍 输入学校名称搜索…" autocomplete="off">
-          <div class="search-dropdown" id="schoolDropdown"></div>
+        <div class="card">
+          <div class="section-title">🏫 意向院校（最多3所）</div>
+          <div class="search-wrap">
+            <input class="form-input" id="schoolSearch" placeholder="🔍 输入学校名称搜索…" autocomplete="off">
+            <div class="search-dropdown" id="schoolDropdown"></div>
+          </div>
+          <div class="selected-schools" id="selectedSchools"></div>
         </div>
-        <div class="selected-schools" id="selectedSchools"></div>
-      </div>
-      <div class="card">
-        <div class="section-title">🧠 性格/倾向（多选）</div>
-        <div class="tag-group" id="personalityTags" style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-          <span class="tag" data-val="外向活泼">外向活泼</span>
-          <span class="tag" data-val="沉稳内敛">沉稳内敛</span>
-          <span class="tag" data-val="钻研学术">钻研学术</span>
-          <span class="tag" data-val="领导管理">领导管理</span>
-          <span class="tag" data-val="艺术创作">艺术创作</span>
-          <span class="tag" data-val="社交沟通">社交沟通</span>
-          <span class="tag" data-val="动手实践">动手实践</span>
-          <span class="tag" data-val="逻辑分析">逻辑分析</span>
+        <div class="card">
+          <div class="section-title">🧠 性格/倾向（多选）</div>
+          <div class="tag-group" id="personalityTags" style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+            <span class="tag" data-val="外向活泼">外向活泼</span>
+            <span class="tag" data-val="沉稳内敛">沉稳内敛</span>
+            <span class="tag" data-val="钻研学术">钻研学术</span>
+            <span class="tag" data-val="领导管理">领导管理</span>
+            <span class="tag" data-val="艺术创作">艺术创作</span>
+            <span class="tag" data-val="社交沟通">社交沟通</span>
+            <span class="tag" data-val="动手实践">动手实践</span>
+            <span class="tag" data-val="逻辑分析">逻辑分析</span>
+          </div>
         </div>
       </div>
       <div class="flex-row" style="gap:8px">
@@ -595,13 +647,13 @@ body{background:var(--bg-primary);min-height:100vh;font-family:'PingFang SC','Mi
       </div>
       <div class="card">
         <div class="section-title">🏫 AI 推荐院校（15所）· 已加密</div>
-        <div id="blurredSchools" style="display:flex;flex-direction:column;gap:6px"></div>
+        <div id="blurredSchools" class="blurred-schools-grid"></div>
       </div>
-      <div class="card" style="text-align:center;background:#FEF2F2;border-color:#FECACA">
+      <div class="card paywall-cta-wrap" style="text-align:center;background:#FEF2F2;border-color:#FECACA">
         <div style="font-size:13px;color:var(--text-secondary);margin-bottom:4px">
           剩余解锁次数：<strong style="color:var(--text-primary);font-size:16px" id="remainCount">—</strong> 次
         </div>
-        <div style="font-size:11px;color:#94A3B8;margin-bottom:10px">次数不足时请联系平台充值</div>
+        <div style="font-size:13px;color:#94A3B8;margin-bottom:10px">次数不足时请联系平台充值</div>
         <button class="btn btn-danger btn-block btn-lg" id="btnUnlock" onclick="doUnlock()">🔓 一键解锁完整报告</button>
       </div>
       <div class="data-source">数据来源：教育部官网 · 阳光高考<br>近6年 2200万+ 录取记录</div>
@@ -612,10 +664,10 @@ body{background:var(--bg-primary);min-height:100vh;font-family:'PingFang SC','Mi
       <div id="reportContent">
         <!-- Rendered by renderReport() -->
       </div>
-      <div class="flex-row" style="gap:6px;margin-top:4px">
-        <button class="btn btn-ghost" style="flex:1;font-size:12px" onclick="downloadPDF()">📥 下载PDF</button>
-        <button class="btn btn-ghost" style="flex:1;font-size:12px" onclick="nextStudent()">👤 测下一个</button>
-        <button class="btn btn-primary" style="flex:1;font-size:12px" onclick="navigate('assistant')">🎙️ 主播助手</button>
+      <div class="flex-row report-action-row">
+        <button class="btn btn-ghost btn-lg" onclick="downloadPDF()">📥 下载PDF</button>
+        <button class="btn btn-ghost btn-lg" onclick="nextStudent()">👤 测下一个</button>
+        <button class="btn btn-primary btn-lg" onclick="navigate('assistant')">🎙️ 主播助手</button>
       </div>
     </div>
 
@@ -1429,16 +1481,18 @@ function renderReport() {
   // ── 板块一: 封面基础信息 ──
   let html = `<div class="card">
     <div class="board-header"><span class="board-num">一</span><span class="board-title">考生信息 &amp; 数据权威说明</span></div>
-    <div style="text-align:center;margin-bottom:8px">
-      <div style="font-size:11px;color:var(--text-secondary)">${esc(orderId)} · 防伪</div>
-      <div class="flex-row" style="justify-content:center;flex-wrap:wrap;gap:6px;margin-top:4px">
-        <span class="badge badge-211">📌 ${esc(stu.nickname||'')}</span>
-        <span style="font-size:12px;color:var(--text-secondary)">${esc(stu.province||'')} · ${stu.score||0}分 · ${esc(stu.subjectStr||'')} · 位次${data.student_rank||'估算中'}</span>
+    <div class="board-one-grid">
+      <div>
+        <div style="font-size:13px;color:var(--text-secondary);margin-bottom:6px">${esc(orderId)} · 防伪</div>
+        <div class="flex-row" style="flex-wrap:wrap;gap:6px;margin-bottom:4px">
+          <span class="badge badge-211">📌 ${esc(stu.nickname||'')}</span>
+          <span style="font-size:14px;color:var(--text-secondary)">${esc(stu.province||'')} · ${stu.score||0}分 · ${esc(stu.subjectStr||'')} · 位次${data.student_rank||'估算中'}</span>
+        </div>
       </div>
-    </div>
-    <div style="font-size:11px;color:var(--text-muted);line-height:1.6;text-align:center">
-      数据来源：教育部阳光高考 · 2026年一分一段 · 近6年2200万+录取记录<br>
-      AI引擎：Claude · DeepSeek V4 Pro · GPT-5.5 多模型交叉验证
+      <div style="font-size:13px;color:var(--text-muted);line-height:1.8;background:#F8FAFC;border-radius:var(--radius-sm);padding:10px 12px;border:1px solid var(--border)">
+        📊 数据来源：教育部阳光高考 · 2026年一分一段 · 近6年2200万+录取记录<br>
+        🤖 AI引擎：Claude · DeepSeek V4 Pro · GPT-5.5 多模型交叉验证
+      </div>
     </div>
   </div>`;
 
@@ -1469,9 +1523,9 @@ function renderReport() {
       </div>
     </div>`;
   }
-  if (rush.length)   html += `<div class="tier-section"><div class="tier-header rush">🚀 冲刺 <span class="tier-count">（共${rush.length}所）</span></div><div style="display:flex;flex-direction:column;gap:10px">${rush.map(s=>renderSchoolCard(s,'rush')).join('')}</div></div>`;
-  if (safe.length)   html += `<div class="tier-section"><div class="tier-header safe">🎯 稳妥 <span class="tier-count">（共${safe.length}所）</span></div><div style="display:flex;flex-direction:column;gap:10px">${safe.map(s=>renderSchoolCard(s,'safe')).join('')}</div></div>`;
-  if (bottom.length) html += `<div class="tier-section"><div class="tier-header bottom">🟢 保底 <span class="tier-count">（共${bottom.length}所）</span></div><div style="display:flex;flex-direction:column;gap:10px">${bottom.map(s=>renderSchoolCard(s,'bottom')).join('')}</div></div>`;
+  if (rush.length)   html += `<div class="tier-section"><div class="tier-header rush">🚀 冲刺 <span class="tier-count">（共${rush.length}所）</span></div><div class="school-cards-grid">${rush.map(s=>renderSchoolCard(s,'rush')).join('')}</div></div>`;
+  if (safe.length)   html += `<div class="tier-section"><div class="tier-header safe">🎯 稳妥 <span class="tier-count">（共${safe.length}所）</span></div><div class="school-cards-grid">${safe.map(s=>renderSchoolCard(s,'safe')).join('')}</div></div>`;
+  if (bottom.length) html += `<div class="tier-section"><div class="tier-header bottom">🟢 保底 <span class="tier-count">（共${bottom.length}所）</span></div><div class="school-cards-grid">${bottom.map(s=>renderSchoolCard(s,'bottom')).join('')}</div></div>`;
   if (!rush.length && !safe.length && !bottom.length) {
     html += `<div class="card" style="text-align:center;color:var(--text-secondary);padding:24px">暂无推荐数据，请检查输入信息后重试</div>`;
   }
@@ -1482,8 +1536,8 @@ function renderReport() {
   }
 
   // ── 板块四: AI个性化填报建议书 ──
-  html += `<div class="board-header" style="padding:4px 0 4px;margin-top:4px"><span class="board-num">四</span><span class="board-title">AI个性化填报建议书</span></div>`;
-  html += buildAdviceSection(stu, pref, data);
+  html += `<div class="board-header" style="padding:4px 0 4px;margin-top:4px"><span class="board-num">四</span><span class="board-title" style="font-size:24px">AI个性化填报建议书</span></div>`;
+  html += `<div class="advice-section-wrap">${buildAdviceSection(stu, pref, data)}</div>`;
 
   // ── 板块五: 免责声明 ──
   html += `<div class="card" style="margin-top:4px;border:1px solid rgba(239,68,68,.15);background:rgba(239,68,68,.04)">
