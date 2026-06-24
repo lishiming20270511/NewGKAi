@@ -352,6 +352,66 @@ body{background:var(--bg-primary);min-height:100vh;font-family:'PingFang SC','Mi
 .report-action-row{gap:12px;margin-top:16px}
 .report-action-row .btn{flex:1;font-size:14px}
 
+/* ═══════════════ v8 亮色直播主题（SimHei + 大字号 + 清晰优化）════════════════ */
+:root{
+  --bg-primary:#F0F4FF;
+  --bg-card:#FFFFFF;
+  --bg-card-hover:#F8FAFC;
+  --bg-input:#FFFFFF;
+  --text-primary:#000000;
+  --text-secondary:#000000;
+  --text-muted:#475569;
+  --color-blur:#E2E8F0;
+  --border:rgba(59,130,246,.18);
+  --border-subtle:rgba(59,130,246,.10);
+  --shadow-card:0 2px 12px rgba(59,130,246,.07);
+  --shadow-sm:0 1px 4px rgba(0,0,0,.08);
+  --shadow-md:0 4px 16px rgba(0,0,0,.10);
+}
+body{
+  font-family:"SimHei","Heiti SC","STHeiti","黑体","Microsoft YaHei",system-ui,sans-serif;
+  -webkit-font-smoothing:none;
+  -moz-osx-font-smoothing:unset;
+  text-rendering:geometricPrecision;
+  font-size:21px;
+}
+/* 全局笔画加粗（抗视频压缩模糊） */
+body *{text-shadow:0 0 0.4px #000000,0 0 0.4px #000000}
+/* 白底按钮/蓝底按钮：白字用白色描边 */
+.btn-primary,.btn-danger,.btn-lg,.btn-live,
+.tag.selected,.tag-radio.selected{text-shadow:0 0 0.4px #ffffff,0 0 0.4px #ffffff !important}
+/* 导航栏保持白底 */
+.nav-bar{background:#FFFFFF;border-bottom:1px solid rgba(59,130,246,.15)}
+/* 骨架屏 / 分析背景 / 聊天区保持亮色 */
+.skeleton{background:linear-gradient(90deg,#E2E8F0 0%,#F1F5F9 50%,#E2E8F0 100%);background-size:200% 100%}
+.analyzing-bg{background:linear-gradient(135deg,#EFF6FF,#F0FDF4);border-color:rgba(59,130,246,.15)}
+.chat-area{background:#F8FAFC;border-color:rgba(59,130,246,.15)}
+/* 输入框边框加粗（v8 风格 2px） */
+.form-input,.form-select,.form-textarea,
+.input-with-suffix input,.password-wrap input{border-width:2px}
+/* 字号：小标签 / 内容区 */
+.nav-user,.nav-btn-small,.btn-live,.toast,.tier-count,.page-subtitle,.brand-subtitle,
+.trust-badge span,.analyzing-subtitle,.step-label,.info-card-title,.info-card-text,
+.blur-card,.report-summary,.school-row,.school-ai-comment,.school-row-col,
+.special-attention-label,.advice-item,.sample-banner,.chat-bubble,.selected-school-tag,
+.search-dropdown-item,.assist-tab-btn,.script-body,.qa-bubble-user,.qa-bubble-ai,
+.login-promo-item,.report-action-row .btn,.form-error-text,.suffix{font-size:19px}
+.nav-balance,.step-indicator,.engine-badge,.step-status,.insight-item .label,
+.data-source,.school-match,.city-panel-row,.eco-badge,.est-badge,.data-est,
+.data-pending,.src-note,.major-note-tag,.badge,.board-num,.board-sub,
+.script-title,.script-copy-btn,.qa-preset-btn,.search-dropdown-item .city{font-size:18px}
+.form-label{font-size:20px}
+.form-input,.form-select,.form-textarea,.btn,.btn-lg,.input-with-suffix input,
+.password-wrap input,.toggle-pwd,.insight-item .value,.tier-header,.school-prob,
+.board-title{font-size:21px}
+.script-cat-header{font-size:20px}
+.section-title,.analyzing-title,.modal h3{font-size:23px}
+.school-name,.login-promo-item .promo-icon{font-size:23px}
+.page-title,.brand-logo{font-size:29px}
+.step-icon{font-size:25px}
+.city-toggle-icon{font-size:16px}
+.analyzing-icon{font-size:53px}
+/* ═══════════════════════════════════════════════════════ */
 
 </style>
 </head>
