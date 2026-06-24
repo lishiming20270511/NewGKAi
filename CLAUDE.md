@@ -56,7 +56,7 @@ scp -i ~/.ssh/id_rsa frontend/index.html root@121.41.69.234:/root/gaokao-ai/fron
 - 清晰度：`-webkit-font-smoothing:none` + `text-shadow` 笔画加粗（专为直播流压缩优化）
 - 演示账号：手机号 `13800138000` 任意密码触发登录成功
 
-**待决策**：v8 原型是否应用到生产 `frontend/index.html` 的登录页，以及是否扩展到 STEP1/付款墙/报告页。
+**已决策（2026-06-24）**：v8 风格已全站应用到 `frontend/index.html`（SimHei 黑体、`#F0F4FF` 背景、`#000000` 纯黑文字、大字号、`-webkit-font-smoothing:none`、`text-shadow` 笔画加粗）。
 
 ## 已知问题（待处理）
 > 见 `docs/BBB.txt` 和 `docs/abc.txt`，或直接询问
