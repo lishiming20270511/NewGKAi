@@ -352,6 +352,58 @@ body{background:var(--bg-primary);min-height:100vh;font-family:'PingFang SC','Mi
 .report-action-row{gap:12px;margin-top:16px}
 .report-action-row .btn{flex:1;font-size:14px}
 
+/* ═══════════════ 深色主题 + 字体+5px 实验层 ════════════════
+   回退: git checkout frontend/index.html
+   ═════════════════════════════════════════════════════════ */
+:root{
+  --bg-primary:#0F172A;--bg-card:#1E293B;--bg-card-hover:#334155;--bg-input:#1E293B;
+  --text-primary:#F1F5F9;--text-secondary:#94A3B8;--text-muted:#64748B;
+  --color-blur:#334155;
+  --border:rgba(148,163,184,.10);--border-subtle:rgba(148,163,184,.08);
+  --shadow-card:0 4px 24px rgba(0,0,0,.35);--shadow-sm:0 1px 4px rgba(0,0,0,.2);
+  --shadow-md:0 8px 32px rgba(0,0,0,.35);
+}
+.nav-bar{background:#1E293B}
+.nav-btn-small{background:#1E293B;border-color:rgba(148,163,184,.15)}
+.nav-btn-small:hover{background:#334155}
+.tag,.tag-radio{background:#334155;border-color:rgba(148,163,184,.12)}
+.trust-badge span{background:#334155;border-color:rgba(148,163,184,.12)}
+.engine-badge{background:#334155;border-color:rgba(148,163,184,.12)}
+.insight-item{background:#334155}
+.school-ai-comment{background:#1a2d45;border-top-color:rgba(148,163,184,.10)}
+.city-panel{background:#1a2d45;border-color:rgba(148,163,184,.10)}
+.est-badge{background:#334155;border-color:rgba(148,163,184,.12)}
+.badge-public{background:#334155;color:var(--text-secondary)}
+.chat-area{background:#0F172A;border-color:rgba(148,163,184,.10)}
+.login-promo-item{background:#334155;border-color:rgba(148,163,184,.10)}
+.skeleton{background:linear-gradient(90deg,#334155 0%,#475569 50%,#334155 100%)}
+.analyzing-bg{background:linear-gradient(135deg,#1E293B,#0F2040);border-color:rgba(148,163,184,.10)}
+.analyzing-bg::before{background-image:radial-gradient(rgba(129,140,248,.06) 1px,transparent 1px)}
+/* 字体 +5px */
+body{font-size:21px}
+.nav-user,.nav-btn-small,.btn-live,.toast,.tier-count,.page-subtitle,.brand-subtitle,
+.trust-badge span,.analyzing-subtitle,.step-label,.info-card-title,.info-card-text,
+.blur-card,.report-summary,.school-row,.school-ai-comment,.school-row-col,
+.special-attention-label,.advice-item,.sample-banner,.chat-bubble,.selected-school-tag,
+.search-dropdown-item,.assist-tab-btn,.script-body,.qa-bubble-user,.qa-bubble-ai,
+.login-promo-item,.report-action-row .btn,.form-error-text,.suffix{font-size:19px}
+.nav-balance,.step-indicator,.engine-badge,.step-status,.insight-item .label,
+.data-source,.school-match,.city-panel-row,.eco-badge,.est-badge,.data-est,
+.data-pending,.src-note,.major-note-tag,.badge,.board-num,.board-sub,
+.script-title,.script-copy-btn,.qa-preset-btn,.search-dropdown-item .city{font-size:18px}
+.form-label{font-size:20px}
+.form-input,.form-select,.form-textarea,.btn,.btn-lg,.input-with-suffix input,
+.password-wrap input,.toggle-pwd,.insight-item .value,.tier-header,.school-prob,
+.board-title{font-size:21px}
+.script-cat-header{font-size:20px}
+.section-title,.analyzing-title,.modal h3{font-size:23px}
+.school-name,.login-promo-item .promo-icon{font-size:23px}
+.page-title,.brand-logo{font-size:29px}
+.step-icon{font-size:25px}
+.city-toggle-icon{font-size:16px}
+.analyzing-icon{font-size:53px}
+/* ═══════════════════════════════════════════════════════ */
+
 </style>
 </head>
 <body>
@@ -839,6 +891,37 @@ const S = {
 
 const PAGE_SIZE = 20;
 const PROVINCES_33 = ['浙江','上海','北京','天津','山东','海南'];
+
+// TASK-18: 三大工科专业静态资料库
+const MAJOR_INFO_DB = {
+  "软件工程": {
+    label: "软件工程",
+    definition: "培养具备计算机软件开发、系统设计与项目管理能力的工程师，是数字化时代需求最旺盛的专业之一。",
+    core_courses: ["数据结构与算法", "操作系统", "计算机网络", "数据库原理", "软件工程方法学", "前后端开发"],
+    career_tracks: ["软件开发工程师", "后端/前端架构师", "AI工程师", "产品经理（技术背景）", "技术创业"],
+    salary: "应届月薪 1.2–3.5万（一线城市互联网大厂），3年后 2–8万",
+    top_schools: "两电一邮（北邮/电子科大/西电）、中科大、华科、重庆大学、南京大学；计算机强985优先",
+    further_study: "保研率15–30%（985级），可报考计算机/软件工程/人工智能硕士；出国留学竞争激烈但机会多"
+  },
+  "通信工程": {
+    label: "通信工程",
+    definition: "研究信息传输与处理技术，涵盖5G/6G、光纤通信、卫星通信等，是信息基础设施的核心学科。",
+    core_courses: ["信号与系统", "通信原理", "数字信号处理", "电磁场与微波", "无线通信", "嵌入式系统"],
+    career_tracks: ["通信工程师（华为/中兴/运营商）", "5G网络优化", "芯片射频工程师", "嵌入式开发", "军工航天"],
+    salary: "应届月薪 1.0–3.0万，华为等头部企业届内达4–8万，3年后平均2.5–6万",
+    top_schools: "两电一邮（北邮/电子科大/西电）、北京理工、哈工大、东南大学、南京邮电大学",
+    further_study: "保研率约15–25%，可报通信/信息与通信工程/集成电路硕士；华为终端海思等直接校招"
+  },
+  "电气工程": {
+    label: "电气工程",
+    definition: "研究电能的产生、传输、分配与利用，涵盖电力系统、电机控制、新能源等，是新型电力系统建设的主力专业。",
+    core_courses: ["电路理论", "电机学", "电力系统分析", "高电压技术", "电力电子技术", "自动控制原理"],
+    career_tracks: ["国家电网/南方电网（校招规模最大）", "新能源（光伏/风电）工程师", "特高压/智能电网", "电气设备制造（ABB/施耐德）", "轨道交通电气"],
+    salary: "应届月薪 0.8–2.5万；国家电网待遇稳定+隐性福利高；新能源赛道可达3–6万",
+    top_schools: "华北电力大学（业内顶尖）、上海电力大学、东北电力大学、华科、重庆大学、西安交大",
+    further_study: "保研率10–20%，可报电气工程/电力系统/新能源硕博；国网定向培养名额大"
+  }
+};
 
 // ══════════════════════════════════════════════════════════
 // Init
@@ -1594,6 +1677,24 @@ function renderReport() {
   html += `<div class="board-header" style="padding:4px 0 4px;margin-top:4px"><span class="board-num">四</span><span class="board-title" style="font-size:24px">AI个性化填报建议书</span></div>`;
   html += `<div class="advice-section-wrap">${buildAdviceSection(stu, pref, data)}</div>`;
 
+  // ── 专业解读（TASK-18，仅限 MAJOR_INFO_DB 中的意向专业，不进PDF） ──
+  const _matchedMajors = (pref.majors || []).filter(m => MAJOR_INFO_DB[m]);
+  if (_matchedMajors.length > 0) {
+    html += `<div class="board-header" style="padding:4px 0 4px;margin-top:4px"><span class="board-num" style="background:#0891b2">+</span><span class="board-title" style="font-size:24px">专业解读</span></div>`;
+    _matchedMajors.forEach(m => {
+      const info = MAJOR_INFO_DB[m];
+      html += `<div class="card" style="margin-top:0">
+        <div class="section-title" style="margin-bottom:8px;color:var(--color-accent)">📖 ${esc(info.label)}</div>
+        <div style="font-size:12px;color:var(--text-secondary);line-height:1.7;margin-bottom:8px">${esc(info.definition)}</div>
+        <div style="font-size:12px;margin-bottom:6px"><span style="color:var(--text-muted)">核心课程：</span>${esc(info.core_courses.join('、'))}</div>
+        <div style="font-size:12px;margin-bottom:6px"><span style="color:var(--text-muted)">就业赛道：</span>${esc(info.career_tracks.join('　'))}</div>
+        <div style="font-size:12px;margin-bottom:6px"><span style="color:var(--text-muted)">薪资区间：</span>${esc(info.salary)}</div>
+        <div style="font-size:12px;margin-bottom:6px"><span style="color:var(--text-muted)">推荐院校：</span>${esc(info.top_schools)}</div>
+        <div style="font-size:12px"><span style="color:var(--text-muted)">深造建议：</span>${esc(info.further_study)}</div>
+      </div>`;
+    });
+  }
+
   // ── 板块五: 免责声明 ──
   html += `<div class="card" style="margin-top:4px;border:1px solid rgba(239,68,68,.15);background:rgba(239,68,68,.04)">
     <div class="board-header"><span class="board-num" style="background:var(--color-danger)">五</span><span class="board-title">免责声明</span></div>
@@ -1870,31 +1971,48 @@ function renderSchoolCard(s, tierKey) {
     ? `<div class="school-row"><span class="label">💵 薪资</span><span class="value">${esc(salaryStart)}${salary3yr ? ` → ${esc(salary3yr)}(3年)` : ''}${salaryEstBadge}</span></div>`
     : `<div class="school-row"><span class="label">💵 薪资</span><span class="value"><span class="data-pending">暂无数据，持续完善中</span></span></div>`;
 
-  // Dim 15: City analysis — collapsible 5-sub-dimension panel
-  let cityHtml = '';
-  if (dim.city_analysis && typeof dim.city_analysis === 'object') {
-    const ca = dim.city_analysis;
-    const cid = 'c' + Math.random().toString(36).slice(2, 9);
-    // API may return {summary:...} or full {location,advantage,disadvantage,job_market,livability}
-    const rows = ca.summary ? `<div class="city-panel-row">${esc(ca.summary)}</div>` : [
-      ca.location     ? `<div class="city-panel-row">📍 ${esc(ca.location)}</div>` : '',
-      ca.advantage    ? `<div class="city-panel-row">✅ ${esc(ca.advantage)}</div>` : '',
-      ca.disadvantage ? `<div class="city-panel-row">⚠️ ${esc(ca.disadvantage)}</div>` : '',
-      ca.job_market   ? `<div class="city-panel-row">💼 ${esc(ca.job_market)}</div>` : '',
-      ca.livability   ? `<div class="city-panel-row">🏠 ${esc(ca.livability)}</div>` : '',
-    ].filter(Boolean).join('');
-    if (rows) {
-      cityHtml = `<div class="school-row-col">
-        <div class="city-toggle" onclick="toggleCityPanel('${cid}')">
-          <span class="label" style="min-width:unset">🏙️ 城市分析</span>
-          <span id="${cid}_ic" class="city-toggle-icon">▼</span>
-        </div>
-        <div id="${cid}" class="city-panel">${rows}</div>
-      </div>`;
-    }
-  } else if (dim.city_analysis) {
-    cityHtml = `<div class="school-row"><span class="label">🏙️ 城市</span><span class="value">${esc(String(dim.city_analysis))}</span></div>`;
-  }
+  // 院校分析 collapsible panel（替代原城市分析面板，TASK-17）
+  const _aid = 'a' + Math.random().toString(36).slice(2, 9);
+  const _tagsArr = s.tags || [];
+  const _eliteTagStr = _tagsArr.filter(t => ['985','211','双一流'].includes(t)).join(' · ');
+  const _isPublic = !((s.school_type||'').includes('民办') || (s.school_type||'').includes('独立'));
+  const _institutionTag = _isPublic ? '公办' : '民办';
+  const _attrParts = [_eliteTagStr, _institutionTag, s.school_type ? esc(s.school_type) : ''].filter(Boolean);
+  const _attrText = _attrParts.join(' · ');
+
+  const _matchLabel = s.major_match_label || '';
+  const _majorAdaptText = dim.recommended_major
+    ? `${_matchLabel ? esc(_matchLabel) + ' ' : ''}${esc(dim.recommended_major)}${dim.major_level ? `<span class="src-note" style="color:var(--color-cyan)">${esc(dim.major_level)}</span>` : ''}`
+    : '<span class="data-pending">暂无匹配数据，持续完善中</span>';
+
+  const _empParts = [
+    dim.employment_rate ? `就业率：${esc(dim.employment_rate)}` : '',
+    dim.graduate_rate   ? `深造率：${esc(dim.graduate_rate)}` : '',
+  ].filter(Boolean);
+  const _empSrc = dim.employment_source ? `<span class="src-note">${esc(dim.employment_source)}</span>` : '';
+  const _empText = _empParts.length
+    ? _empParts.join(' · ') + _empSrc
+    : '<span class="data-pending">暂无数据，持续完善中</span>';
+
+  const _tierDescMap = {
+    0: `您的分数在本校属于<strong>冲刺层次</strong>，录取概率 ${Math.round(probVal)}%，建议作为冲刺志愿`,
+    1: `您的分数在本校属于<strong>稳妥层次</strong>，录取概率 ${Math.round(probVal)}%，是理想的稳妥志愿`,
+    2: `您的分数在本校属于<strong>保底层次</strong>，录取概率 ${Math.round(probVal)}%，可作为保底兜底志愿`,
+  };
+  const _tierDesc = _tierDescMap[s.tier] || `录取概率 ${Math.round(probVal)}%`;
+
+  const cityHtml = `<div class="school-row-col">
+    <div class="city-toggle" onclick="toggleCityPanel('${_aid}')">
+      <span class="label" style="min-width:unset">🏫 院校分析</span>
+      <span id="${_aid}_ic" class="city-toggle-icon">▼</span>
+    </div>
+    <div id="${_aid}" class="city-panel">
+      <div class="city-panel-row">🏷️ 院校属性：${_attrText}</div>
+      <div class="city-panel-row">🎓 专业适配：${_majorAdaptText}</div>
+      <div class="city-panel-row">💼 升学就业：${_empText}</div>
+      <div class="city-panel-row">📊 分段适配：${_tierDesc}</div>
+    </div>
+  </div>`;
 
   const aiComment = dim.ai_review
     ? `<div class="school-ai-comment"><span class="speaker">💡 点评：</span>${esc(dim.ai_review)}</div>`

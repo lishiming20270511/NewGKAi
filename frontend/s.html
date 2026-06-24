@@ -803,19 +803,31 @@ function renderSchoolCard(s, tierKey) {
   const salary3yr   = dim.avg_salary_3yr;
   const salaryHtml  = salaryStart ? `<div class="school-row"><span class="label">💵 薪资</span><span class="value">${esc(salaryStart)}${salary3yr ? ` → ${esc(salary3yr)}(3年)` : ''}</span></div>` : '';
 
+  // TASK-17: 院校分析取代城市分析
   let cityHtml = '';
-  if (dim.city_analysis && typeof dim.city_analysis === 'object') {
-    const ca = dim.city_analysis;
+  {
     const cid = 'c' + Math.random().toString(36).slice(2,9);
-    const rows = ca.summary ? `<div class="city-panel-row">${esc(ca.summary)}</div>` : [
-      ca.location     ? `<div class="city-panel-row">📍 ${esc(ca.location)}</div>` : '',
-      ca.advantage    ? `<div class="city-panel-row">✅ ${esc(ca.advantage)}</div>` : '',
-      ca.disadvantage ? `<div class="city-panel-row">⚠️ ${esc(ca.disadvantage)}</div>` : '',
-      ca.job_market   ? `<div class="city-panel-row">💼 ${esc(ca.job_market)}</div>` : '',
+    const tags = (s.tags || []).join(' ');
+    const _attrText = [tags, s.specialty_type ? `[${esc(s.specialty_type)}]` : ''].filter(Boolean).join('　');
+    const _majorAdaptText = [
+      s.major_match_label || '',
+      s.recommended_major ? esc(s.recommended_major) : '',
+      s.major_level       ? `(${esc(s.major_level)})`  : ''
+    ].filter(Boolean).join(' ');
+    const _empRate  = dim.employment_rate  ? `就业率 ${esc(String(dim.employment_rate))}` : '';
+    const _gradRate = dim.graduate_rate    ? `深造率 ${esc(String(dim.graduate_rate))}`   : '';
+    const _empText  = [_empRate, _gradRate].filter(Boolean).join('　') || '<span class="data-pending">暂无数据，持续完善中</span>';
+    const tierMap = { 0: `冲刺`, 1: `稳妥`, 2: `保底` };
+    const tierName = tierMap[s.tier] ?? '参考';
+    const probVal2 = s.rank_prob || 0;
+    const _tierDesc = `您的分数在本校属于${tierName}层次，录取概率 ${Math.round(probVal2)}%`;
+    const rows2 = [
+      _attrText      ? `<div class="city-panel-row">🏷️ ${_attrText}</div>` : '',
+      _majorAdaptText? `<div class="city-panel-row">📚 专业适配：${_majorAdaptText}</div>` : '',
+                       `<div class="city-panel-row">💼 升学就业：${_empText}</div>`,
+                       `<div class="city-panel-row">📊 分段适配：${_tierDesc}</div>`,
     ].filter(Boolean).join('');
-    if (rows) {
-      cityHtml = `<div class="school-row-col"><div class="city-toggle" onclick="toggleCityPanel('${cid}')"><span class="label">🏙️ 城市分析</span><span id="${cid}_ic" class="city-toggle-icon">▼</span></div><div id="${cid}" class="city-panel">${rows}</div></div>`;
-    }
+    cityHtml = `<div class="school-row-col"><div class="city-toggle" onclick="toggleCityPanel('${cid}')"><span class="label">🏫 院校分析</span><span id="${cid}_ic" class="city-toggle-icon">▼</span></div><div id="${cid}" class="city-panel">${rows2}</div></div>`;
   }
 
   const aiComment = dim.ai_review ? `<div class="school-ai-comment"><span class="speaker">💡 点评：</span>${esc(dim.ai_review)}</div>` : '';

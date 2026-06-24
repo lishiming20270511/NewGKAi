@@ -1,7 +1,7 @@
 # AI高考志愿规划师 · 开发说明
 
 ## 项目状态
-当前版本：**v5.23**（已验收，broadcast_scripts 路由注册上线，全部14个任务完成）  
+当前版本：**v5.6**（已验收，TASK-15~18 v5.6 全部完成：工科过滤/高分保底/院校分析/专业资料库）  
 代码仓库：`https://github.com/lishiming20270511/NewGKAi`  
 生产服务器：`121.41.69.234`，路径 `/root/gaokao-ai/`
 
@@ -35,6 +35,28 @@ cd D:/dev/NewGKAi && git push origin main
 # 部署生产服务器
 scp -i ~/.ssh/id_rsa frontend/index.html root@121.41.69.234:/root/gaokao-ai/frontend/index.html
 ```
+
+## 9:16 直播竖屏 UI 原型（2026-06-24）
+
+> 当前最新版：**`docs/prototype_9x16_login_v8.html`**（未部署，仅本地预览）
+
+| 文件 | 说明 |
+|------|------|
+| `docs/prototype_9x16_login_v3.html` | 全宽暗色版，flex比例布局基础框架 |
+| `docs/prototype_9x16_login_v4.html` | 亮色版（#F0F4FF背景+白卡片） |
+| `docs/prototype_9x16_login_v5.html` | v4 + SimHei黑体 + 全局字体+5px + 全黑文字 |
+| `docs/prototype_9x16_login_v6.html` | v5 + 全局字体再+5px |
+| `docs/prototype_9x16_login_v7.html` | v6 + 全局字体再+10px |
+| `docs/prototype_9x16_login_v8.html` | **当前最新** v7 + 直播清晰度优化（关闭抗锯齿/text-shadow加粗笔画/纯黑#000000） |
+
+**设计规格（已确认）**：
+- 布局：`width:100vw` 无 max-width，flex 比例 20/30/40/10（品牌/登录/功能/页脚）
+- 风格：亮色（`#F0F4FF` 背景，白卡片），SimHei/黑体，全黑文字
+- 字号：大号（品牌名 46~60px，输入框 38~44px，按钮 42~50px，功能描述 33~38px）
+- 清晰度：`-webkit-font-smoothing:none` + `text-shadow` 笔画加粗（专为直播流压缩优化）
+- 演示账号：手机号 `13800138000` 任意密码触发登录成功
+
+**待决策**：v8 原型是否应用到生产 `frontend/index.html` 的登录页，以及是否扩展到 STEP1/付款墙/报告页。
 
 ## 已知问题（待处理）
 > 见 `docs/BBB.txt` 和 `docs/abc.txt`，或直接询问
